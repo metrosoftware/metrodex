@@ -223,14 +223,20 @@ final class BlockDb {
 
     static BlockImpl loadBlock(Connection con, ResultSet rs, boolean loadTransactions) {
         try {
-            int version = rs.getInt("version");
+            short version = rs.getShort("version");
             int timestamp = rs.getInt("timestamp");
             long previousBlockId = rs.getLong("previous_block_id");
+            long previousKeyBlockId = rs.getLong("previous_key_block_id");
+            long nonce = rs.getLong("nonce");
             long totalAmountNQT = rs.getLong("total_amount");
             long totalFeeNQT = rs.getLong("total_fee");
             int payloadLength = rs.getInt("payload_length");
             long generatorId = rs.getLong("generator_id");
             byte[] previousBlockHash = rs.getBytes("previous_block_hash");
+            // TODO stage 2: read and pass txMerkleRoot rather than payload_hash
+            byte[] previousKeyBlockHash = rs.getBytes("previous_key_block_hash");
+            byte[] posBlocksSummary = rs.getBytes("pos_blocks_summary");
+            byte[] stakeMerkleRoot = rs.getBytes("stake_merkle_root");
             BigInteger cumulativeDifficulty = new BigInteger(rs.getBytes("cumulative_difficulty"));
             long baseTarget = rs.getLong("base_target");
             long nextBlockId = rs.getLong("next_block_id");
@@ -238,13 +244,14 @@ final class BlockDb {
                 throw new IllegalStateException("Attempting to load invalid block");
             }
             int height = rs.getInt("height");
+            int localHeight = rs.getInt("local_height");
             byte[] generationSignature = rs.getBytes("generation_signature");
             byte[] blockSignature = rs.getBytes("block_signature");
             byte[] payloadHash = rs.getBytes("payload_hash");
             long id = rs.getLong("id");
-            return new BlockImpl(version, timestamp, previousBlockId, totalAmountNQT, totalFeeNQT, payloadLength, payloadHash,
-                    generatorId, generationSignature, blockSignature, previousBlockHash,
-                    cumulativeDifficulty, baseTarget, nextBlockId, height, id, loadTransactions ? TransactionDb.findBlockTransactions(con, id) : null);
+            return new BlockImpl(version, timestamp, previousBlockId, previousKeyBlockId, nonce, totalAmountNQT, totalFeeNQT, payloadLength, payloadHash,
+                    generatorId, generationSignature, blockSignature, previousBlockHash, previousKeyBlockHash, posBlocksSummary, stakeMerkleRoot,
+                    cumulativeDifficulty, baseTarget, nextBlockId, height, localHeight, id, loadTransactions ? TransactionDb.findBlockTransactions(con, id) : null);
         } catch (SQLException e) {
             throw new RuntimeException(e.toString(), e);
         }
@@ -252,15 +259,22 @@ final class BlockDb {
 
     static void saveBlock(Connection con, BlockImpl block) {
         try {
-            try (PreparedStatement pstmt = con.prepareStatement("INSERT INTO block (id, version, timestamp, previous_block_id, "
+            // TODO stage 2: store also txMerkleRoot, that will be replacing payload_hash
+            try (PreparedStatement pstmt = con.prepareStatement("INSERT INTO block (id, version, timestamp, previous_block_id, previous_key_block_id, nonce, "
+                    + "previous_key_block_hash, pos_blocks_summary, stake_merkle_root, "
                     + "total_amount, total_fee, payload_length, previous_block_hash, next_block_id, cumulative_difficulty, "
-                    + "base_target, height, generation_signature, block_signature, payload_hash, generator_id) "
-                    + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+                    + "base_target, height, local_height, generation_signature, block_signature, payload_hash, generator_id) "
+                    + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
                 int i = 0;
                 pstmt.setLong(++i, block.getId());
-                pstmt.setInt(++i, block.getVersion());
+                pstmt.setShort(++i, block.getVersion());
                 pstmt.setInt(++i, block.getTimestamp());
                 DbUtils.setLongZeroToNull(pstmt, ++i, block.getPreviousBlockId());
+                DbUtils.setLongZeroToNull(pstmt, ++i, block.getPreviousKeyBlockId());
+                DbUtils.setLongZeroToNull(pstmt, ++i, block.getNonce());
+                DbUtils.setBytes(pstmt, ++i, block.getPreviousKeyBlockHash());
+                DbUtils.setBytes(pstmt, ++i, block.getPosBlocksSummary());
+                DbUtils.setBytes(pstmt, ++i, block.getStakeMerkleRoot());
                 pstmt.setLong(++i, block.getTotalAmountNQT());
                 pstmt.setLong(++i, block.getTotalFeeNQT());
                 pstmt.setInt(++i, block.getPayloadLength());
@@ -269,6 +283,7 @@ final class BlockDb {
                 pstmt.setBytes(++i, block.getCumulativeDifficulty().toByteArray());
                 pstmt.setLong(++i, block.getBaseTarget());
                 pstmt.setInt(++i, block.getHeight());
+                pstmt.setInt(++i, block.getLocalHeight());
                 pstmt.setBytes(++i, block.getGenerationSignature());
                 pstmt.setBytes(++i, block.getBlockSignature());
                 pstmt.setBytes(++i, block.getPayloadHash());

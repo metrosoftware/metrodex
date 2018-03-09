@@ -23,13 +23,17 @@ import java.util.List;
 
 public interface Block {
 
-    int getVersion();
+    short getVersion();
+
+    boolean isKeyBlock();
 
     long getId();
 
     String getStringId();
 
     int getHeight();
+
+    int getLocalHeight();
 
     int getTimestamp();
 
@@ -39,7 +43,17 @@ public interface Block {
 
     long getPreviousBlockId();
 
+    long getPreviousKeyBlockId();
+
+    long getNonce();
+
     byte[] getPreviousBlockHash();
+
+    byte[] getPreviousKeyBlockHash();
+
+    byte[] getPosBlocksSummary();
+
+    byte[] getStakeMerkleRoot();
 
     long getNextBlockId();
 

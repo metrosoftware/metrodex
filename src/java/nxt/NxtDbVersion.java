@@ -23,14 +23,15 @@ class NxtDbVersion extends DbVersion {
     protected void update(int nextUpdate) {
         switch (nextUpdate) {
             case 1:
-                apply("CREATE TABLE IF NOT EXISTS block (db_id IDENTITY, id BIGINT NOT NULL, version INT NOT NULL, "
-                        + "timestamp INT NOT NULL, previous_block_id BIGINT, "
+                apply("CREATE TABLE IF NOT EXISTS block (db_id IDENTITY, id BIGINT NOT NULL, version SMALLINT NOT NULL, "
+                        + "timestamp INT NOT NULL, previous_block_id BIGINT, previous_key_block_id BIGINT, "
                         + "total_amount BIGINT NOT NULL, "
-                        + "total_fee BIGINT NOT NULL, payload_length INT NOT NULL, "
-                        + "previous_block_hash BINARY(32), cumulative_difficulty VARBINARY NOT NULL, base_target BIGINT NOT NULL, "
+                        + "total_fee BIGINT NOT NULL, payload_length INT, "
+                        + "previous_block_hash BINARY(32), previous_key_block_hash BINARY(32), cumulative_difficulty VARBINARY NOT NULL, base_target BIGINT NOT NULL, "
                         + "next_block_id BIGINT, "
-                        + "height INT NOT NULL, generation_signature BINARY(64) NOT NULL, "
-                        + "block_signature BINARY(64) NOT NULL, payload_hash BINARY(32) NOT NULL, generator_id BIGINT NOT NULL)");
+                        + "nonce BIGINT, pos_blocks_summary BINARY(32), stake_merkle_root BINARY(32), tx_merkle_root BINARY(32), "
+                        + "height INT NOT NULL, local_height INT NOT NULL, generation_signature BINARY(32), "
+                        + "block_signature BINARY(64) NOT NULL, payload_hash BINARY(32), generator_id BIGINT NOT NULL)");
             case 2:
                 apply("CREATE UNIQUE INDEX IF NOT EXISTS block_id_idx ON block (id)");
             case 3:
@@ -644,6 +645,8 @@ class NxtDbVersion extends DbVersion {
             case 237:
                 apply("CREATE UNIQUE INDEX IF NOT EXISTS public_key_account_id_height_idx ON public_key (account_id, height DESC)");
             case 238:
+                apply("CREATE UNIQUE INDEX IF NOT EXISTS block_local_height_idx ON block (local_height)");
+            case 239:
                 return;
             default:
                 throw new RuntimeException("Blockchain database inconsistent with code, at update " + nextUpdate

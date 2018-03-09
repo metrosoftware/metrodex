@@ -34,11 +34,17 @@ import java.util.List;
 
 final class BlockImpl implements Block {
 
-    private final int version;
+    private final short version;
     private final int timestamp;
     private final long previousBlockId;
+    // TODO previousKeyBlockId and nonce should be 0 in POS blocks, validate it somewhere!
+    private final long previousKeyBlockId;
+    private final long nonce;
     private volatile byte[] generatorPublicKey;
     private final byte[] previousBlockHash;
+    private final byte[] previousKeyBlockHash;
+    private final byte[] posBlocksSummary;
+    private final byte[] stakeMerkleRoot;
     private final long totalAmountNQT;
     private final long totalFeeNQT;
     private final int payloadLength;
@@ -51,6 +57,7 @@ final class BlockImpl implements Block {
     private long baseTarget = Constants.INITIAL_BASE_TARGET;
     private volatile long nextBlockId;
     private int height = -1;
+    private int localHeight = -1;
     private volatile long id;
     private volatile String stringId = null;
     private volatile long generatorId;
@@ -58,55 +65,74 @@ final class BlockImpl implements Block {
 
 
     BlockImpl(byte[] generatorPublicKey, byte[] generationSignature) {
-        this(-1, 0, 0, 0, 0, 0, new byte[32], generatorPublicKey, generationSignature, new byte[64],
-                new byte[32], Collections.emptyList());
+        // the Genesis block is POS with version 0x7FFF?
+        this((short)0x7FFF, 0, 0, 0, 0, 0, 0, 0, new byte[32], generatorPublicKey, generationSignature, new byte[64],
+                new byte[32], new byte[32], new byte[32], new byte[32], Collections.emptyList());
         this.height = 0;
+        this.localHeight = 0;
     }
 
-    BlockImpl(int version, int timestamp, long previousBlockId, long totalAmountNQT, long totalFeeNQT, int payloadLength, byte[] payloadHash,
-              byte[] generatorPublicKey, byte[] generationSignature, byte[] previousBlockHash, List<TransactionImpl> transactions, String secretPhrase) {
-        this(version, timestamp, previousBlockId, totalAmountNQT, totalFeeNQT, payloadLength, payloadHash,
-                generatorPublicKey, generationSignature, null, previousBlockHash, transactions);
+    BlockImpl(short version, int timestamp, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountNQT, long totalFeeNQT, int payloadLength, byte[] payloadHash,
+              byte[] generatorPublicKey, byte[] generationSignature, byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] posBlocksSummary, byte[] stakeMerkleRoot, List<TransactionImpl> transactions, String secretPhrase) {
+        this(version, timestamp, previousBlockId, previousKeyBlockId, nonce, totalAmountNQT, totalFeeNQT, payloadLength, payloadHash,
+                generatorPublicKey, generationSignature, null, previousBlockHash, previousKeyBlockHash, posBlocksSummary, stakeMerkleRoot, transactions);
         blockSignature = Crypto.sign(bytes(), secretPhrase);
         bytes = null;
     }
 
-    BlockImpl(int version, int timestamp, long previousBlockId, long totalAmountNQT, long totalFeeNQT, int payloadLength, byte[] payloadHash,
-              byte[] generatorPublicKey, byte[] generationSignature, byte[] blockSignature, byte[] previousBlockHash, List<TransactionImpl> transactions) {
+    BlockImpl(short version, int timestamp, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountNQT, long totalFeeNQT, int payloadLength, byte[] payloadHash,
+              byte[] generatorPublicKey, byte[] generationSignature, byte[] blockSignature, byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] posBlocksSummary, byte[] stakeMerkleRoot, List<TransactionImpl> transactions) {
         this.version = version;
         this.timestamp = timestamp;
         this.previousBlockId = previousBlockId;
+        this.previousKeyBlockId = previousKeyBlockId;
+        this.nonce = nonce;
         this.totalAmountNQT = totalAmountNQT;
         this.totalFeeNQT = totalFeeNQT;
         this.payloadLength = payloadLength;
         this.payloadHash = payloadHash;
         this.generatorPublicKey = generatorPublicKey;
+        // 32 bytes actually, and not exactly a "signature"
         this.generationSignature = generationSignature;
         this.blockSignature = blockSignature;
         this.previousBlockHash = previousBlockHash;
+        this.previousKeyBlockHash = previousKeyBlockHash;
+        this.posBlocksSummary = posBlocksSummary;
+        this.stakeMerkleRoot = stakeMerkleRoot;
         if (transactions != null) {
             this.blockTransactions = Collections.unmodifiableList(transactions);
         }
     }
 
-    BlockImpl(int version, int timestamp, long previousBlockId, long totalAmountNQT, long totalFeeNQT, int payloadLength,
+    BlockImpl(short version, int timestamp, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountNQT, long totalFeeNQT, int payloadLength,
               byte[] payloadHash, long generatorId, byte[] generationSignature, byte[] blockSignature,
-              byte[] previousBlockHash, BigInteger cumulativeDifficulty, long baseTarget, long nextBlockId, int height, long id,
+              byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] posBlocksSummary, byte[] stakeMerkleRoot,
+              BigInteger cumulativeDifficulty, long baseTarget, long nextBlockId, int height, int localHeight, long id,
               List<TransactionImpl> blockTransactions) {
-        this(version, timestamp, previousBlockId, totalAmountNQT, totalFeeNQT, payloadLength, payloadHash,
-                null, generationSignature, blockSignature, previousBlockHash, null);
+        this(version, timestamp, previousBlockId, previousKeyBlockId, nonce, totalAmountNQT, totalFeeNQT, payloadLength, payloadHash,
+                null, generationSignature, blockSignature, previousBlockHash, previousKeyBlockHash, posBlocksSummary, stakeMerkleRoot, null);
         this.cumulativeDifficulty = cumulativeDifficulty;
         this.baseTarget = baseTarget;
         this.nextBlockId = nextBlockId;
         this.height = height;
+        this.localHeight = localHeight;
         this.id = id;
         this.generatorId = generatorId;
         this.blockTransactions = blockTransactions;
     }
 
     @Override
-    public int getVersion() {
+    public short getVersion() {
         return version;
+    }
+
+    @Override
+    public boolean isKeyBlock() {
+        return isKeyBlockVersion(this.version);
+    }
+
+    public static boolean isKeyBlockVersion(short version) {
+        return Short.toUnsignedInt(version) > 0x8000;
     }
 
     @Override
@@ -120,6 +146,16 @@ final class BlockImpl implements Block {
     }
 
     @Override
+    public long getPreviousKeyBlockId() {
+        return previousKeyBlockId;
+    }
+
+    @Override
+    public long getNonce() {
+        return nonce;
+    }
+
+    @Override
     public byte[] getGeneratorPublicKey() {
         if (generatorPublicKey == null) {
             generatorPublicKey = Account.getPublicKey(generatorId);
@@ -130,6 +166,21 @@ final class BlockImpl implements Block {
     @Override
     public byte[] getPreviousBlockHash() {
         return previousBlockHash;
+    }
+
+    @Override
+    public byte[] getPreviousKeyBlockHash() {
+        return previousKeyBlockHash;
+    }
+
+    @Override
+    public byte[] getPosBlocksSummary() {
+        return posBlocksSummary;
+    }
+
+    @Override
+    public byte[] getStakeMerkleRoot() {
+        return stakeMerkleRoot;
     }
 
     @Override
@@ -202,6 +253,14 @@ final class BlockImpl implements Block {
     }
 
     @Override
+    public int getLocalHeight() {
+        if (localHeight == -1) {
+            throw new IllegalStateException("Block localHeight not yet set");
+        }
+        return localHeight;
+    }
+
+    @Override
     public long getId() {
         if (id == 0) {
             if (blockSignature == null) {
@@ -250,12 +309,21 @@ final class BlockImpl implements Block {
         json.put("version", version);
         json.put("timestamp", timestamp);
         json.put("previousBlock", Long.toUnsignedString(previousBlockId));
+        if (isKeyBlock()) {
+            json.put("previousKeyBlock", Long.toUnsignedString(previousKeyBlockId));
+            json.put("nonce", Long.toUnsignedString(nonce));
+            json.put("previousKeyBlockHash", Convert.toHexString(previousKeyBlockHash));
+            json.put("posBlocksSummary", Convert.toHexString(posBlocksSummary));
+            json.put("stakeMerkleRoot", Convert.toHexString(stakeMerkleRoot));
+        } else {
+            json.put("payloadLength", payloadLength);
+            json.put("payloadHash", Convert.toHexString(payloadHash));
+            json.put("generationSignature", Convert.toHexString(generationSignature));
+        }
         json.put("totalAmountNQT", totalAmountNQT);
         json.put("totalFeeNQT", totalFeeNQT);
-        json.put("payloadLength", payloadLength);
-        json.put("payloadHash", Convert.toHexString(payloadHash));
         json.put("generatorPublicKey", Convert.toHexString(getGeneratorPublicKey()));
-        json.put("generationSignature", Convert.toHexString(generationSignature));
+
         json.put("previousBlockHash", Convert.toHexString(previousBlockHash));
         json.put("blockSignature", Convert.toHexString(blockSignature));
         JSONArray transactionsData = new JSONArray();
@@ -266,23 +334,35 @@ final class BlockImpl implements Block {
 
     static BlockImpl parseBlock(JSONObject blockData) throws NxtException.NotValidException {
         try {
-            int version = ((Long) blockData.get("version")).intValue();
+            short version = ((Long) blockData.get("version")).shortValue();
             int timestamp = ((Long) blockData.get("timestamp")).intValue();
+            long previousKeyBlock = 0, nonce = 0;
+            int payloadLength = 0;
+            byte[] previousKeyBlockHash = null, posBlocksSummary = null, stakeMerkleRoot = null, payloadHash = null, generationSignature = null;
+            if (isKeyBlockVersion(version)) {
+                previousKeyBlock = Convert.parseUnsignedLong((String) blockData.get("previousKeyBlock"));
+                nonce = Convert.parseUnsignedLong((String) blockData.get("nonce"));
+                previousKeyBlockHash = Convert.parseHexString((String) blockData.get("previousKeyBlockHash"));
+                posBlocksSummary = Convert.parseHexString((String) blockData.get("posBlocksSummary"));
+                stakeMerkleRoot = Convert.parseHexString((String) blockData.get("stakeMerkleRoot"));
+                // TODO txMerkleRoot
+            } else {
+                payloadLength = ((Long) blockData.get("payloadLength")).intValue();
+                payloadHash = Convert.parseHexString((String) blockData.get("payloadHash"));
+                generationSignature = Convert.parseHexString((String) blockData.get("generationSignature"));
+            }
             long previousBlock = Convert.parseUnsignedLong((String) blockData.get("previousBlock"));
             long totalAmountNQT = Convert.parseLong(blockData.get("totalAmountNQT"));
             long totalFeeNQT = Convert.parseLong(blockData.get("totalFeeNQT"));
-            int payloadLength = ((Long) blockData.get("payloadLength")).intValue();
-            byte[] payloadHash = Convert.parseHexString((String) blockData.get("payloadHash"));
             byte[] generatorPublicKey = Convert.parseHexString((String) blockData.get("generatorPublicKey"));
-            byte[] generationSignature = Convert.parseHexString((String) blockData.get("generationSignature"));
             byte[] blockSignature = Convert.parseHexString((String) blockData.get("blockSignature"));
             byte[] previousBlockHash = version == 1 ? null : Convert.parseHexString((String) blockData.get("previousBlockHash"));
             List<TransactionImpl> blockTransactions = new ArrayList<>();
             for (Object transactionData : (JSONArray) blockData.get("transactions")) {
                 blockTransactions.add(TransactionImpl.parseTransaction((JSONObject) transactionData));
             }
-            BlockImpl block = new BlockImpl(version, timestamp, previousBlock, totalAmountNQT, totalFeeNQT, payloadLength, payloadHash, generatorPublicKey,
-                    generationSignature, blockSignature, previousBlockHash, blockTransactions);
+            BlockImpl block = new BlockImpl(version, timestamp, previousBlock, previousKeyBlock, nonce, totalAmountNQT, totalFeeNQT, payloadLength, payloadHash, generatorPublicKey,
+                    generationSignature, blockSignature, previousBlockHash, previousKeyBlockHash, posBlocksSummary, stakeMerkleRoot, blockTransactions);
             if (!block.checkSignature()) {
                 throw new NxtException.NotValidException("Invalid block signature");
             }
@@ -300,19 +380,44 @@ final class BlockImpl implements Block {
 
     byte[] bytes() {
         if (bytes == null) {
-            ByteBuffer buffer = ByteBuffer.allocate(4 + 4 + 8 + 4 + 8 + 8 + 4 + 32 + 32 + 32 + 32 + (blockSignature != null ? 64 : 0));
+            final boolean isKeyBlock = isKeyBlock();
+            ByteBuffer buffer = ByteBuffer.allocate(2 + 4 + 8 + 32*3 + (isKeyBlock ? (32*3 + 4 + 8) : 0) + (blockSignature != null ? 64 : 0));
             buffer.order(ByteOrder.LITTLE_ENDIAN);
-            buffer.putInt(version);
+
+            // Slot #0
+            // Block.version: the most significant bit to differentiate between block (0x0001...) and keyblock (0x8001...)
+            buffer.putShort(version);
+            // For simplicity, all POS block header fields will be also part of keyblock header,
+            // so we have only one "if (isKeyBlock)" at the end of this code block
+            // Slot #1
+            // Block.timestamp: 4 bytes, seconds since NxtEpoch
             buffer.putInt(timestamp);
-            buffer.putLong(previousBlockId);
-            buffer.putInt(getTransactions().size());
-            buffer.putLong(totalAmountNQT);
+            // This were not necessary for the block hash and therefore removed:
+            // getTransactions().size(), totalAmountNQT, payloadLength, previousBlockId, generationSignature
+
+            // Slot #2
             buffer.putLong(totalFeeNQT);
-            buffer.putInt(payloadLength);
+
+            // Slot #3 - this will be replaced by txMerkleRoot in stage 2
             buffer.put(payloadHash);
+            // Slot #4
             buffer.put(getGeneratorPublicKey());
-            buffer.put(generationSignature);
+            // Slot #5
             buffer.put(previousBlockHash);
+            // POS block may follow keyblock and refer to it in it's previousBlockId (no need to skip it and refer to POS block preceding that keyblock);
+            // or may just follow another POS block in which case previousBlockId points to POS[N-1] where N is height
+            // POW block needs to have both: it has ALWAYS a POS preceding (in previousBlockId) and POW[L-1] where L is POW local height
+            if (isKeyBlock) {
+                // Slots #6-#9
+                // Key blocks (starting from the 2nd) have non-null previousKeyBlock reference
+                buffer.put(previousKeyBlockHash);
+                buffer.put(posBlocksSummary);
+                buffer.put(stakeMerkleRoot);
+                // Slot #10 - only 4 bytes of target are needed for PoW
+                buffer.putInt((int) (baseTarget & 0xffffffffL));
+                // Slot #11
+                buffer.putLong(nonce);
+            }
             if (blockSignature != null) {
                 buffer.put(blockSignature);
             }
@@ -407,9 +512,11 @@ final class BlockImpl implements Block {
                 throw new IllegalStateException("Previous block id doesn't match");
             }
             this.height = block.getHeight() + 1;
+            this.localHeight = block.getLocalHeight() + 1;
             this.calculateBaseTarget(block);
         } else {
             this.height = 0;
+            this.localHeight = 0;
         }
         short index = 0;
         for (TransactionImpl transaction : getTransactions()) {
@@ -427,7 +534,7 @@ final class BlockImpl implements Block {
 
     private void calculateBaseTarget(BlockImpl previousBlock) {
         long prevBaseTarget = previousBlock.baseTarget;
-        int blockchainHeight = previousBlock.height;
+        int blockchainHeight = previousBlock.localHeight;
         if (blockchainHeight > 2 && blockchainHeight % 2 == 0) {
             BlockImpl block = BlockDb.findBlockAtHeight(blockchainHeight - 2);
             int blocktimeAverage = (this.timestamp - block.timestamp) / 3;

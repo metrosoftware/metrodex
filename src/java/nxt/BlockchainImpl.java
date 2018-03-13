@@ -18,6 +18,7 @@ package nxt;
 
 import nxt.db.DbIterator;
 import nxt.db.DbUtils;
+import nxt.util.BitcoinJUtils;
 import nxt.util.Convert;
 import nxt.util.Filter;
 import nxt.util.ReadWriteUpdateLock;
@@ -26,7 +27,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 final class BlockchainImpl implements Blockchain {
@@ -101,12 +107,37 @@ final class BlockchainImpl implements Blockchain {
     }
 
     @Override
+    public BlockImpl getLastKeyBlock() {
+        // TODO #146
+        int lastKeyLocalHeight = BlockDb.getMaxLocalHeightOfKeyBlocks();
+        return lastKeyLocalHeight > 0 ? BlockDb.findBlockAtLocalHeight(lastKeyLocalHeight, true) : null;
+    }
+
+    @Override
+    public BlockImpl getLastPosBlock() {
+        BlockImpl lastBlock = getLastBlock();
+        while (lastBlock != null && lastBlock.isKeyBlock()) {
+            lastBlock = getBlock(lastBlock.getPreviousBlockId());
+        }
+        return lastBlock;
+    }
+
+    @Override
     public BlockImpl getBlock(long blockId) {
         BlockImpl block = lastBlock.get();
         if (block.getId() == blockId) {
             return block;
         }
         return BlockDb.findBlock(blockId);
+    }
+
+    @Override
+    public BlockImpl getPosBlockPreceding(long blockId) {
+        BlockImpl block = getBlock(blockId);
+        while (block != null && block.isKeyBlock()) {
+            block = getBlock(block.getPreviousBlockId());
+        }
+        return block;
     }
 
     @Override
@@ -336,6 +367,48 @@ final class BlockchainImpl implements Blockchain {
             return getBlockAtHeight(0);
         }
         return BlockDb.findBlockAtHeight(Math.max(block.getHeight() - 720, 0));
+    }
+
+    @Override
+    public Block parseBlockHeader(byte[] headerData) throws NxtException.NotValidException {
+        short version = (short)BitcoinJUtils.readUint16(headerData, 0);
+        final boolean isKeyBlock = Short.toUnsignedInt(version) > 0x8000;
+        int cursor = 2;
+        int timestamp = (int) BitcoinJUtils.readUint32(headerData, cursor);
+        cursor += 4;
+        long totalFeeNQT = BitcoinJUtils.readInt64(headerData, cursor);
+        cursor += 8;
+        // in stage 2, we will have txMerkleRoot rather than payload_hash in Slot #3:
+        byte[] txMerkleRoot = BitcoinJUtils.read256bits(headerData, cursor);
+        cursor += 32;
+        // Slot #4
+        byte[] generatorPublicKey = BitcoinJUtils.read256bits(headerData, cursor);
+        cursor += 32;
+        // Slot #5
+        byte[] previousBlockHash = BitcoinJUtils.read256bits(headerData, cursor);
+        cursor += 32;
+        if (isKeyBlock) {
+            // Slots #6-#9
+            // Key blocks (starting from the 2nd) have non-null previousKeyBlock reference
+            byte[] previousKeyBlockHash = BitcoinJUtils.read256bits(headerData, cursor);
+            cursor += 32;
+            byte[] posBlocksSummary = BitcoinJUtils.read256bits(headerData, cursor);
+            cursor += 32;
+            byte[] stakeMerkleRoot = BitcoinJUtils.read256bits(headerData, cursor);
+            cursor += 32;
+            // Slot #10 - only 4 bytes of target are needed for PoW
+            long baseTarget = BitcoinJUtils.readUint32(headerData, cursor);
+            cursor += 4;
+            // Slot #11
+            long nonce = BitcoinJUtils.readInt64(headerData, cursor);
+            cursor += 8;
+            return new BlockImpl(version, timestamp, baseTarget, Convert.fullHashToId(previousBlockHash), Convert.fullHashToId(previousKeyBlockHash), nonce,
+                    0, totalFeeNQT, 0, txMerkleRoot, generatorPublicKey,
+                    null, null, previousBlockHash, previousKeyBlockHash, posBlocksSummary, stakeMerkleRoot, null);
+        }
+        return new BlockImpl(version, timestamp, 0, Convert.fullHashToId(previousBlockHash), 0, 0,
+                0, totalFeeNQT, 0, txMerkleRoot, generatorPublicKey,
+                null, null, previousBlockHash, Convert.EMPTY_HASH, Convert.EMPTY_HASH, Convert.EMPTY_HASH, null);
     }
 
     @Override

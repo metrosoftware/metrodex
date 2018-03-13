@@ -66,7 +66,7 @@ final class BlockImpl implements Block {
 
     BlockImpl(byte[] generatorPublicKey, byte[] generationSignature) {
         // the Genesis block is POS with version 0x7FFF?
-        this((short)0x7FFF, 0, 0, 0, 0, 0, 0, 0, new byte[32], generatorPublicKey, generationSignature, new byte[64],
+        this((short)0x7FFF, 0, Constants.INITIAL_BASE_TARGET, 0, 0, 0, 0, 0, 0, new byte[32], generatorPublicKey, generationSignature, new byte[64],
                 new byte[32], new byte[32], new byte[32], new byte[32], Collections.emptyList());
         this.height = 0;
         this.localHeight = 0;
@@ -74,16 +74,17 @@ final class BlockImpl implements Block {
 
     BlockImpl(short version, int timestamp, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountNQT, long totalFeeNQT, int payloadLength, byte[] payloadHash,
               byte[] generatorPublicKey, byte[] generationSignature, byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] posBlocksSummary, byte[] stakeMerkleRoot, List<TransactionImpl> transactions, String secretPhrase) {
-        this(version, timestamp, previousBlockId, previousKeyBlockId, nonce, totalAmountNQT, totalFeeNQT, payloadLength, payloadHash,
+        this(version, timestamp, 0, previousBlockId, previousKeyBlockId, nonce, totalAmountNQT, totalFeeNQT, payloadLength, payloadHash,
                 generatorPublicKey, generationSignature, null, previousBlockHash, previousKeyBlockHash, posBlocksSummary, stakeMerkleRoot, transactions);
         blockSignature = Crypto.sign(bytes(), secretPhrase);
         bytes = null;
     }
 
-    BlockImpl(short version, int timestamp, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountNQT, long totalFeeNQT, int payloadLength, byte[] payloadHash,
+    BlockImpl(short version, int timestamp, long baseTarget, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountNQT, long totalFeeNQT, int payloadLength, byte[] payloadHash,
               byte[] generatorPublicKey, byte[] generationSignature, byte[] blockSignature, byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] posBlocksSummary, byte[] stakeMerkleRoot, List<TransactionImpl> transactions) {
         this.version = version;
         this.timestamp = timestamp;
+        this.baseTarget = baseTarget;
         this.previousBlockId = previousBlockId;
         this.previousKeyBlockId = previousKeyBlockId;
         this.nonce = nonce;
@@ -109,10 +110,9 @@ final class BlockImpl implements Block {
               byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] posBlocksSummary, byte[] stakeMerkleRoot,
               BigInteger cumulativeDifficulty, long baseTarget, long nextBlockId, int height, int localHeight, long id,
               List<TransactionImpl> blockTransactions) {
-        this(version, timestamp, previousBlockId, previousKeyBlockId, nonce, totalAmountNQT, totalFeeNQT, payloadLength, payloadHash,
+        this(version, timestamp, baseTarget, previousBlockId, previousKeyBlockId, nonce, totalAmountNQT, totalFeeNQT, payloadLength, payloadHash,
                 null, generationSignature, blockSignature, previousBlockHash, previousKeyBlockHash, posBlocksSummary, stakeMerkleRoot, null);
         this.cumulativeDifficulty = cumulativeDifficulty;
-        this.baseTarget = baseTarget;
         this.nextBlockId = nextBlockId;
         this.height = height;
         this.localHeight = localHeight;
@@ -263,7 +263,8 @@ final class BlockImpl implements Block {
     @Override
     public long getId() {
         if (id == 0) {
-            if (blockSignature == null) {
+            // TODO passing keyBlock signature over API?
+            if (!isKeyBlock() && blockSignature == null) {
                 throw new IllegalStateException("Block is not signed yet");
             }
             byte[] hash = Crypto.sha256().digest(bytes());
@@ -311,7 +312,8 @@ final class BlockImpl implements Block {
         json.put("previousBlock", Long.toUnsignedString(previousBlockId));
         if (isKeyBlock()) {
             json.put("previousKeyBlock", Long.toUnsignedString(previousKeyBlockId));
-            json.put("nonce", Long.toUnsignedString(nonce));
+            json.put("nonce", nonce);
+            json.put("baseTarget", baseTarget);
             json.put("previousKeyBlockHash", Convert.toHexString(previousKeyBlockHash));
             json.put("posBlocksSummary", Convert.toHexString(posBlocksSummary));
             json.put("stakeMerkleRoot", Convert.toHexString(stakeMerkleRoot));
@@ -335,17 +337,20 @@ final class BlockImpl implements Block {
     static BlockImpl parseBlock(JSONObject blockData) throws NxtException.NotValidException {
         try {
             short version = ((Long) blockData.get("version")).shortValue();
+            boolean keyBlock = isKeyBlockVersion(version);
             int timestamp = ((Long) blockData.get("timestamp")).intValue();
-            long previousKeyBlock = 0, nonce = 0;
+            long previousKeyBlock = 0, nonce = 0, baseTarget = 0;
             int payloadLength = 0;
             byte[] previousKeyBlockHash = null, posBlocksSummary = null, stakeMerkleRoot = null, payloadHash = null, generationSignature = null;
-            if (isKeyBlockVersion(version)) {
+            if (keyBlock) {
                 previousKeyBlock = Convert.parseUnsignedLong((String) blockData.get("previousKeyBlock"));
-                nonce = Convert.parseUnsignedLong((String) blockData.get("nonce"));
+                nonce = Convert.parseLong(blockData.get("nonce"));
+                baseTarget = Convert.parseLong(blockData.get("baseTarget"));
                 previousKeyBlockHash = Convert.parseHexString((String) blockData.get("previousKeyBlockHash"));
                 posBlocksSummary = Convert.parseHexString((String) blockData.get("posBlocksSummary"));
                 stakeMerkleRoot = Convert.parseHexString((String) blockData.get("stakeMerkleRoot"));
                 // TODO txMerkleRoot
+                payloadHash = Convert.EMPTY_PAYLOAD_HASH;
             } else {
                 payloadLength = ((Long) blockData.get("payloadLength")).intValue();
                 payloadHash = Convert.parseHexString((String) blockData.get("payloadHash"));
@@ -361,9 +366,10 @@ final class BlockImpl implements Block {
             for (Object transactionData : (JSONArray) blockData.get("transactions")) {
                 blockTransactions.add(TransactionImpl.parseTransaction((JSONObject) transactionData));
             }
-            BlockImpl block = new BlockImpl(version, timestamp, previousBlock, previousKeyBlock, nonce, totalAmountNQT, totalFeeNQT, payloadLength, payloadHash, generatorPublicKey,
+            BlockImpl block = new BlockImpl(version, timestamp, baseTarget, previousBlock, previousKeyBlock, nonce, totalAmountNQT, totalFeeNQT, payloadLength, payloadHash, generatorPublicKey,
                     generationSignature, blockSignature, previousBlockHash, previousKeyBlockHash, posBlocksSummary, stakeMerkleRoot, blockTransactions);
-            if (!block.checkSignature()) {
+            // TODO #144
+            if (!keyBlock && !block.checkSignature()) {
                 throw new NxtException.NotValidException("Invalid block signature");
             }
             return block;
@@ -418,7 +424,7 @@ final class BlockImpl implements Block {
                 // Slot #11
                 buffer.putLong(nonce);
             }
-            if (blockSignature != null) {
+            if (!isKeyBlock && blockSignature != null) {
                 buffer.put(blockSignature);
             }
             bytes = buffer.array();
@@ -444,9 +450,9 @@ final class BlockImpl implements Block {
 
         try {
 
-            BlockImpl previousBlock = BlockchainImpl.getInstance().getBlock(getPreviousBlockId());
+            BlockImpl previousBlock = BlockchainImpl.getInstance().getPosBlockPreceding(getPreviousBlockId());
             if (previousBlock == null) {
-                throw new BlockchainProcessor.BlockOutOfOrderException("Can't verify signature because previous block is missing", this);
+                throw new BlockchainProcessor.BlockOutOfOrderException("Can't verify signature because previous POS block is missing", this);
             }
 
             Account account = Account.getAccount(getGeneratorId());
@@ -479,7 +485,7 @@ final class BlockImpl implements Block {
         Account generatorAccount = Account.addOrGetAccount(getGeneratorId());
         generatorAccount.apply(getGeneratorPublicKey());
         long totalBackFees = 0;
-        if (this.height > 3) {
+        if (this.localHeight > 3) {
             long[] backFees = new long[3];
             for (TransactionImpl transaction : getTransactions()) {
                 long[] fees = transaction.getBackFees();
@@ -492,28 +498,34 @@ final class BlockImpl implements Block {
                     break;
                 }
                 totalBackFees += backFees[i];
-                Account previousGeneratorAccount = Account.getAccount(BlockDb.findBlockAtHeight(this.height - i - 1).getGeneratorId());
-                Logger.logDebugMessage("Back fees %f %s to forger at height %d", ((double)backFees[i])/Constants.ONE_NXT, Constants.COIN_SYMBOL, this.height - i - 1);
+                Account previousGeneratorAccount = Account.getAccount(BlockDb.findBlockAtLocalHeight(this.localHeight - i - 1, false).getGeneratorId());
+                Logger.logDebugMessage("Back fees %f %s to forger at POS height %d", ((double)backFees[i])/Constants.ONE_NXT, Constants.COIN_SYMBOL, this.localHeight - i - 1);
                 previousGeneratorAccount.addToBalanceAndUnconfirmedBalanceNQT(LedgerEvent.BLOCK_GENERATED, getId(), backFees[i]);
                 previousGeneratorAccount.addToForgedBalanceNQT(backFees[i]);
             }
         }
         if (totalBackFees != 0) {
-            Logger.logDebugMessage("Fee reduced by %f %s at height %d", ((double)totalBackFees)/Constants.ONE_NXT, Constants.COIN_SYMBOL, this.height);
+            Logger.logDebugMessage("Fee reduced by %f %s at POS height %d", ((double)totalBackFees)/Constants.ONE_NXT, Constants.COIN_SYMBOL, this.localHeight);
         }
         generatorAccount.addToBalanceAndUnconfirmedBalanceNQT(LedgerEvent.BLOCK_GENERATED, getId(), totalFeeNQT - totalBackFees);
         generatorAccount.addToForgedBalanceNQT(totalFeeNQT - totalBackFees);
     }
 
-    void setPrevious(BlockImpl block) {
+    void setPrevious(BlockImpl block, BlockImpl posBlock) {
         if (block != null) {
             if (block.getId() != getPreviousBlockId()) {
                 // shouldn't happen as previous id is already verified, but just in case
                 throw new IllegalStateException("Previous block id doesn't match");
             }
             this.height = block.getHeight() + 1;
-            this.localHeight = block.getLocalHeight() + 1;
-            this.calculateBaseTarget(block);
+            if (isKeyBlock()) {
+                // TODO we may use previousKeyBlockId here once it's set, to obtain last key localHeight
+                this.localHeight = BlockDb.getMaxLocalHeightOfKeyBlocks() + 1;
+                this.cumulativeDifficulty = block.cumulativeDifficulty.add(BigInteger.ONE);
+            } else {
+                this.localHeight = posBlock.getLocalHeight() + 1;
+                this.calculateBaseTarget(block);
+            }
         } else {
             this.height = 0;
             this.localHeight = 0;
@@ -536,7 +548,7 @@ final class BlockImpl implements Block {
         long prevBaseTarget = previousBlock.baseTarget;
         int blockchainHeight = previousBlock.localHeight;
         if (blockchainHeight > 2 && blockchainHeight % 2 == 0) {
-            BlockImpl block = BlockDb.findBlockAtHeight(blockchainHeight - 2);
+            BlockImpl block = BlockDb.findBlockAtLocalHeight(blockchainHeight - 2, false);
             int blocktimeAverage = (this.timestamp - block.timestamp) / 3;
             if (blocktimeAverage > Constants.BLOCK_TIME) {
                 baseTarget = (prevBaseTarget * Math.min(blocktimeAverage, Constants.MAX_BLOCKTIME_LIMIT)) / Constants.BLOCK_TIME;
@@ -553,7 +565,8 @@ final class BlockImpl implements Block {
         } else {
             baseTarget = prevBaseTarget;
         }
-        cumulativeDifficulty = previousBlock.cumulativeDifficulty.add(Convert.two64.divide(BigInteger.valueOf(baseTarget)));
+        // TODO PoW/Hybrid
+        cumulativeDifficulty = isKeyBlock() ? previousBlock.cumulativeDifficulty : previousBlock.cumulativeDifficulty.add(Convert.two64.divide(BigInteger.valueOf(baseTarget)));
     }
 
 }

@@ -37,11 +37,17 @@ public interface Blockchain {
 
     Block getLastBlock(int timestamp);
 
+    Block getLastKeyBlock();
+
+    Block getLastPosBlock();
+
     int getHeight();
 
     int getLastBlockTimestamp();
 
     Block getBlock(long blockId);
+
+    Block getPosBlockPreceding(long blockId);
 
     Block getBlockAtHeight(int height);
 
@@ -68,6 +74,8 @@ public interface Blockchain {
     long getBlockIdAtHeight(int height);
 
     Block getECBlock(int timestamp);
+
+    Block parseBlockHeader(byte[] headerData) throws NxtException.NotValidException;
 
     Transaction getTransaction(long transactionId);
 

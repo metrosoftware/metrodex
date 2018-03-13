@@ -60,6 +60,7 @@ public final class JSONResponses {
     public static final JSONStreamAware UNKNOWN_ENTRY = unknown("entry");
     public static final JSONStreamAware MISSING_PEER = missing("peer");
     public static final JSONStreamAware UNKNOWN_PEER = unknown("peer");
+    public static final JSONStreamAware MISSING_BLOCK_HEADER = missing("blockHeader");
     public static final JSONStreamAware MISSING_TRANSACTION = missing("transaction");
     public static final JSONStreamAware UNKNOWN_TRANSACTION = unknown("transaction");
     public static final JSONStreamAware INCORRECT_TRANSACTION = incorrect("transaction");
@@ -417,6 +418,14 @@ public final class JSONResponses {
         response.put("errorCode", 5);
         response.put("errorDescription", "Peer is not providing open API");
         PEER_NOT_OPEN_API = JSON.prepare(response);
+    }
+
+    public static final JSONStreamAware REPLACEMENT_BLOCK_IGNORED;
+    static {
+        JSONObject response = new JSONObject();
+        response.put("errorCode", 22);
+        response.put("errorDescription", "Replacement block failed to be accepted");
+        REPLACEMENT_BLOCK_IGNORED = JSON.prepare(response);
     }
 
     static JSONStreamAware missing(String... paramNames) {

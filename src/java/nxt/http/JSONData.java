@@ -425,6 +425,7 @@ public final class JSONData {
         if (block.getNextBlockId() != 0) {
             json.put("nextBlock", Long.toUnsignedString(block.getNextBlockId()));
         }
+        // TODO #145 if (block.isKeyblock()) { ... } report key block fields for UI
         json.put("payloadHash", Convert.toHexString(block.getPayloadHash()));
         json.put("generationSignature", Convert.toHexString(block.getGenerationSignature()));
         json.put("previousBlockHash", Convert.toHexString(block.getPreviousBlockHash()));

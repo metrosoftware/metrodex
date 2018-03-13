@@ -48,6 +48,8 @@ public interface BlockchainProcessor extends Observable<Block,BlockchainProcesso
 
     void processPeerBlock(JSONObject request) throws NxtException;
 
+    boolean processMinerBlock(Block block, byte[] signature) throws NxtException;
+
     void fullReset();
 
     void scan(int height, boolean validate);

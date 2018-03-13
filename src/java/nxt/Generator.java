@@ -66,7 +66,7 @@ public final class Generator implements Comparable<Generator> {
                 try {
                     BlockchainImpl.getInstance().updateLock();
                     try {
-                        Block lastBlock = Nxt.getBlockchain().getLastBlock();
+                        Block lastBlock = Nxt.getBlockchain().getLastPosBlock();
                         if (lastBlock == null || lastBlock.getHeight() < Constants.LAST_KNOWN_BLOCK) {
                             return;
                         }
@@ -74,7 +74,7 @@ public final class Generator implements Comparable<Generator> {
                         if (lastBlock.getId() != lastBlockId || sortedForgers == null) {
                             lastBlockId = lastBlock.getId();
                             if (lastBlock.getTimestamp() > Nxt.getEpochTime() - 600) {
-                                Block previousBlock = Nxt.getBlockchain().getBlock(lastBlock.getPreviousBlockId());
+                                Block previousBlock = Nxt.getBlockchain().getPosBlockPreceding(lastBlock.getPreviousBlockId());
                                 for (Generator generator : generators.values()) {
                                     generator.setLastBlock(previousBlock);
                                     int timestamp = generator.getTimestamp(generationLimit);
@@ -281,7 +281,7 @@ public final class Generator implements Comparable<Generator> {
         Nxt.getBlockchain().updateLock();
         try {
             if (Nxt.getBlockchain().getHeight() >= Constants.LAST_KNOWN_BLOCK) {
-                setLastBlock(Nxt.getBlockchain().getLastBlock());
+                setLastBlock(Nxt.getBlockchain().getLastPosBlock());
             }
             sortedForgers = null;
         } finally {

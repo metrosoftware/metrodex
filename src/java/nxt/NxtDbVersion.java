@@ -23,6 +23,8 @@ class NxtDbVersion extends DbVersion {
     protected void update(int nextUpdate) {
         switch (nextUpdate) {
             case 1:
+                // TODO #144 block_signature BINARY(64) NOT NULL
+                // alter table block alter column block_signature drop not null (if you have old DB) - in order to test key blocks
                 apply("CREATE TABLE IF NOT EXISTS block (db_id IDENTITY, id BIGINT NOT NULL, version SMALLINT NOT NULL, "
                         + "timestamp INT NOT NULL, previous_block_id BIGINT, previous_key_block_id BIGINT, "
                         + "total_amount BIGINT NOT NULL, "
@@ -31,7 +33,7 @@ class NxtDbVersion extends DbVersion {
                         + "next_block_id BIGINT, "
                         + "nonce BIGINT, pos_blocks_summary BINARY(32), stake_merkle_root BINARY(32), tx_merkle_root BINARY(32), "
                         + "height INT NOT NULL, local_height INT NOT NULL, generation_signature BINARY(32), "
-                        + "block_signature BINARY(64) NOT NULL, payload_hash BINARY(32), generator_id BIGINT NOT NULL)");
+                        + "block_signature BINARY(64), payload_hash BINARY(32), generator_id BIGINT NOT NULL)");
             case 2:
                 apply("CREATE UNIQUE INDEX IF NOT EXISTS block_id_idx ON block (id)");
             case 3:
@@ -645,7 +647,7 @@ class NxtDbVersion extends DbVersion {
             case 237:
                 apply("CREATE UNIQUE INDEX IF NOT EXISTS public_key_account_id_height_idx ON public_key (account_id, height DESC)");
             case 238:
-                apply("CREATE UNIQUE INDEX IF NOT EXISTS block_local_height_idx ON block (local_height)");
+                apply("CREATE INDEX IF NOT EXISTS block_local_height_idx ON block (local_height)");
             case 239:
                 return;
             default:

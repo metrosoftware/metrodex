@@ -48,6 +48,9 @@ public final class Convert {
     public static final byte[][] EMPTY_BYTES = new byte[0][];
     public static final String[] EMPTY_STRING = new String[0];
 
+    public static final byte[] EMPTY_HASH = new byte[32];
+    public static final byte[] EMPTY_PAYLOAD_HASH = parseHexString("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+
     private Convert() {} //never
 
     public static byte[] parseHexString(String hex) {
@@ -61,7 +64,7 @@ public final class Convert {
             int char2 = hex.charAt(i * 2 + 1);
             char2 = char2 > 0x60 ? char2 - 0x57 : char2 - 0x30;
             if (char1 < 0 || char2 < 0 || char1 > 15 || char2 > 15) {
-                throw new NumberFormatException("Invalid hex number: " + hex);
+                throw new NumberFormatException("Invalid hex number at index: " + i);
             }
             bytes[i] = (byte)((char1 << 4) + char2);
         }
@@ -318,5 +321,4 @@ public final class Convert {
         }
         return o1.length - o2.length;
     };
-
 }

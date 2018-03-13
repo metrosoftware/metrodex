@@ -39,12 +39,14 @@ final class BlockDb {
     static final int BLOCK_CACHE_SIZE = 10;
     static final Map<Long, BlockImpl> blockCache = new HashMap<>();
     static final SortedMap<Integer, BlockImpl> heightMap = new TreeMap<>();
+    static final SortedMap<Integer, BlockImpl> localHeightMap = new TreeMap<>();
     static final Map<Long, TransactionImpl> transactionCache = new HashMap<>();
     static final Blockchain blockchain = Nxt.getBlockchain();
     static {
         Nxt.getBlockchainProcessor().addListener((block) -> {
             synchronized (blockCache) {
                 int height = block.getHeight();
+                int localHeight = block.getLocalHeight();
                 Iterator<BlockImpl> it = blockCache.values().iterator();
                 while (it.hasNext()) {
                     Block cacheBlock = it.next();
@@ -54,9 +56,14 @@ final class BlockDb {
                         heightMap.remove(cacheHeight);
                         it.remove();
                     }
+                    int cacheHeight1 = cacheBlock.getLocalHeight();
+                    if (cacheHeight1 <= localHeight - BLOCK_CACHE_SIZE || cacheHeight1 >= localHeight) {
+                        localHeightMap.remove(cacheHeight1);
+                    }
                 }
                 block.getTransactions().forEach((tx) -> transactionCache.put(tx.getId(), (TransactionImpl)tx));
                 heightMap.put(height, (BlockImpl)block);
+                localHeightMap.put(localHeight, (BlockImpl)block);
                 blockCache.put(block.getId(), (BlockImpl)block);
             }
         }, BlockchainProcessor.Event.BLOCK_PUSHED);
@@ -66,6 +73,7 @@ final class BlockDb {
         synchronized (blockCache) {
             blockCache.clear();
             heightMap.clear();
+            localHeightMap.clear();
             transactionCache.clear();
         }
     }
@@ -167,6 +175,32 @@ final class BlockDb {
         }
     }
 
+    static BlockImpl findBlockAtLocalHeight(int height, boolean isKeyBlock) {
+        // Check the cache
+        synchronized(blockCache) {
+            BlockImpl block = localHeightMap.get(height);
+            if (block != null && (isKeyBlock && block.isKeyBlock() || !block.isKeyBlock())) {
+                return block;
+            }
+        }
+        // Search the database
+        try (Connection con = Db.db.getConnection();
+             PreparedStatement pstmt = con.prepareStatement("SELECT * FROM block WHERE local_height = ? AND nonce IS " + (isKeyBlock ? "NOT NULL" : "NULL"))) {
+            pstmt.setInt(1, height);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                BlockImpl block;
+                if (rs.next()) {
+                    block = loadBlock(con, rs);
+                } else {
+                    throw new RuntimeException("Block at local_height " + height + " not found in database!");
+                }
+                return block;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e.toString(), e);
+        }
+    }
+
     static BlockImpl findLastBlock() {
         try (Connection con = Db.db.getConnection();
              PreparedStatement pstmt = con.prepareStatement("SELECT * FROM block WHERE next_block_id <> 0 OR next_block_id IS NULL ORDER BY timestamp DESC LIMIT 1")) {
@@ -196,6 +230,21 @@ final class BlockDb {
         } catch (SQLException e) {
             throw new RuntimeException(e.toString(), e);
         }
+    }
+
+    static int getMaxLocalHeightOfKeyBlocks() {
+        try (Connection con = Db.db.getConnection();
+             PreparedStatement pstmt = con.prepareStatement("SELECT MAX(local_height) FROM block WHERE nonce IS NOT NULL")) {
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e.toString(), e);
+        }
+        return -1;
     }
 
     static Set<Long> getBlockGenerators(int startHeight) {
@@ -285,6 +334,7 @@ final class BlockDb {
                 pstmt.setInt(++i, block.getHeight());
                 pstmt.setInt(++i, block.getLocalHeight());
                 pstmt.setBytes(++i, block.getGenerationSignature());
+                // TODO block signature NOT NULL, made nullable temporarily for testing
                 pstmt.setBytes(++i, block.getBlockSignature());
                 pstmt.setBytes(++i, block.getPayloadHash());
                 pstmt.setLong(++i, block.getGeneratorId());

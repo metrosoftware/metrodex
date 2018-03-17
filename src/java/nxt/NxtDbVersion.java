@@ -32,7 +32,7 @@ class NxtDbVersion extends DbVersion {
                         + "previous_block_hash BINARY(32), previous_key_block_hash BINARY(32), cumulative_difficulty VARBINARY NOT NULL, base_target BIGINT NOT NULL, "
                         + "next_block_id BIGINT, "
                         + "nonce BIGINT, pos_blocks_summary BINARY(32), stake_merkle_root BINARY(32), tx_merkle_root BINARY(32), "
-                        + "height INT NOT NULL, local_height INT NOT NULL, generation_signature BINARY(32), "
+                        + "height INT NOT NULL, local_height INT NOT NULL, generation_signature BINARY(32) NOT NULL, "
                         + "block_signature BINARY(64), payload_hash BINARY(32), generator_id BIGINT NOT NULL)");
             case 2:
                 apply("CREATE UNIQUE INDEX IF NOT EXISTS block_id_idx ON block (id)");

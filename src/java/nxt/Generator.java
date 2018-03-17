@@ -66,7 +66,7 @@ public final class Generator implements Comparable<Generator> {
                 try {
                     BlockchainImpl.getInstance().updateLock();
                     try {
-                        Block lastBlock = Nxt.getBlockchain().getLastPosBlock();
+                        Block lastBlock = Nxt.getBlockchain().getLastBlock();
                         if (lastBlock == null || lastBlock.getHeight() < Constants.LAST_KNOWN_BLOCK) {
                             return;
                         }
@@ -74,7 +74,7 @@ public final class Generator implements Comparable<Generator> {
                         if (lastBlock.getId() != lastBlockId || sortedForgers == null) {
                             lastBlockId = lastBlock.getId();
                             if (lastBlock.getTimestamp() > Nxt.getEpochTime() - 600) {
-                                Block previousBlock = Nxt.getBlockchain().getPosBlockPreceding(lastBlock.getPreviousBlockId());
+                                Block previousBlock = Nxt.getBlockchain().getBlock(lastBlock.getPreviousBlockId());
                                 for (Generator generator : generators.values()) {
                                     generator.setLastBlock(previousBlock);
                                     int timestamp = generator.getTimestamp(generationLimit);
@@ -254,9 +254,7 @@ public final class Generator implements Comparable<Generator> {
         if (allowsFakeForging(publicKey)) {
             return BigInteger.ZERO;
         }
-        MessageDigest digest = Crypto.sha256();
-        digest.update(block.getGenerationSignature());
-        byte[] generationSignatureHash = digest.digest(publicKey);
+        byte[] generationSignatureHash = Convert.generationSignature(block.getGenerationSignature(), publicKey);
         return new BigInteger(1, new byte[] {generationSignatureHash[7], generationSignatureHash[6], generationSignatureHash[5], generationSignatureHash[4], generationSignatureHash[3], generationSignatureHash[2], generationSignatureHash[1], generationSignatureHash[0]});
     }
 
@@ -281,7 +279,7 @@ public final class Generator implements Comparable<Generator> {
         Nxt.getBlockchain().updateLock();
         try {
             if (Nxt.getBlockchain().getHeight() >= Constants.LAST_KNOWN_BLOCK) {
-                setLastBlock(Nxt.getBlockchain().getLastPosBlock());
+                setLastBlock(Nxt.getBlockchain().getLastBlock());
             }
             sortedForgers = null;
         } finally {

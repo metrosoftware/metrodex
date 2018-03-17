@@ -39,6 +39,7 @@ final class BlockDb {
     static final int BLOCK_CACHE_SIZE = 10;
     static final Map<Long, BlockImpl> blockCache = new HashMap<>();
     static final SortedMap<Integer, BlockImpl> heightMap = new TreeMap<>();
+    //FIXME we can not use localHight as key because it is not uniq
     static final SortedMap<Integer, BlockImpl> localHeightMap = new TreeMap<>();
     static final Map<Long, TransactionImpl> transactionCache = new HashMap<>();
     static final Blockchain blockchain = Nxt.getBlockchain();

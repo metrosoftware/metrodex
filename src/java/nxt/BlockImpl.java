@@ -320,8 +320,8 @@ final class BlockImpl implements Block {
         } else {
             json.put("payloadLength", payloadLength);
             json.put("payloadHash", Convert.toHexString(payloadHash));
-            json.put("generationSignature", Convert.toHexString(generationSignature));
         }
+        json.put("generationSignature", Convert.toHexString(generationSignature));
         json.put("totalAmountNQT", totalAmountNQT);
         json.put("totalFeeNQT", totalFeeNQT);
         json.put("generatorPublicKey", Convert.toHexString(getGeneratorPublicKey()));
@@ -341,7 +341,7 @@ final class BlockImpl implements Block {
             int timestamp = ((Long) blockData.get("timestamp")).intValue();
             long previousKeyBlock = 0, nonce = 0, baseTarget = 0;
             int payloadLength = 0;
-            byte[] previousKeyBlockHash = null, posBlocksSummary = null, stakeMerkleRoot = null, payloadHash = null, generationSignature = null;
+            byte[] previousKeyBlockHash = null, posBlocksSummary = null, stakeMerkleRoot = null, payloadHash = null;
             if (keyBlock) {
                 previousKeyBlock = Convert.parseUnsignedLong((String) blockData.get("previousKeyBlock"));
                 nonce = Convert.parseLong(blockData.get("nonce"));
@@ -354,8 +354,8 @@ final class BlockImpl implements Block {
             } else {
                 payloadLength = ((Long) blockData.get("payloadLength")).intValue();
                 payloadHash = Convert.parseHexString((String) blockData.get("payloadHash"));
-                generationSignature = Convert.parseHexString((String) blockData.get("generationSignature"));
             }
+            byte[] generationSignature = Convert.parseHexString((String) blockData.get("generationSignature"));
             long previousBlock = Convert.parseUnsignedLong((String) blockData.get("previousBlock"));
             long totalAmountNQT = Convert.parseLong(blockData.get("totalAmountNQT"));
             long totalFeeNQT = Convert.parseLong(blockData.get("totalFeeNQT"));
@@ -450,9 +450,9 @@ final class BlockImpl implements Block {
 
         try {
 
-            BlockImpl previousBlock = BlockchainImpl.getInstance().getPosBlockPreceding(getPreviousBlockId());
+            BlockImpl previousBlock = BlockchainImpl.getInstance().getBlock(getPreviousBlockId());
             if (previousBlock == null) {
-                throw new BlockchainProcessor.BlockOutOfOrderException("Can't verify signature because previous POS block is missing", this);
+                throw new BlockchainProcessor.BlockOutOfOrderException("Can't verify signature because previous block is missing", this);
             }
 
             Account account = Account.getAccount(getGeneratorId());

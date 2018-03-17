@@ -1,6 +1,7 @@
 package nxt.http;
 
 import nxt.Block;
+import nxt.Consensus;
 import nxt.Nxt;
 import nxt.NxtException;
 import nxt.crypto.Crypto;
@@ -14,6 +15,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import static nxt.Consensus.KEY_BLOCK_VERSION;
 import static nxt.http.JSONResponses.REPLACEMENT_BLOCK_IGNORED;
 
 public class SubmitBlockSolution extends APIServlet.APIRequestHandler {
@@ -42,27 +44,29 @@ public class SubmitBlockSolution extends APIServlet.APIRequestHandler {
             // auto-fill with data from last blocks
             Block lastBlock = Nxt.getBlockchain().getLastBlock();
             Block lastKeyBlock = Nxt.getBlockchain().getLastKeyBlock();
-            ByteBuffer buf = ByteBuffer.allocate(218 - 76);
-            buf.order(ByteOrder.LITTLE_ENDIAN);
+            //218-76???
+            ByteBuffer buffer = ByteBuffer.allocate(218 - 76);
+            buffer.order(ByteOrder.LITTLE_ENDIAN);
             // version
-            buf.putShort((short)-32767);
+            buffer.putShort(KEY_BLOCK_VERSION);
 
             // timestamp
-            buf.putInt(Nxt.getEpochTime());
+            buffer.putInt(Nxt.getEpochTime());
 
             // template part #1
-            buf.put(headerTemplate);
+            buffer.put(headerTemplate);
             // prev block hashes
-            byte[] previousBH = Crypto.sha256().digest(lastBlock.getBytes());
-            buf.put(previousBH);
-            if (lastKeyBlock.getNextBlockId() != 0) {
-                buf.put(Nxt.getBlockchain().getBlock(lastKeyBlock.getNextBlockId()).getPreviousBlockHash());
+            byte[] previousBlockHash = Crypto.sha256().digest(lastBlock.getBytes());
+            buffer.put(previousBlockHash);
+
+            if (lastKeyBlock != null) {
+                buffer.put(Crypto.sha256().digest(lastKeyBlock.getBytes()));
             } else {
-                buf.put(previousBH);
+                buffer.put(Convert.EMPTY_HASH);
             }
 
             // template part #2 (Merkle roots, baseTarget, nonce)
-            blockHeader = Convert.toHexString(buf.array()) + headerTemplatePart2;
+            blockHeader = Convert.toHexString(buffer.array()) + headerTemplatePart2;
         }
         if (blockHeader.length() != 436) {
             JSONObject response = new JSONObject();

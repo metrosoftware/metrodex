@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -129,6 +130,11 @@ public final class Convert {
         return bigInteger.longValue();
     }
 
+    public static byte[] generationSignature(byte[] previousGenerationSignature, byte[] generatorPublicKey) {
+        MessageDigest digest = Crypto.sha256();
+        digest.update(previousGenerationSignature);
+        return digest.digest(generatorPublicKey);
+    }
     public static long fromEpochTime(int epochTime) {
         return epochTime * 1000L + Genesis.EPOCH_BEGINNING - 500L;
     }

@@ -402,9 +402,13 @@ final class BlockchainImpl implements Blockchain {
             // Slot #11
             long nonce = BitcoinJUtils.readInt64(headerData, cursor);
             cursor += 8;
-            return new BlockImpl(version, timestamp, baseTarget, Convert.fullHashToId(previousBlockHash), Convert.fullHashToId(previousKeyBlockHash), nonce,
+
+            long previousBlockId = Convert.fullHashToId(previousBlockHash);
+            byte[] generationSignature = Convert.generationSignature(getBlock(previousBlockId).getGenerationSignature(), generatorPublicKey);
+
+            return new BlockImpl(version, timestamp, baseTarget, previousBlockId, Convert.fullHashToId(previousKeyBlockHash), nonce,
                     0, totalFeeNQT, 0, txMerkleRoot, generatorPublicKey,
-                    null, null, previousBlockHash, previousKeyBlockHash, posBlocksSummary, stakeMerkleRoot, null);
+                    generationSignature, null, previousBlockHash, previousKeyBlockHash, posBlocksSummary, stakeMerkleRoot, null);
         }
         return new BlockImpl(version, timestamp, 0, Convert.fullHashToId(previousBlockHash), 0, 0,
                 0, totalFeeNQT, 0, txMerkleRoot, generatorPublicKey,

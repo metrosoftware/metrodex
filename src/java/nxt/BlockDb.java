@@ -39,8 +39,8 @@ final class BlockDb {
     static final int BLOCK_CACHE_SIZE = 10;
     static final Map<Long, BlockImpl> blockCache = new HashMap<>();
     static final SortedMap<Integer, BlockImpl> heightMap = new TreeMap<>();
-    //FIXME we can not use localHight as key because it is not uniq
-    static final SortedMap<Integer, BlockImpl> localHeightMap = new TreeMap<>();
+    static final SortedMap<Integer, BlockImpl> posLocalHeightMap = new TreeMap<>();
+    static final SortedMap<Integer, BlockImpl> keyLocalHeightMap = new TreeMap<>();
     static final Map<Long, TransactionImpl> transactionCache = new HashMap<>();
     static final Blockchain blockchain = Nxt.getBlockchain();
     static {
@@ -50,21 +50,36 @@ final class BlockDb {
                 int localHeight = block.getLocalHeight();
                 Iterator<BlockImpl> it = blockCache.values().iterator();
                 while (it.hasNext()) {
+                    boolean remove = false;
                     Block cacheBlock = it.next();
+
                     int cacheHeight = cacheBlock.getHeight();
                     if (cacheHeight <= height - BLOCK_CACHE_SIZE || cacheHeight >= height) {
                         cacheBlock.getTransactions().forEach((tx) -> transactionCache.remove(tx.getId()));
                         heightMap.remove(cacheHeight);
-                        it.remove();
+                        remove = true;
                     }
-                    int cacheHeight1 = cacheBlock.getLocalHeight();
-                    if (cacheHeight1 <= localHeight - BLOCK_CACHE_SIZE || cacheHeight1 >= localHeight) {
-                        localHeightMap.remove(cacheHeight1);
+
+                    cacheHeight = cacheBlock.getLocalHeight();
+                    if (cacheHeight <= localHeight - BLOCK_CACHE_SIZE || cacheHeight >= localHeight) {
+                        if (block.isKeyBlock()) {
+                            keyLocalHeightMap.remove(cacheHeight);
+                        } else {
+                            posLocalHeightMap.remove(cacheHeight);
+                        }
+                        remove = true;
+                    }
+                    if (remove) {
+                        it.remove();
                     }
                 }
                 block.getTransactions().forEach((tx) -> transactionCache.put(tx.getId(), (TransactionImpl)tx));
                 heightMap.put(height, (BlockImpl)block);
-                localHeightMap.put(localHeight, (BlockImpl)block);
+                if (block.isKeyBlock()) {
+                    keyLocalHeightMap.put(localHeight, (BlockImpl) block);
+                } else {
+                    posLocalHeightMap.put(localHeight, (BlockImpl) block);
+                }
                 blockCache.put(block.getId(), (BlockImpl)block);
             }
         }, BlockchainProcessor.Event.BLOCK_PUSHED);
@@ -74,7 +89,8 @@ final class BlockDb {
         synchronized (blockCache) {
             blockCache.clear();
             heightMap.clear();
-            localHeightMap.clear();
+            keyLocalHeightMap.clear();
+            posLocalHeightMap.clear();
             transactionCache.clear();
         }
     }
@@ -179,8 +195,8 @@ final class BlockDb {
     static BlockImpl findBlockAtLocalHeight(int height, boolean isKeyBlock) {
         // Check the cache
         synchronized(blockCache) {
-            BlockImpl block = localHeightMap.get(height);
-            if (block != null && (isKeyBlock && block.isKeyBlock() || !block.isKeyBlock())) {
+            BlockImpl block = isKeyBlock ? keyLocalHeightMap.get(height) : posLocalHeightMap.get(height);
+            if (block != null) {
                 return block;
             }
         }

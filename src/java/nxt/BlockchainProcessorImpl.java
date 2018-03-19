@@ -1303,7 +1303,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 validate(block, previousLastBlock, previousLastKeyBlock, curTime);
 
                 long nextHitTime = Generator.getNextHitTime(previousLastBlock.getId(), curTime);
-                if (nextHitTime > 0 && block.getTimestamp() > nextHitTime + 1) {
+                if (!block.isKeyBlock() && nextHitTime > 0 && block.getTimestamp() > nextHitTime + 1) {
                     String msg = "Rejecting block " + block.getStringId() + " at height " + previousLastBlock.getHeight()
                             + " block timestamp " + block.getTimestamp() + " next hit time " + nextHitTime
                             + " current time " + curTime;

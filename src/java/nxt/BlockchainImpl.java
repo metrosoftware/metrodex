@@ -23,6 +23,8 @@ import nxt.util.Convert;
 import nxt.util.Filter;
 import nxt.util.ReadWriteUpdateLock;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -370,38 +372,31 @@ final class BlockchainImpl implements Blockchain {
     }
 
     @Override
-    public Block parseBlockHeader(byte[] headerData) throws NxtException.NotValidException {
-        short version = (short)BitcoinJUtils.readUint16(headerData, 0);
-        final boolean isKeyBlock = Short.toUnsignedInt(version) > 0x8000;
-        int cursor = 2;
-        int timestamp = (int) BitcoinJUtils.readUint32(headerData, cursor);
-        cursor += 4;
-        long totalFeeNQT = BitcoinJUtils.readInt64(headerData, cursor);
-        cursor += 8;
+    public Block processBlockHeader(byte[] headerData) throws NxtException.NotValidException {
+        ByteBuffer header = ByteBuffer.wrap(headerData);
+        header.order(ByteOrder.LITTLE_ENDIAN);
+        short version = header.getShort();
+        final boolean isKeyBlock = BlockImpl.isKeyBlockVersion(version);
+        int timestamp = header.getInt();
+        long totalFeeNQT = header.getLong();
+        final int hashSize = Convert.EMPTY_HASH.length;
         // in stage 2, we will have txMerkleRoot rather than payload_hash in Slot #3:
-        byte[] txMerkleRoot = BitcoinJUtils.read256bits(headerData, cursor);
-        cursor += 32;
-        // Slot #4
-        byte[] generatorPublicKey = BitcoinJUtils.read256bits(headerData, cursor);
-        cursor += 32;
-        // Slot #5
-        byte[] previousBlockHash = BitcoinJUtils.read256bits(headerData, cursor);
-        cursor += 32;
+        byte[] txMerkleRoot = new byte[hashSize];
+        header.get(txMerkleRoot);
+        byte[] generatorPublicKey = new byte[hashSize];
+        header.get(generatorPublicKey);
+        byte[] previousBlockHash = new byte[hashSize];
+        header.get(previousBlockHash);
         if (isKeyBlock) {
-            // Slots #6-#9
-            // Key blocks (starting from the 2nd) have non-null previousKeyBlock reference
-            byte[] previousKeyBlockHash = BitcoinJUtils.read256bits(headerData, cursor);
-            cursor += 32;
-            byte[] posBlocksSummary = BitcoinJUtils.read256bits(headerData, cursor);
-            cursor += 32;
-            byte[] stakeMerkleRoot = BitcoinJUtils.read256bits(headerData, cursor);
-            cursor += 32;
-            // Slot #10 - only 4 bytes of target are needed for PoW
-            long baseTarget = BitcoinJUtils.readUint32(headerData, cursor);
-            cursor += 4;
-            // Slot #11
-            long nonce = BitcoinJUtils.readInt64(headerData, cursor);
-            cursor += 8;
+            byte[] previousKeyBlockHash = new byte[hashSize];
+            header.get(previousKeyBlockHash);
+            byte[] posBlocksSummary = new byte[hashSize];
+            header.get(posBlocksSummary);
+            byte[] stakeMerkleRoot = new byte[hashSize];
+            header.get(stakeMerkleRoot);
+
+            long baseTarget = header.getInt();
+            long nonce = header.getLong();
 
             long previousBlockId = Convert.fullHashToId(previousBlockHash);
             byte[] generationSignature = Convert.generationSignature(getBlock(previousBlockId).getGenerationSignature(), generatorPublicKey);

@@ -390,38 +390,28 @@ final class BlockImpl implements Block {
             ByteBuffer buffer = ByteBuffer.allocate(2 + 4 + 8 + 32*3 + (isKeyBlock ? (32*3 + 4 + 8) : 0) + (blockSignature != null ? 64 : 0));
             buffer.order(ByteOrder.LITTLE_ENDIAN);
 
-            // Slot #0
             // Block.version: the most significant bit to differentiate between block (0x0001...) and keyblock (0x8001...)
             buffer.putShort(version);
             // For simplicity, all POS block header fields will be also part of keyblock header,
             // so we have only one "if (isKeyBlock)" at the end of this code block
-            // Slot #1
-            // Block.timestamp: 4 bytes, seconds since NxtEpoch
             buffer.putInt(timestamp);
-            // This were not necessary for the block hash and therefore removed:
-            // getTransactions().size(), totalAmountNQT, payloadLength, previousBlockId, generationSignature
 
-            // Slot #2
             buffer.putLong(totalFeeNQT);
 
-            // Slot #3 - this will be replaced by txMerkleRoot in stage 2
             buffer.put(payloadHash);
-            // Slot #4
+
             buffer.put(getGeneratorPublicKey());
-            // Slot #5
+
             buffer.put(previousBlockHash);
-            // POS block may follow keyblock and refer to it in it's previousBlockId (no need to skip it and refer to POS block preceding that keyblock);
-            // or may just follow another POS block in which case previousBlockId points to POS[N-1] where N is height
-            // POW block needs to have both: it has ALWAYS a POS preceding (in previousBlockId) and POW[L-1] where L is POW local height
+
             if (isKeyBlock) {
-                // Slots #6-#9
                 // Key blocks (starting from the 2nd) have non-null previousKeyBlock reference
                 buffer.put(previousKeyBlockHash);
                 buffer.put(posBlocksSummary);
                 buffer.put(stakeMerkleRoot);
-                // Slot #10 - only 4 bytes of target are needed for PoW
+                // only 4 bytes of target are needed for PoW
                 buffer.putInt((int) (baseTarget & 0xffffffffL));
-                // Slot #11
+                // 8 rather than 4 bytes, so no "extranonce" needed
                 buffer.putLong(nonce);
             }
             if (!isKeyBlock && blockSignature != null) {

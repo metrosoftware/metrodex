@@ -22,26 +22,8 @@ import java.math.BigInteger;
 
 public class BitcoinJUtils {
 
-    public static long readInt64(byte[] bytes, int offset) {
-        return (long)bytes[offset] & 255L | ((long)bytes[offset + 1] & 255L) << 8 | ((long)bytes[offset + 2] & 255L) << 16 | ((long)bytes[offset + 3] & 255L) << 24 | ((long)bytes[offset + 4] & 255L) << 32 | ((long)bytes[offset + 5] & 255L) << 40 | ((long)bytes[offset + 6] & 255L) << 48 | ((long)bytes[offset + 7] & 255L) << 56;
-    }
-
-    public static long readUint32(byte[] bytes, int offset) {
-        return (long)bytes[offset] & 255L | ((long)bytes[offset + 1] & 255L) << 8 | ((long)bytes[offset + 2] & 255L) << 16 | ((long)bytes[offset + 3] & 255L) << 24;
-    }
-
-    public static int readUint16(byte[] bytes, int offset) {
-        return bytes[offset] & 255 | (bytes[offset + 1] & 255) << 8;
-    }
-
     public static long readUint32BE(byte[] bytes, int offset) {
         return ((long)bytes[offset] & 255L) << 24 | ((long)bytes[offset + 1] & 255L) << 16 | ((long)bytes[offset + 2] & 255L) << 8 | (long)bytes[offset + 3] & 255L;
-    }
-
-    public static byte[] read256bits(byte[] bytes, int offset) {
-        byte[] bits = new byte[Convert.EMPTY_HASH.length];
-        System.arraycopy(bytes, offset, bits, 0, bits.length);
-        return bits;
     }
 
     public static void uint32ToByteArrayBE(long val, byte[] out, int offset) {

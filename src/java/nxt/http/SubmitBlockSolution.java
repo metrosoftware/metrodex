@@ -1,7 +1,6 @@
 package nxt.http;
 
 import nxt.Block;
-import nxt.Consensus;
 import nxt.Nxt;
 import nxt.NxtException;
 import nxt.crypto.Crypto;
@@ -77,7 +76,7 @@ public class SubmitBlockSolution extends APIServlet.APIRequestHandler {
         String blockSignature = Convert.emptyToNull(request.getParameter("blockSignature"));
         // TODO #144 validate length of the signature
         byte[] signatureBytes = Convert.parseHexString(blockSignature != null ? blockSignature.toLowerCase() : null);
-        Block extra = Nxt.getBlockchain().parseBlockHeader(headerBytes);
+        Block extra = Nxt.getBlockchain().processBlockHeader(headerBytes);
         boolean blockAccepted = Nxt.getBlockchainProcessor().processMinerBlock(extra, signatureBytes);
         // Return JSON block representation or "Replacement block failed to be accepted" error
         return blockAccepted ? extra.getJSONObject() : REPLACEMENT_BLOCK_IGNORED;

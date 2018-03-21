@@ -1,6 +1,7 @@
 package nxt.http;
 
 import nxt.Block;
+import nxt.BlockImpl;
 import nxt.Nxt;
 import nxt.NxtException;
 import nxt.crypto.Crypto;
@@ -39,36 +40,37 @@ public class SubmitBlockSolution extends APIServlet.APIRequestHandler {
             return JSON.prepare(response);
         }
         String blockHeader = Convert.emptyToNull(request.getParameter("blockHeader"));
+        int keyBlockHeaderSize = BlockImpl.getHeaderSize(true, false);
         if (blockHeader == null) {
             // auto-fill with data from last blocks
             Block lastBlock = Nxt.getBlockchain().getLastBlock();
             Block lastKeyBlock = Nxt.getBlockchain().getLastKeyBlock();
             // 218 is full header length; headerTemplatePart2 will be appended by String concatenation
-            ByteBuffer buf = ByteBuffer.allocate(218 - headerTemplatePart2.length() / 2);
-            buf.order(ByteOrder.LITTLE_ENDIAN);
+            ByteBuffer buffer = ByteBuffer.allocate(keyBlockHeaderSize - headerTemplatePart2.length() / 2);
+            buffer.order(ByteOrder.LITTLE_ENDIAN);
             // version
-            buf.putShort(KEY_BLOCK_VERSION);
+            buffer.putShort(KEY_BLOCK_VERSION);
 
             // timestamp
-            buf.putInt(Nxt.getEpochTime());
+            buffer.putInt(Nxt.getEpochTime());
 
             // template part #1
-            buf.put(headerTemplate);
+            buffer.put(headerTemplate);
             // prev block hashes
             byte[] previousBlockHash = Crypto.sha256().digest(lastBlock.getBytes());
-            buf.put(previousBlockHash);
+            buffer.put(previousBlockHash);
             if (lastKeyBlock != null) {
-                buf.put(Crypto.sha256().digest(lastKeyBlock.getBytes()));
+                buffer.put(Crypto.sha256().digest(lastKeyBlock.getBytes()));
             } else {
-                buf.put(Convert.EMPTY_HASH);
+                buffer.put(Convert.EMPTY_HASH);
             }
 
             // template part #2 (Merkle roots, baseTarget, nonce)
-            blockHeader = Convert.toHexString(buf.array()) + headerTemplatePart2;
+            blockHeader = Convert.toHexString(buffer.array()) + headerTemplatePart2;
         }
-        if (blockHeader.length() != 218 * 2) {
+        if (blockHeader.length() != keyBlockHeaderSize * 2) {
             JSONObject response = new JSONObject();
-            response.put("error", "Wrong block header length, was " + blockHeader.length() / 2 + " rather than 218 bytes");
+            response.put("error", "Wrong block header length, was " + blockHeader.length() / 2 + " rather than " + keyBlockHeaderSize + " bytes");
             return JSON.prepare(response);
         }
         byte[] headerBytes = Convert.parseHexString(blockHeader.toLowerCase());

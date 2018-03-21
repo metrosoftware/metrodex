@@ -36,7 +36,7 @@ import java.util.List;
 import static nxt.util.Convert.HASH_SIZE;
 import static org.bouncycastle.pqc.math.linearalgebra.IntegerFunctions.squareRoot;
 
-final class BlockImpl implements Block {
+public final class BlockImpl implements Block {
 
     private final short version;
     private final int timestamp;
@@ -51,9 +51,6 @@ final class BlockImpl implements Block {
     private final long totalAmountNQT;
     private final long totalFeeNQT;
     private final int payloadLength;
-    /**
-     * Not exactly a "signature" - rather a 256bit hash for pseudo-random block issuer selection
-     */
     private final byte[] generationSignature;
     private final byte[] payloadHash;
     private volatile List<TransactionImpl> blockTransactions;
@@ -75,8 +72,6 @@ final class BlockImpl implements Block {
     /**
      * Special constructor for Genesis block only
      *
-     * @param generatorPublicKey
-     * @param generationSignature
      */
     BlockImpl(byte[] generatorPublicKey, byte[] generationSignature) {
         // the Genesis block is POS with version 0x0000
@@ -102,24 +97,6 @@ final class BlockImpl implements Block {
     /**
      * Typical constructor called for a block not yet in DB
      *
-     * @param version
-     * @param timestamp
-     * @param baseTarget
-     * @param previousBlockId
-     * @param previousKeyBlockId
-     * @param nonce
-     * @param totalAmountNQT
-     * @param totalFeeNQT
-     * @param payloadLength
-     * @param payloadHash
-     * @param generatorPublicKey
-     * @param generationSignature
-     * @param blockSignature
-     * @param previousBlockHash
-     * @param previousKeyBlockHash
-     * @param posBlocksSummary
-     * @param stakeMerkleRoot
-     * @param transactions
      */
     BlockImpl(short version, int timestamp, long baseTarget, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountNQT, long totalFeeNQT, int payloadLength, byte[] payloadHash,
               byte[] generatorPublicKey, byte[] generationSignature, byte[] blockSignature, byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] posBlocksSummary, byte[] stakeMerkleRoot, List<TransactionImpl> transactions) {
@@ -316,7 +293,7 @@ final class BlockImpl implements Block {
     @Override
     public long getId() {
         if (id == 0) {
-            // TODO passing keyBlock signature over API?
+            // TODO #144
             if (!isKeyBlock() && blockSignature == null) {
                 throw new IllegalStateException("Block is not signed yet");
             }
@@ -373,8 +350,8 @@ final class BlockImpl implements Block {
         } else {
             json.put("payloadLength", payloadLength);
             json.put("payloadHash", Convert.toHexString(payloadHash));
-            json.put("generationSignature", Convert.toHexString(generationSignature));
         }
+        json.put("generationSignature", Convert.toHexString(generationSignature));
         json.put("totalAmountNQT", totalAmountNQT);
         json.put("totalFeeNQT", totalFeeNQT);
         json.put("generatorPublicKey", Convert.toHexString(getGeneratorPublicKey()));
@@ -407,8 +384,8 @@ final class BlockImpl implements Block {
             } else {
                 payloadLength = ((Long) blockData.get("payloadLength")).intValue();
                 payloadHash = Convert.parseHexString((String) blockData.get("payloadHash"));
-                generationSignature = Convert.parseHexString((String) blockData.get("generationSignature"));
             }
+            generationSignature = Convert.parseHexString((String) blockData.get("generationSignature"));
             long previousBlock = Convert.parseUnsignedLong((String) blockData.get("previousBlock"));
             long totalAmountNQT = Convert.parseLong(blockData.get("totalAmountNQT"));
             long totalFeeNQT = Convert.parseLong(blockData.get("totalFeeNQT"));
@@ -437,6 +414,10 @@ final class BlockImpl implements Block {
         return Arrays.copyOf(bytes(), bytes.length);
     }
 
+    public static int getHeaderSize(boolean keyBlock, boolean signed) {
+        return 2 + 4 + 8 + 32*3 + (keyBlock ? (32*3 + 4 + 8) : 56) + (signed ? 64 : 0);
+    }
+
     /**
      * blockSignature MUST be in the last 64 bytes, if present
      * otherwise checkSignature() will be BROKEN
@@ -445,21 +426,17 @@ final class BlockImpl implements Block {
      // or may just follow another POS block in which case previousBlockId points to POS[N-1] where N is height
      // POW block (a.k.a. keyBlock) needs to have both: it has ALWAYS a POS/POW immediately preceding it (in previousBlockId)
      //  and POW[L-1] where L is POW local height
-     * @return
+     * @return byte array containing the header of POS or key block
      */
     byte[] bytes() {
         if (bytes == null) {
             final boolean isKeyBlock = isKeyBlock();
             final boolean isSignedPosBlock = !isKeyBlock && blockSignature != null;
-            ByteBuffer buffer = ByteBuffer.allocate(2 + 4 + 8 + 32*3 + (isKeyBlock ? (32*3 + 4 + 8) : 56) + (isSignedPosBlock ? 64 : 0));
+            ByteBuffer buffer = ByteBuffer.allocate(getHeaderSize(isKeyBlock, isSignedPosBlock));
             buffer.order(ByteOrder.LITTLE_ENDIAN);
 
-            // Slot #0
             // Block.version: the most significant bit to differentiate between block (0x0001...) and keyblock (0x8001...)
             buffer.putShort(version);
-            // For simplicity, all POS block header fields will be also part of keyblock header,
-            // so we have only one "if (isKeyBlock)" at the end of this code block
-            // Slot #1
             // Block.timestamp: 4 bytes, seconds since NxtEpoch
             buffer.putInt(timestamp);
 

@@ -75,6 +75,8 @@ public interface Block {
 
     BigInteger getCumulativeDifficulty();
 
+    BigInteger getStakeBatchDifficulty();
+
     byte[] getBytes();
 
     JSONObject getJSONObject();

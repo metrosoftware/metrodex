@@ -50,7 +50,13 @@ public final class Convert {
     public static final String[] EMPTY_STRING = new String[0];
 
     public static final byte[] EMPTY_HASH = new byte[32];
+    public static final int HASH_SIZE = EMPTY_HASH.length;
     public static final byte[] EMPTY_PAYLOAD_HASH = parseHexString("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+    /**
+     * The number that is one greater than the largest representable SHA-256
+     * hash.
+     */
+    public static BigInteger LARGEST_HASH = BigInteger.ONE.shiftLeft(256);
 
     private Convert() {} //never
 

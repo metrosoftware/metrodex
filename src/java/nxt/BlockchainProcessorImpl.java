@@ -61,6 +61,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static nxt.Consensus.getKeyBlockVersion;
+import static nxt.Consensus.getPosBlockVersion;
+import static nxt.Consensus.getTransactionVersion;
+
 final class BlockchainProcessorImpl implements BlockchainProcessor {
 
     private static final byte[] CHECKSUM_1 = Constants.isTestnet ?
@@ -1252,12 +1256,6 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         if (lastBlock != null) {
             Logger.logMessage("Genesis block already in database");
             blockchain.setLastBlock(lastBlock);
-            /*
-            // FIXME a temporary fake keyBlock just to make getters of getLastBlock(true) happy
-            BlockImpl keyBlock0 = new BlockImpl((short)0x8001, 0, 0, null, 0L, 0, 0, 0, new byte[32], new byte[32], new byte[32], new byte[64],
-                    new byte[32], new byte[32], new byte[32], new byte[32], Collections.emptyList());
-            blockchain.setLastBlock(keyBlock0);
-            */
             BlockDb.deleteBlocksFromHeight(lastBlock.getHeight() + 1);
             popOffTo(lastBlock);
             genesisBlockId = BlockDb.findBlockIdAtHeight(0);
@@ -1294,9 +1292,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             try {
                 Db.db.beginTransaction();
                 previousLastBlock = blockchain.getLastBlock();
-                // TODO what happens in case of PoW reorg?
-                int lastKeyLocalHeight = BlockDb.getMaxLocalHeightOfKeyBlocks();
-                previousLastKeyBlock = block.isKeyBlock() && lastKeyLocalHeight > 0 ? BlockDb.findBlockAtLocalHeight(lastKeyLocalHeight, true) : null;
+                previousLastKeyBlock = blockchain.getLastKeyBlock();
                 if (previousLastKeyBlock != null) {
                     Logger.logDebugMessage("previousLastKeyBlock=" + Convert.toHexString(previousLastKeyBlock.getBytes()));
                 }
@@ -1318,10 +1314,10 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 validatePhasedTransactions(previousLastBlock.getHeight(), validPhasedTransactions, invalidPhasedTransactions, duplicates);
                 validateTransactions(block, previousLastBlock, curTime, duplicates, previousLastBlock.getHeight() >= Constants.LAST_CHECKSUM_BLOCK);
 
-                block.setPrevious(previousLastBlock, blockchain.getPosBlockPreceding(previousLastBlock.getId()));
+                block.setPrevious(previousLastBlock, blockchain.getPosBlockPreceding(previousLastBlock.getId()), blockchain.getLastKeyBlock());
                 blockListeners.notify(block, Event.BEFORE_BLOCK_ACCEPT);
                 TransactionProcessorImpl.getInstance().requeueAllUnconfirmedTransactions();
-                Logger.logDebugMessage("block=" + Convert.toHexString(block.getBytes()));
+                Logger.logDebugMessage("adding/storing/accepting new block=" + Convert.toHexString(block.getBytes()));
                 addBlock(block);
                 accept(block, validPhasedTransactions, invalidPhasedTransactions, duplicates);
                 BlockDb.commit(block);
@@ -1401,6 +1397,8 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                     throw new BlockNotAcceptedException("Previous keyBlock hash doesn't match", block);
                 }
             }
+        } else if (block.getNonce() != 0) {
+            throw new BlockNotAcceptedException("Non-zero nonce is incompatible with POS block", block);
         }
         /* validation done in ticket 126, so we don't have it here yet
         if (block.isKeyBlock()) {
@@ -1413,6 +1411,12 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         if (block.getId() == 0L || BlockDb.hasBlock(block.getId(), previousLastBlock.getHeight())) {
             throw new BlockNotAcceptedException("Duplicate block or invalid id", block);
         }
+        if (block.getTransactions().size() > Constants.MAX_NUMBER_OF_TRANSACTIONS) {
+            throw new BlockNotAcceptedException("Invalid block transaction count " + block.getTransactions().size(), block);
+        }
+        if (block.getPayloadLength() > Constants.MAX_PAYLOAD_LENGTH || block.getPayloadLength() < 0) {
+            throw new BlockNotAcceptedException("Invalid block payload length " + block.getPayloadLength(), block);
+        }
         // FIXME #144 the following checks skipped for testing submitBlockSolution
         if (block.isKeyBlock())
             return;
@@ -1423,12 +1427,6 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         }
         if (!block.verifyBlockSignature()) {
             throw new BlockNotAcceptedException("Block signature verification failed", block);
-        }
-        if (block.getTransactions().size() > Constants.MAX_NUMBER_OF_TRANSACTIONS) {
-            throw new BlockNotAcceptedException("Invalid block transaction count " + block.getTransactions().size(), block);
-        }
-        if (block.getPayloadLength() > Constants.MAX_PAYLOAD_LENGTH || block.getPayloadLength() < 0) {
-            throw new BlockNotAcceptedException("Invalid block payload length " + block.getPayloadLength(), block);
         }
     }
 
@@ -1617,7 +1615,6 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             }
             List<BlockImpl> poppedOffBlocks = new ArrayList<>();
             try {
-                // TODO can commonBlock be keyBlock and if yes, is that necessary to have as a possibility?
                 BlockImpl block = blockchain.getLastBlock();
                 block.loadTransactions();
                 Logger.logDebugMessage("Rollback from block " + block.getStringId() + " at height " + block.getHeight()
@@ -1671,18 +1668,6 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         } finally {
             blockchain.writeUnlock();
         }
-    }
-
-    private short getPosBlockVersion(int previousBlockHeight) {
-        return 3;
-    }
-
-    private short getKeyBlockVersion(int previousBlockHeight) {
-        return (short)0x8001;
-    }
-
-    private int getTransactionVersion(int previousBlockHeight) {
-        return 1;
     }
 
     private boolean verifyChecksum(byte[] validChecksum, int fromHeight, int toHeight) {
@@ -1959,7 +1944,6 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                                         if (!Arrays.equals(blockBytes, BlockImpl.parseBlock(blockJSON).bytes())) {
                                             throw new NxtException.NotValidException("Block JSON cannot be parsed back to the same block");
                                         }
-                                        // FIXME for now we just assume all transactions are in the POS blocks
                                         validateTransactions(currentBlock, blockchain.getLastBlock(), curTime, duplicates, true);
                                         for (TransactionImpl transaction : currentBlock.getTransactions()) {
                                             byte[] transactionBytes = transaction.bytes();

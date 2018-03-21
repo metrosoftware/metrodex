@@ -18,6 +18,7 @@ package nxt;
 
 import nxt.AccountLedger.LedgerEvent;
 import nxt.crypto.Crypto;
+import nxt.util.BitcoinJUtils;
 import nxt.util.Convert;
 import nxt.util.Logger;
 import org.json.simple.JSONArray;
@@ -32,12 +33,14 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static nxt.util.Convert.HASH_SIZE;
+import static org.bouncycastle.pqc.math.linearalgebra.IntegerFunctions.squareRoot;
+
 final class BlockImpl implements Block {
 
     private final short version;
     private final int timestamp;
     private final long previousBlockId;
-    // TODO previousKeyBlockId and nonce should be 0 in POS blocks, validate it somewhere!
     private final long previousKeyBlockId;
     private final long nonce;
     private volatile byte[] generatorPublicKey;
@@ -48,13 +51,19 @@ final class BlockImpl implements Block {
     private final long totalAmountNQT;
     private final long totalFeeNQT;
     private final int payloadLength;
+    /**
+     * Not exactly a "signature" - rather a 256bit hash for pseudo-random block issuer selection
+     */
     private final byte[] generationSignature;
     private final byte[] payloadHash;
     private volatile List<TransactionImpl> blockTransactions;
 
     private byte[] blockSignature;
     private BigInteger cumulativeDifficulty = BigInteger.ZERO;
+    private BigInteger stakeBatchDifficulty = null;
+    // NXT style initial POS target
     private long baseTarget = Constants.INITIAL_BASE_TARGET;
+
     private volatile long nextBlockId;
     private int height = -1;
     private int localHeight = -1;
@@ -63,15 +72,25 @@ final class BlockImpl implements Block {
     private volatile long generatorId;
     private volatile byte[] bytes = null;
 
-
+    /**
+     * Special constructor for Genesis block only
+     *
+     * @param generatorPublicKey
+     * @param generationSignature
+     */
     BlockImpl(byte[] generatorPublicKey, byte[] generationSignature) {
-        // the Genesis block is POS with version 0x7FFF?
-        this((short)0x7FFF, 0, Constants.INITIAL_BASE_TARGET, 0, 0, 0, 0, 0, 0, new byte[32], generatorPublicKey, generationSignature, new byte[64],
-                new byte[32], new byte[32], new byte[32], new byte[32], Collections.emptyList());
+        // the Genesis block is POS with version 0x0000
+        this(Consensus.GENESIS_BLOCK_VERSION, 0, Constants.INITIAL_BASE_TARGET, 0, 0, 0, 0, 0, 0, new byte[HASH_SIZE], generatorPublicKey, generationSignature, new byte[HASH_SIZE * 2],
+                new byte[HASH_SIZE], new byte[HASH_SIZE], new byte[HASH_SIZE], new byte[HASH_SIZE], Collections.emptyList());
         this.height = 0;
         this.localHeight = 0;
+        this.stakeBatchDifficulty = BigInteger.ZERO;
     }
 
+    /**
+     * Constructs and signs a new block, by passing a secretPhrase
+     *
+     */
     BlockImpl(short version, int timestamp, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountNQT, long totalFeeNQT, int payloadLength, byte[] payloadHash,
               byte[] generatorPublicKey, byte[] generationSignature, byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] posBlocksSummary, byte[] stakeMerkleRoot, List<TransactionImpl> transactions, String secretPhrase) {
         this(version, timestamp, 0, previousBlockId, previousKeyBlockId, nonce, totalAmountNQT, totalFeeNQT, payloadLength, payloadHash,
@@ -80,6 +99,28 @@ final class BlockImpl implements Block {
         bytes = null;
     }
 
+    /**
+     * Typical constructor called for a block not yet in DB
+     *
+     * @param version
+     * @param timestamp
+     * @param baseTarget
+     * @param previousBlockId
+     * @param previousKeyBlockId
+     * @param nonce
+     * @param totalAmountNQT
+     * @param totalFeeNQT
+     * @param payloadLength
+     * @param payloadHash
+     * @param generatorPublicKey
+     * @param generationSignature
+     * @param blockSignature
+     * @param previousBlockHash
+     * @param previousKeyBlockHash
+     * @param posBlocksSummary
+     * @param stakeMerkleRoot
+     * @param transactions
+     */
     BlockImpl(short version, int timestamp, long baseTarget, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountNQT, long totalFeeNQT, int payloadLength, byte[] payloadHash,
               byte[] generatorPublicKey, byte[] generationSignature, byte[] blockSignature, byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] posBlocksSummary, byte[] stakeMerkleRoot, List<TransactionImpl> transactions) {
         this.version = version;
@@ -93,7 +134,6 @@ final class BlockImpl implements Block {
         this.payloadLength = payloadLength;
         this.payloadHash = payloadHash;
         this.generatorPublicKey = generatorPublicKey;
-        // 32 bytes actually, and not exactly a "signature"
         this.generationSignature = generationSignature;
         this.blockSignature = blockSignature;
         this.previousBlockHash = previousBlockHash;
@@ -105,14 +145,19 @@ final class BlockImpl implements Block {
         }
     }
 
+    /**
+     * Constructor used after existing block is loaded from DB
+     *
+     */
     BlockImpl(short version, int timestamp, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountNQT, long totalFeeNQT, int payloadLength,
               byte[] payloadHash, long generatorId, byte[] generationSignature, byte[] blockSignature,
               byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] posBlocksSummary, byte[] stakeMerkleRoot,
-              BigInteger cumulativeDifficulty, long baseTarget, long nextBlockId, int height, int localHeight, long id,
+              BigInteger cumulativeDifficulty, BigInteger stakeBatchDifficulty, long baseTarget, long nextBlockId, int height, int localHeight, long id,
               List<TransactionImpl> blockTransactions) {
         this(version, timestamp, baseTarget, previousBlockId, previousKeyBlockId, nonce, totalAmountNQT, totalFeeNQT, payloadLength, payloadHash,
                 null, generationSignature, blockSignature, previousBlockHash, previousKeyBlockHash, posBlocksSummary, stakeMerkleRoot, null);
         this.cumulativeDifficulty = cumulativeDifficulty;
+        this.stakeBatchDifficulty = stakeBatchDifficulty;
         this.nextBlockId = nextBlockId;
         this.height = height;
         this.localHeight = localHeight;
@@ -236,6 +281,14 @@ final class BlockImpl implements Block {
     }
 
     @Override
+    public BigInteger getStakeBatchDifficulty() {
+        if (stakeBatchDifficulty == null) {
+            throw new IllegalStateException("Block stakeBatchDifficulty not yet calculated (before call to calculateBaseTarget)");
+        }
+        return stakeBatchDifficulty;
+    }
+
+    @Override
     public long getNextBlockId() {
         return nextBlockId;
     }
@@ -320,8 +373,8 @@ final class BlockImpl implements Block {
         } else {
             json.put("payloadLength", payloadLength);
             json.put("payloadHash", Convert.toHexString(payloadHash));
+            json.put("generationSignature", Convert.toHexString(generationSignature));
         }
-        json.put("generationSignature", Convert.toHexString(generationSignature));
         json.put("totalAmountNQT", totalAmountNQT);
         json.put("totalFeeNQT", totalFeeNQT);
         json.put("generatorPublicKey", Convert.toHexString(getGeneratorPublicKey()));
@@ -341,7 +394,7 @@ final class BlockImpl implements Block {
             int timestamp = ((Long) blockData.get("timestamp")).intValue();
             long previousKeyBlock = 0, nonce = 0, baseTarget = 0;
             int payloadLength = 0;
-            byte[] previousKeyBlockHash = null, posBlocksSummary = null, stakeMerkleRoot = null, payloadHash = null;
+            byte[] previousKeyBlockHash = null, posBlocksSummary = null, stakeMerkleRoot = null, payloadHash = null, generationSignature = null;
             if (keyBlock) {
                 previousKeyBlock = Convert.parseUnsignedLong((String) blockData.get("previousKeyBlock"));
                 nonce = Convert.parseLong(blockData.get("nonce"));
@@ -354,8 +407,8 @@ final class BlockImpl implements Block {
             } else {
                 payloadLength = ((Long) blockData.get("payloadLength")).intValue();
                 payloadHash = Convert.parseHexString((String) blockData.get("payloadHash"));
+                generationSignature = Convert.parseHexString((String) blockData.get("generationSignature"));
             }
-            byte[] generationSignature = Convert.parseHexString((String) blockData.get("generationSignature"));
             long previousBlock = Convert.parseUnsignedLong((String) blockData.get("previousBlock"));
             long totalAmountNQT = Convert.parseLong(blockData.get("totalAmountNQT"));
             long totalFeeNQT = Convert.parseLong(blockData.get("totalFeeNQT"));
@@ -384,16 +437,30 @@ final class BlockImpl implements Block {
         return Arrays.copyOf(bytes(), bytes.length);
     }
 
+    /**
+     * blockSignature MUST be in the last 64 bytes, if present
+     * otherwise checkSignature() will be BROKEN
+     *
+     // POS block may follow keyblock and refer to it in it's previousBlockId
+     // or may just follow another POS block in which case previousBlockId points to POS[N-1] where N is height
+     // POW block (a.k.a. keyBlock) needs to have both: it has ALWAYS a POS/POW immediately preceding it (in previousBlockId)
+     //  and POW[L-1] where L is POW local height
+     * @return
+     */
     byte[] bytes() {
         if (bytes == null) {
             final boolean isKeyBlock = isKeyBlock();
-            ByteBuffer buffer = ByteBuffer.allocate(2 + 4 + 8 + 32*3 + (isKeyBlock ? (32*3 + 4 + 8) : 0) + (blockSignature != null ? 64 : 0));
+            final boolean isSignedPosBlock = !isKeyBlock && blockSignature != null;
+            ByteBuffer buffer = ByteBuffer.allocate(2 + 4 + 8 + 32*3 + (isKeyBlock ? (32*3 + 4 + 8) : 56) + (isSignedPosBlock ? 64 : 0));
             buffer.order(ByteOrder.LITTLE_ENDIAN);
 
+            // Slot #0
             // Block.version: the most significant bit to differentiate between block (0x0001...) and keyblock (0x8001...)
             buffer.putShort(version);
             // For simplicity, all POS block header fields will be also part of keyblock header,
             // so we have only one "if (isKeyBlock)" at the end of this code block
+            // Slot #1
+            // Block.timestamp: 4 bytes, seconds since NxtEpoch
             buffer.putInt(timestamp);
 
             buffer.putLong(totalFeeNQT);
@@ -413,8 +480,19 @@ final class BlockImpl implements Block {
                 buffer.putInt((int) (baseTarget & 0xffffffffL));
                 // 8 rather than 4 bytes, so no "extranonce" needed
                 buffer.putLong(nonce);
+            } else {
+                // keep previousBlockId here to preserve compatibility with NXT original POS -
+                // previousBlockId is just 8 contiguous bytes from previousBlockHash
+                buffer.putLong(previousBlockId);
+                // these three seem to be necessary because of NXT pruning concept
+                buffer.putInt(getTransactions().size());
+                buffer.putLong(totalAmountNQT);
+                buffer.putInt(payloadLength);
+                // seems superfluous as it depends only on generator public key of this block and previous block's generationSignature value,
+                // which is fixated by previousBlockHash link
+                buffer.put(generationSignature);
             }
-            if (!isKeyBlock && blockSignature != null) {
+            if (isSignedPosBlock) {
                 buffer.put(blockSignature);
             }
             bytes = buffer.array();
@@ -501,25 +579,40 @@ final class BlockImpl implements Block {
         generatorAccount.addToForgedBalanceNQT(totalFeeNQT - totalBackFees);
     }
 
-    void setPrevious(BlockImpl block, BlockImpl posBlock) {
-        if (block != null) {
-            if (block.getId() != getPreviousBlockId()) {
+    void setPrevious(BlockImpl prevBlock, BlockImpl posBlock, BlockImpl keyBlock) {
+        if (prevBlock != null) {
+            if (prevBlock.getId() != getPreviousBlockId()) {
                 // shouldn't happen as previous id is already verified, but just in case
                 throw new IllegalStateException("Previous block id doesn't match");
             }
-            this.height = block.getHeight() + 1;
+            this.height = prevBlock.getHeight() + 1;
             if (isKeyBlock()) {
-                // TODO we may use previousKeyBlockId here once it's set, to obtain last key localHeight
-                this.localHeight = BlockDb.getMaxLocalHeightOfKeyBlocks() + 1;
-                this.cumulativeDifficulty = block.cumulativeDifficulty.add(BigInteger.ONE);
+                this.localHeight = (keyBlock == null ? 0 : keyBlock.getLocalHeight()) + 1;
+                this.stakeBatchDifficulty = Convert.two64.divide(BigInteger.valueOf(posBlock.baseTarget));
             } else {
                 this.localHeight = posBlock.getLocalHeight() + 1;
-                this.calculateBaseTarget(block);
+                this.calculateBaseTarget(prevBlock.isKeyBlock(), posBlock);
             }
         } else {
             this.height = 0;
             this.localHeight = 0;
         }
+        // N is height of previous key block; K is size of stakeBatch (number of POS blocks since N)
+        // CD[N + K] = CD[N] + sqrt(WD[N]*sum(SD[i])i=N..N+K)
+        // CD = cumulative hybrid; WD = work difficulty of one block; SD = stake difficulty of one block
+        BigInteger currentBatch = isKeyBlock() ? prevBlock.stakeBatchDifficulty : stakeBatchDifficulty;
+        BigInteger keyBlockWork;
+        if (isKeyBlock()) {
+            keyBlockWork = getWork();
+        } else if (keyBlock != null) {
+            keyBlockWork = keyBlock.getWork();
+        } else {
+            keyBlockWork = BigInteger.ONE;
+        }
+        BigInteger prevCumulativeDifficulty = keyBlock != null ? keyBlock.cumulativeDifficulty : BigInteger.ZERO;
+
+        this.cumulativeDifficulty = prevCumulativeDifficulty.add(squareRoot(keyBlockWork.multiply(currentBatch)));
+
         short index = 0;
         for (TransactionImpl transaction : getTransactions()) {
             transaction.setBlock(this);
@@ -534,9 +627,9 @@ final class BlockImpl implements Block {
         }
     }
 
-    private void calculateBaseTarget(BlockImpl previousBlock) {
-        long prevBaseTarget = previousBlock.baseTarget;
-        int blockchainHeight = previousBlock.localHeight;
+    private void calculateBaseTarget(boolean prevIsKeyBlock, BlockImpl posBlock) {
+        long prevBaseTarget = posBlock.baseTarget;
+        int blockchainHeight = posBlock.localHeight;
         if (blockchainHeight > 2 && blockchainHeight % 2 == 0) {
             BlockImpl block = BlockDb.findBlockAtLocalHeight(blockchainHeight - 2, false);
             int blocktimeAverage = (this.timestamp - block.timestamp) / 3;
@@ -555,8 +648,38 @@ final class BlockImpl implements Block {
         } else {
             baseTarget = prevBaseTarget;
         }
-        // TODO PoW/Hybrid
-        cumulativeDifficulty = isKeyBlock() ? previousBlock.cumulativeDifficulty : previousBlock.cumulativeDifficulty.add(Convert.two64.divide(BigInteger.valueOf(baseTarget)));
+
+        stakeBatchDifficulty = Convert.two64.divide(BigInteger.valueOf(baseTarget));
+        // after each key block, stakeBatchDifficulty restarts from zero
+        if (!prevIsKeyBlock) {
+            stakeBatchDifficulty = stakeBatchDifficulty.add(posBlock.stakeBatchDifficulty);
+        }
     }
 
+    /**
+     * Returns the difficulty target as a 256 bit value that can be compared to a SHA-256 hash. Inside a block the
+     * target is represented using a compact form. If this form decodes to a value that is out of bounds, an exception
+     * is thrown.
+     *
+     * difficultyTarget of the Genesis block is set to 0x1d07fff8L in org.bitcoinj.core.Block "Special case constructor"
+     */
+    public BigInteger getDifficultyTargetAsInteger() {
+        BigInteger target = BitcoinJUtils.decodeCompactBits(baseTarget);
+        if (target.signum() <= 0 || target.compareTo(Constants.MAX_WORK_TARGET) > 0)
+            throw new IllegalStateException("Difficulty target is bad: " + target.toString());
+        return target;
+    }
+
+    /**
+     * Returns the work represented by this block.<p>
+     *
+     * Work is defined as the number of tries needed to solve a block in the
+     * average case. Consider a difficulty target that covers 5% of all possible
+     * hash values. Then the work of the block will be 20. As the target gets
+     * lower, the amount of work goes up.
+     */
+    public BigInteger getWork() {
+        BigInteger target = getDifficultyTargetAsInteger();
+        return Convert.LARGEST_HASH.divide(target.add(BigInteger.ONE));
+    }
 }

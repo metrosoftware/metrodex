@@ -16,6 +16,8 @@
 
 package nxt;
 
+import nxt.util.BitcoinJUtils;
+
 import java.math.BigInteger;
 
 public final class Constants {
@@ -51,6 +53,10 @@ public final class Constants {
     public static final int FORGING_DELAY = Nxt.getIntProperty("nxt.forgingDelay");
     public static final int FORGING_SPEEDUP = Nxt.getIntProperty("nxt.forgingSpeedup");
     public static final int BATCH_COMMIT_SIZE = Nxt.getIntProperty("nxt.batchCommitSize", Integer.MAX_VALUE);
+
+    // New ProofOfWork constants
+    public static final BigInteger MAX_WORK_TARGET = isTestnet ? BitcoinJUtils.decodeCompactBits(Long.parseUnsignedLong(Nxt.getStringProperty("nxt.testnetMaxWorkTarget", "1d00ffff"), 16)) : BitcoinJUtils.decodeCompactBits(0x1d00ffffL);
+    public static final int SUBSIDY_HALVING_INTERVAL = 210000;
 
     public static final byte MAX_PHASING_VOTE_TRANSACTIONS = 10;
     public static final byte MAX_PHASING_WHITELIST_SIZE = 10;

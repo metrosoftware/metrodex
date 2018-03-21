@@ -43,31 +43,30 @@ public class SubmitBlockSolution extends APIServlet.APIRequestHandler {
             // auto-fill with data from last blocks
             Block lastBlock = Nxt.getBlockchain().getLastBlock();
             Block lastKeyBlock = Nxt.getBlockchain().getLastKeyBlock();
-            //218-76???
-            ByteBuffer buffer = ByteBuffer.allocate(218 - 76);
-            buffer.order(ByteOrder.LITTLE_ENDIAN);
+            // 218 is full header length; headerTemplatePart2 will be appended by String concatenation
+            ByteBuffer buf = ByteBuffer.allocate(218 - headerTemplatePart2.length() / 2);
+            buf.order(ByteOrder.LITTLE_ENDIAN);
             // version
-            buffer.putShort(KEY_BLOCK_VERSION);
+            buf.putShort(KEY_BLOCK_VERSION);
 
             // timestamp
-            buffer.putInt(Nxt.getEpochTime());
+            buf.putInt(Nxt.getEpochTime());
 
             // template part #1
-            buffer.put(headerTemplate);
+            buf.put(headerTemplate);
             // prev block hashes
             byte[] previousBlockHash = Crypto.sha256().digest(lastBlock.getBytes());
-            buffer.put(previousBlockHash);
-
+            buf.put(previousBlockHash);
             if (lastKeyBlock != null) {
-                buffer.put(Crypto.sha256().digest(lastKeyBlock.getBytes()));
+                buf.put(Crypto.sha256().digest(lastKeyBlock.getBytes()));
             } else {
-                buffer.put(Convert.EMPTY_HASH);
+                buf.put(Convert.EMPTY_HASH);
             }
 
             // template part #2 (Merkle roots, baseTarget, nonce)
-            blockHeader = Convert.toHexString(buffer.array()) + headerTemplatePart2;
+            blockHeader = Convert.toHexString(buf.array()) + headerTemplatePart2;
         }
-        if (blockHeader.length() != 436) {
+        if (blockHeader.length() != 218 * 2) {
             JSONObject response = new JSONObject();
             response.put("error", "Wrong block header length, was " + blockHeader.length() / 2 + " rather than 218 bytes");
             return JSON.prepare(response);

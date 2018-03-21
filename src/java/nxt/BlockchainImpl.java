@@ -49,6 +49,7 @@ final class BlockchainImpl implements Blockchain {
 
     private final ReadWriteUpdateLock lock = new ReadWriteUpdateLock();
     private final AtomicReference<BlockImpl> lastBlock = new AtomicReference<>();
+    private final AtomicReference<BlockImpl> lastKeyBlock = new AtomicReference<>();
 
     @Override
     public void readLock() {
@@ -85,6 +86,9 @@ final class BlockchainImpl implements Blockchain {
 
     void setLastBlock(BlockImpl block) {
         lastBlock.set(block);
+        if (block.isKeyBlock()) {
+            lastKeyBlock.set(block);
+        }
     }
 
     @Override
@@ -110,9 +114,7 @@ final class BlockchainImpl implements Blockchain {
 
     @Override
     public BlockImpl getLastKeyBlock() {
-        // TODO #146
-        int lastKeyLocalHeight = BlockDb.getMaxLocalHeightOfKeyBlocks();
-        return lastKeyLocalHeight > 0 ? BlockDb.findBlockAtLocalHeight(lastKeyLocalHeight, true) : null;
+        return lastKeyBlock.get();
     }
 
     @Override

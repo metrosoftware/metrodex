@@ -25,6 +25,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -249,21 +250,6 @@ final class BlockDb {
         }
     }
 
-    static int getMaxLocalHeightOfKeyBlocks() {
-        try (Connection con = Db.db.getConnection();
-             PreparedStatement pstmt = con.prepareStatement("SELECT MAX(local_height) FROM block WHERE nonce IS NOT NULL")) {
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-            }
-
-        } catch (SQLException e) {
-            throw new RuntimeException(e.toString(), e);
-        }
-        return -1;
-    }
-
     static Set<Long> getBlockGenerators(int startHeight) {
         Set<Long> generators = new HashSet<>();
         try (Connection con = Db.db.getConnection();
@@ -304,6 +290,7 @@ final class BlockDb {
             byte[] posBlocksSummary = rs.getBytes("pos_blocks_summary");
             byte[] stakeMerkleRoot = rs.getBytes("stake_merkle_root");
             BigInteger cumulativeDifficulty = new BigInteger(rs.getBytes("cumulative_difficulty"));
+            BigInteger stakeBatchDifficulty = new BigInteger(rs.getBytes("stake_batch_difficulty"));
             long baseTarget = rs.getLong("base_target");
             long nextBlockId = rs.getLong("next_block_id");
             if (nextBlockId == 0 && !rs.wasNull()) {
@@ -317,7 +304,7 @@ final class BlockDb {
             long id = rs.getLong("id");
             return new BlockImpl(version, timestamp, previousBlockId, previousKeyBlockId, nonce, totalAmountNQT, totalFeeNQT, payloadLength, payloadHash,
                     generatorId, generationSignature, blockSignature, previousBlockHash, previousKeyBlockHash, posBlocksSummary, stakeMerkleRoot,
-                    cumulativeDifficulty, baseTarget, nextBlockId, height, localHeight, id, loadTransactions ? TransactionDb.findBlockTransactions(con, id) : null);
+                    cumulativeDifficulty, stakeBatchDifficulty, baseTarget, nextBlockId, height, localHeight, id, loadTransactions ? TransactionDb.findBlockTransactions(con, id) : null);
         } catch (SQLException e) {
             throw new RuntimeException(e.toString(), e);
         }
@@ -328,16 +315,20 @@ final class BlockDb {
             // TODO stage 2: store also txMerkleRoot, that will be replacing payload_hash
             try (PreparedStatement pstmt = con.prepareStatement("INSERT INTO block (id, version, timestamp, previous_block_id, previous_key_block_id, nonce, "
                     + "previous_key_block_hash, pos_blocks_summary, stake_merkle_root, "
-                    + "total_amount, total_fee, payload_length, previous_block_hash, next_block_id, cumulative_difficulty, "
-                    + "base_target, height, local_height, generation_signature, block_signature, payload_hash, generator_id) "
-                    + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+                    + "total_amount, total_fee, payload_length, previous_block_hash, next_block_id, cumulative_difficulty, stake_batch_difficulty, base_target, "
+                    + "height, local_height, generation_signature, block_signature, payload_hash, generator_id) "
+                    + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
                 int i = 0;
                 pstmt.setLong(++i, block.getId());
                 pstmt.setShort(++i, block.getVersion());
                 pstmt.setInt(++i, block.getTimestamp());
                 DbUtils.setLongZeroToNull(pstmt, ++i, block.getPreviousBlockId());
                 DbUtils.setLongZeroToNull(pstmt, ++i, block.getPreviousKeyBlockId());
-                DbUtils.setLongZeroToNull(pstmt, ++i, block.getNonce());
+                if (block.isKeyBlock()) {
+                    pstmt.setLong(++i, block.getNonce());
+                } else {
+                    pstmt.setNull(++i, Types.BIGINT);
+                }
                 DbUtils.setBytes(pstmt, ++i, block.getPreviousKeyBlockHash());
                 DbUtils.setBytes(pstmt, ++i, block.getPosBlocksSummary());
                 DbUtils.setBytes(pstmt, ++i, block.getStakeMerkleRoot());
@@ -347,11 +338,12 @@ final class BlockDb {
                 pstmt.setBytes(++i, block.getPreviousBlockHash());
                 pstmt.setLong(++i, 0L); // next_block_id set to 0 at first
                 pstmt.setBytes(++i, block.getCumulativeDifficulty().toByteArray());
+                pstmt.setBytes(++i, block.getStakeBatchDifficulty().toByteArray());
                 pstmt.setLong(++i, block.getBaseTarget());
                 pstmt.setInt(++i, block.getHeight());
                 pstmt.setInt(++i, block.getLocalHeight());
                 pstmt.setBytes(++i, block.getGenerationSignature());
-                // TODO block signature NOT NULL, made nullable temporarily for testing
+                // TODO #144 block signature NOT NULL, made nullable temporarily for testing
                 pstmt.setBytes(++i, block.getBlockSignature());
                 pstmt.setBytes(++i, block.getPayloadHash());
                 pstmt.setLong(++i, block.getGeneratorId());

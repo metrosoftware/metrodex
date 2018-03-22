@@ -161,74 +161,6 @@ public final class BlockImpl implements Block {
     }
 
     @Override
-    public ValidationResult validateKeyBlock(Block prevLastKeyBlock) {
-        // txMerkleRoot: for stage 1, just ensure it contains all zeros
-        // TODO #132
-        // if we decide to proceed with adding Coinbase tx to each block,
-        // this would likely by the txid of it in the absence of any other txs in stage 1 in key block
-        if (Convert.byteArrayComparator.compare(txMerkleRoot, Convert.EMPTY_HASH) != 0) {
-            return ValidationResult.TX_MERKLE_ROOT_DISCREPANCY;
-        }
-        // TODO feat #131: verify how posBlocksSummary was calculated
-        // TODO feat #124: verify how stakeMerkleRoot was calculated
-
-        BigInteger target = BitcoinJUtils.decodeCompactBits(baseTarget);
-        if (target.signum() <= 0 || target.compareTo(Consensus.MAX_WORK_TARGET) > 0) {
-            return ValidationResult.DIFFICULTY_TARGET_OUT_OF_RANGE;
-        }
-        // TODO #129
-        BigInteger hash = new BigInteger(Crypto.sha256().digest(bytes()));
-        if (hash.compareTo(target) > 0) {
-            return ValidationResult.INSUFFICIENT_WORK;
-        }
-        if (prevLastKeyBlock != null || localHeight > 1) {
-            long prevDifficultyTarget = prevLastKeyBlock.getBaseTarget();
-            // Is this supposed to be a difficulty transition point?
-            if ((height % Consensus.DIFFICULTY_TRANSITION_INTERVAL) > 0) {
-                // No ... so check the difficulty didn't actually change
-                if (baseTarget != prevDifficultyTarget) {
-                    return ValidationResult.INCORRECT_DIFFICULTY_TRANSITION_HEIGHT;
-                }
-            } else {
-                BlockImpl blockIntervalAgo = BlockDb.findBlockAtLocalHeight(localHeight - Consensus.DIFFICULTY_TRANSITION_INTERVAL, true);
-                // If it's not found, skip this check, we don't have blockchain that far in the past
-                if (blockIntervalAgo != null) {
-                    Logger.logDebugMessage("blockIntervalAgo found=" + Convert.toHexString(blockIntervalAgo.bytes()));
-                    long prevTimestamp = prevLastKeyBlock.getTimestamp();
-                    long oldTimestamp = blockIntervalAgo.getTimestamp();
-                    int timespan = (int) (prevTimestamp - oldTimestamp);
-                    // Limit the adjustment step
-                    if (timespan < Consensus.TARGET_TIMESPAN / 4)
-                        timespan = Consensus.TARGET_TIMESPAN / 4;
-                    if (timespan > Consensus.TARGET_TIMESPAN * 4)
-                        timespan = Consensus.TARGET_TIMESPAN * 4;
-
-                    BigInteger newTarget = BitcoinJUtils.decodeCompactBits(prevDifficultyTarget);
-                    newTarget = newTarget.multiply(BigInteger.valueOf(timespan));
-                    newTarget = newTarget.divide(BigInteger.valueOf(Consensus.TARGET_TIMESPAN));
-
-                    if (newTarget.compareTo(Consensus.MAX_WORK_TARGET) > 0) {
-                        newTarget = Consensus.MAX_WORK_TARGET;
-                    }
-
-                    int accuracyBytes = (int) (baseTarget >>> 24) - 3;
-                    long receivedTargetCompact = baseTarget;
-
-                    // The calculated difficulty is to a higher precision than received, so reduce here.
-                    BigInteger mask = BigInteger.valueOf(0xFFFFFFL).shiftLeft(accuracyBytes * 8);
-                    newTarget = newTarget.and(mask);
-                    long newTargetCompact = BitcoinJUtils.encodeCompactBits(newTarget);
-
-                    if (newTargetCompact != receivedTargetCompact) {
-                        return ValidationResult.INCORRECT_NEW_DIFFICULTY;
-                    }
-                }
-            }
-        }
-        return ValidationResult.OK;
-    }
-
-    @Override
     public int getTimestamp() {
         return timestamp;
     }
@@ -269,6 +201,11 @@ public final class BlockImpl implements Block {
     @Override
     public byte[] getPosBlocksSummary() {
         return posBlocksSummary;
+    }
+
+    @Override
+    public byte[] getTxMerkleRoot() {
+        return txMerkleRoot;
     }
 
     @Override

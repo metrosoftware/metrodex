@@ -23,6 +23,7 @@ import nxt.db.FilteringIterator;
 import nxt.db.FullTextTrigger;
 import nxt.peer.Peer;
 import nxt.peer.Peers;
+import nxt.util.BitcoinJUtils;
 import nxt.util.Convert;
 import nxt.util.JSON;
 import nxt.util.Listener;
@@ -1402,7 +1403,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         }
         /* validation done in ticket 126, so we don't have it here yet
         if (block.isKeyBlock()) {
-            Block.ValidationResult status = block.validateKeyBlock(previousLastKeyBlock);
+            Block.ValidationResult status = validateKeyBlock(block);
             if (status != Block.ValidationResult.OK) {
                 throw new BlockNotAcceptedException("Special keyBlock validation failed: " + status, block);
             }
@@ -1428,6 +1429,78 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         if (!block.verifyBlockSignature()) {
             throw new BlockNotAcceptedException("Block signature verification failed", block);
         }
+    }
+
+    private Block.ValidationResult validateKeyBlock(Block keyblock) {
+        // TODO height must be already set!!
+        if (keyblock.getVersion() != Consensus.getKeyBlockVersion(keyblock.getHeight())) {
+            return Block.ValidationResult.INCORRECT_VERSION;
+        }
+        // txMerkleRoot: for stage 1, just ensure it contains all zeros
+        // TODO #132
+        // if we decide to proceed with adding Coinbase tx to each block,
+        // this would likely by the txid of it in the absence of any other txs in stage 1 in key block
+        if (Convert.byteArrayComparator.compare(keyblock.getTxMerkleRoot(), Convert.EMPTY_HASH) != 0) {
+            return Block.ValidationResult.TX_MERKLE_ROOT_DISCREPANCY;
+        }
+        // TODO feat #131: verify how posBlocksSummary was calculated
+        // TODO feat #124: verify how stakeMerkleRoot was calculated
+
+        BigInteger target = BitcoinJUtils.decodeCompactBits(keyblock.getBaseTarget());
+        if (target.signum() <= 0 || target.compareTo(Consensus.MAX_WORK_TARGET) > 0) {
+            return Block.ValidationResult.DIFFICULTY_TARGET_OUT_OF_RANGE;
+        }
+        // TODO #129
+        BigInteger hash = new BigInteger(Crypto.sha256().digest(keyblock.getBytes()));
+        if (hash.compareTo(target) > 0) {
+            return Block.ValidationResult.INSUFFICIENT_WORK;
+        }
+        Block prevLastKeyBlock = blockchain.getLastKeyBlock();
+        if (prevLastKeyBlock != null || keyblock.getLocalHeight() > 1) {
+            long prevDifficultyTarget = prevLastKeyBlock.getBaseTarget();
+            // Is this supposed to be a difficulty transition point?
+            if ((keyblock.getHeight() % Consensus.DIFFICULTY_TRANSITION_INTERVAL) > 0) {
+                // No ... so check the difficulty didn't actually change
+                if (keyblock.getBaseTarget() != prevDifficultyTarget) {
+                    return Block.ValidationResult.INCORRECT_DIFFICULTY_TRANSITION_HEIGHT;
+                }
+            } else {
+                BlockImpl blockIntervalAgo = BlockDb.findBlockAtLocalHeight(keyblock.getLocalHeight() - Consensus.DIFFICULTY_TRANSITION_INTERVAL, true);
+                // If it's not found, skip this check, we don't have blockchain that far in the past
+                if (blockIntervalAgo != null) {
+                    Logger.logDebugMessage("blockIntervalAgo found=" + Convert.toHexString(blockIntervalAgo.bytes()));
+                    long prevTimestamp = prevLastKeyBlock.getTimestamp();
+                    long oldTimestamp = blockIntervalAgo.getTimestamp();
+                    int timespan = (int) (prevTimestamp - oldTimestamp);
+                    // Limit the adjustment step
+                    if (timespan < Consensus.TARGET_TIMESPAN / 4)
+                        timespan = Consensus.TARGET_TIMESPAN / 4;
+                    if (timespan > Consensus.TARGET_TIMESPAN * 4)
+                        timespan = Consensus.TARGET_TIMESPAN * 4;
+
+                    BigInteger newTarget = BitcoinJUtils.decodeCompactBits(prevDifficultyTarget);
+                    newTarget = newTarget.multiply(BigInteger.valueOf(timespan));
+                    newTarget = newTarget.divide(BigInteger.valueOf(Consensus.TARGET_TIMESPAN));
+
+                    if (newTarget.compareTo(Consensus.MAX_WORK_TARGET) > 0) {
+                        newTarget = Consensus.MAX_WORK_TARGET;
+                    }
+
+                    int accuracyBytes = (int) (keyblock.getBaseTarget() >>> 24) - 3;
+                    long receivedTargetCompact = keyblock.getBaseTarget();
+
+                    // The calculated difficulty is to a higher precision than received, so reduce here.
+                    BigInteger mask = BigInteger.valueOf(0xFFFFFFL).shiftLeft(accuracyBytes * 8);
+                    newTarget = newTarget.and(mask);
+                    long newTargetCompact = BitcoinJUtils.encodeCompactBits(newTarget);
+
+                    if (newTargetCompact != receivedTargetCompact) {
+                        return Block.ValidationResult.INCORRECT_NEW_DIFFICULTY;
+                    }
+                }
+            }
+        }
+        return Block.ValidationResult.OK;
     }
 
     private void validateTransactions(BlockImpl block, BlockImpl previousLastBlock, int curTime, Map<TransactionType, Map<String, Integer>> duplicates,

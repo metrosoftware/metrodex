@@ -23,9 +23,16 @@ import java.util.List;
 
 public interface Block {
 
+    public enum ValidationResult {
+        OK, INSUFFICIENT_WORK, DIFFICULTY_TARGET_OUT_OF_RANGE, INCORRECT_DIFFICULTY_TRANSITION_HEIGHT, INCORRECT_NEW_DIFFICULTY, TX_MERKLE_ROOT_DISCREPANCY,
+        STAKE_MERKLE_ROOT_DISCREPANCY, POS_BLOCKS_SUMMARY_DISCREPANCY
+    }
+
     short getVersion();
 
     boolean isKeyBlock();
+
+    ValidationResult validateKeyBlock(Block prevLastKeyBlock);
 
     long getId();
 

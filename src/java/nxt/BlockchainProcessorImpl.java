@@ -1402,7 +1402,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         }
         /* validation done in ticket 126, so we don't have it here yet
         if (block.isKeyBlock()) {
-            Block.ValidationResult status = block.validateKeyBlock(Crypto.sha256().digest(block.getBytes()), previousLastKeyBlock);
+            Block.ValidationResult status = block.validateKeyBlock(previousLastKeyBlock);
             if (status != Block.ValidationResult.OK) {
                 throw new BlockNotAcceptedException("Special keyBlock validation failed: " + status, block);
             }

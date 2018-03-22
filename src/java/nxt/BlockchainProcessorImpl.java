@@ -1315,7 +1315,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 validatePhasedTransactions(previousLastBlock.getHeight(), validPhasedTransactions, invalidPhasedTransactions, duplicates);
                 validateTransactions(block, previousLastBlock, curTime, duplicates, previousLastBlock.getHeight() >= Constants.LAST_CHECKSUM_BLOCK);
 
-                block.setPrevious(previousLastBlock, blockchain.getPosBlockPreceding(previousLastBlock.getId()), blockchain.getLastKeyBlock());
+                block.setPrevious(previousLastBlock, blockchain.getLastPosBlock(), blockchain.getLastKeyBlock());
                 blockListeners.notify(block, Event.BEFORE_BLOCK_ACCEPT);
                 TransactionProcessorImpl.getInstance().requeueAllUnconfirmedTransactions();
                 Logger.logDebugMessage("adding/storing/accepting new block=" + Convert.toHexString(block.getBytes()));
@@ -1716,6 +1716,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     }
 
     private BlockImpl popLastBlock() {
+        blockchain.forgetLastKeyBlock();
         BlockImpl block = blockchain.getLastBlock();
         if (block.getHeight() == 0) {
             throw new RuntimeException("Cannot pop off genesis block");

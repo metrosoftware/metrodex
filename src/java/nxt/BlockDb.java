@@ -234,6 +234,22 @@ final class BlockDb {
         }
     }
 
+    static BlockImpl findLastKeyBlock(int height) {
+        try (Connection con = Db.db.getConnection();
+             PreparedStatement pstmt = con.prepareStatement("SELECT * FROM block WHERE nonce IS NULL AND next_block_id <> 0 OR next_block_id IS NULL AND height <= ? ORDER BY timestamp DESC LIMIT 1")) {
+            pstmt.setInt(1, height);
+            BlockImpl block = null;
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    block = loadBlock(con, rs);
+                }
+            }
+            return block;
+        } catch (SQLException e) {
+            throw new RuntimeException(e.toString(), e);
+        }
+    }
+
     static BlockImpl findLastBlock(int timestamp) {
         try (Connection con = Db.db.getConnection();
              PreparedStatement pstmt = con.prepareStatement("SELECT * FROM block WHERE timestamp <= ? ORDER BY timestamp DESC LIMIT 1")) {

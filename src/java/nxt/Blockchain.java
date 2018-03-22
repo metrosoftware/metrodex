@@ -47,8 +47,6 @@ public interface Blockchain {
 
     Block getBlock(long blockId);
 
-    Block getPosBlockPreceding(long blockId);
-
     Block getBlockAtHeight(int height);
 
     boolean hasBlock(long blockId);

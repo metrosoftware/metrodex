@@ -91,6 +91,10 @@ final class BlockchainImpl implements Blockchain {
         }
     }
 
+    void forgetLastKeyBlock() {
+        lastKeyBlock.set(null);
+    }
+
     @Override
     public int getHeight() {
         BlockImpl last = lastBlock.get();
@@ -114,6 +118,9 @@ final class BlockchainImpl implements Blockchain {
 
     @Override
     public BlockImpl getLastKeyBlock() {
+        if (lastKeyBlock.get() == null) {
+            lastKeyBlock.set(BlockDb.findLastKeyBlock(lastBlock.get().getHeight()));
+        }
         return lastKeyBlock.get();
     }
 
@@ -133,15 +140,6 @@ final class BlockchainImpl implements Blockchain {
             return block;
         }
         return BlockDb.findBlock(blockId);
-    }
-
-    @Override
-    public BlockImpl getPosBlockPreceding(long blockId) {
-        BlockImpl block = getBlock(blockId);
-        while (block != null && block.isKeyBlock()) {
-            block = getBlock(block.getPreviousBlockId());
-        }
-        return block;
     }
 
     @Override

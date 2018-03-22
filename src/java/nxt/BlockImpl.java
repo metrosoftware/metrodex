@@ -564,23 +564,33 @@ public final class BlockImpl implements Block {
         generatorAccount.addToForgedBalanceNQT(totalFeeNQT - totalBackFees);
     }
 
-    void setPrevious(BlockImpl prevBlock, BlockImpl posBlock, BlockImpl keyBlock) {
-        if (prevBlock != null) {
-            if (prevBlock.getId() != getPreviousBlockId()) {
-                // shouldn't happen as previous id is already verified, but just in case
-                throw new IllegalStateException("Previous block id doesn't match");
-            }
-            this.height = prevBlock.getHeight() + 1;
-            if (isKeyBlock()) {
-                this.localHeight = (keyBlock == null ? 0 : keyBlock.getLocalHeight()) + 1;
-                this.stakeBatchDifficulty = Convert.two64.divide(BigInteger.valueOf(posBlock.baseTarget));
-            } else {
-                this.localHeight = posBlock.getLocalHeight() + 1;
-                this.calculateBaseTarget(prevBlock.isKeyBlock(), posBlock);
-            }
+    void setPrevious(BlockImpl previousBlock) {
+        if (previousBlock == null) {
+            throw new IllegalArgumentException("Should not use for genesis block");
+        }
+        this.height = previousBlock.getHeight() + 1;
+    }
+
+    void setPreceding(BlockImpl posBlock, BlockImpl keyBlock) {
+        BlockImpl prevBlock;
+        if (posBlock == null) {
+            throw new IllegalArgumentException("Previous pos block is null");
+        }
+
+        boolean prevBlockIsKeyBlock = keyBlock != null && keyBlock.getHeight() > posBlock.getHeight();
+        prevBlock = prevBlockIsKeyBlock ? keyBlock : posBlock;
+
+        if (prevBlock.getId() != getPreviousBlockId()) {
+            // shouldn't happen as previous id is already verified, but just in case
+            throw new IllegalStateException("Previous block id doesn't match");
+        }
+
+        if (isKeyBlock()) {
+            this.localHeight = (keyBlock == null ? 0 : keyBlock.getLocalHeight()) + 1;
+            this.stakeBatchDifficulty = Convert.two64.divide(BigInteger.valueOf(posBlock.baseTarget));
         } else {
-            this.height = 0;
-            this.localHeight = 0;
+            this.localHeight = posBlock.getLocalHeight() + 1;
+            this.calculateBaseTarget(prevBlockIsKeyBlock, posBlock);
         }
         // N is height of previous key block; K is size of stakeBatch (number of POS blocks since N)
         // CD[N + K] = CD[N] + sqrt(WD[N]*sum(SD[i])i=N..N+K)
@@ -589,10 +599,8 @@ public final class BlockImpl implements Block {
         BigInteger keyBlockWork;
         if (isKeyBlock()) {
             keyBlockWork = getWork();
-        } else if (keyBlock != null) {
-            keyBlockWork = keyBlock.getWork();
         } else {
-            keyBlockWork = BigInteger.ONE;
+            keyBlockWork = keyBlock != null ? keyBlock.getWork() : BigInteger.ONE;
         }
         BigInteger prevCumulativeDifficulty = keyBlock != null ? keyBlock.cumulativeDifficulty : BigInteger.ZERO;
 

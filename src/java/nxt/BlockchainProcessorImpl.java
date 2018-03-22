@@ -1289,19 +1289,34 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
         blockchain.writeLock();
         try {
-            BlockImpl previousLastBlock = null, previousLastKeyBlock;
+            BlockImpl previousBlock = null;
             try {
                 Db.db.beginTransaction();
-                previousLastBlock = blockchain.getLastBlock();
-                previousLastKeyBlock = blockchain.getLastKeyBlock();
-                if (previousLastKeyBlock != null) {
-                    Logger.logDebugMessage("previousLastKeyBlock=" + Convert.toHexString(previousLastKeyBlock.getBytes()));
-                }
-                validate(block, previousLastBlock, previousLastKeyBlock, curTime);
+                previousBlock = blockchain.getLastBlock();
 
-                long nextHitTime = Generator.getNextHitTime(previousLastBlock.getId(), curTime);
+                if (previousBlock == null) {
+                    throw new IllegalArgumentException("Should not use pushBlock for genesis block");
+                }
+
+                BlockImpl previousKeyBlock = blockchain.getLastKeyBlock();
+                BlockImpl previousPosBlock = blockchain.getLastPosBlock();
+                if (previousKeyBlock != null) {
+                    Logger.logDebugMessage("previousLastKeyBlock=" + Convert.toHexString(previousKeyBlock.getBytes()));
+                }
+
+                if (previousPosBlock.getId() != previousBlock.getId() &&
+                        (previousKeyBlock == null || previousKeyBlock.getId() != previousBlock.getId())) {
+                    throw new IllegalStateException("Last block should be pos or key block");
+                }
+                if (previousBlock.getHeight() != Math.max(previousPosBlock.getHeight(), previousKeyBlock != null ? previousKeyBlock.getHeight() : -1)) {
+                    throw new IllegalStateException("Incorrect last key block");
+                }
+                block.setPrevious(previousBlock);
+                validate(block, previousBlock, previousKeyBlock, curTime);
+
+                long nextHitTime = Generator.getNextHitTime(previousBlock.getId(), curTime);
                 if (!block.isKeyBlock() && nextHitTime > 0 && block.getTimestamp() > nextHitTime + 1) {
-                    String msg = "Rejecting block " + block.getStringId() + " at height " + previousLastBlock.getHeight()
+                    String msg = "Rejecting block " + block.getStringId() + " at height " + previousBlock.getHeight()
                             + " block timestamp " + block.getTimestamp() + " next hit time " + nextHitTime
                             + " current time " + curTime;
                     Logger.logDebugMessage(msg);
@@ -1312,10 +1327,10 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 Map<TransactionType, Map<String, Integer>> duplicates = new HashMap<>();
                 List<TransactionImpl> validPhasedTransactions = new ArrayList<>();
                 List<TransactionImpl> invalidPhasedTransactions = new ArrayList<>();
-                validatePhasedTransactions(previousLastBlock.getHeight(), validPhasedTransactions, invalidPhasedTransactions, duplicates);
-                validateTransactions(block, previousLastBlock, curTime, duplicates, previousLastBlock.getHeight() >= Constants.LAST_CHECKSUM_BLOCK);
+                validatePhasedTransactions(previousBlock.getHeight(), validPhasedTransactions, invalidPhasedTransactions, duplicates);
+                validateTransactions(block, previousBlock, curTime, duplicates, previousBlock.getHeight() >= Constants.LAST_CHECKSUM_BLOCK);
 
-                block.setPrevious(previousLastBlock, blockchain.getLastPosBlock(), blockchain.getLastKeyBlock());
+                block.setPreceding(previousPosBlock, previousKeyBlock);
                 blockListeners.notify(block, Event.BEFORE_BLOCK_ACCEPT);
                 TransactionProcessorImpl.getInstance().requeueAllUnconfirmedTransactions();
                 Logger.logDebugMessage("adding/storing/accepting new block=" + Convert.toHexString(block.getBytes()));
@@ -1325,8 +1340,8 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 Db.db.commitTransaction();
             } catch (Exception e) {
                 Db.db.rollbackTransaction();
-                popOffTo(previousLastBlock);
-                blockchain.setLastBlock(previousLastBlock);
+                popOffTo(previousBlock);
+                blockchain.setLastBlock(previousBlock);
                 throw e;
             } finally {
                 Db.db.endTransaction();

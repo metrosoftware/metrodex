@@ -41,7 +41,7 @@ final class ConfigHandler {
             "# See conf/nxt-default.properties for a full list\n#\n\n";
     private static final String JAR = "nxt.jar";
     private static final String SERVER = "http://localhost";
-    private static final int[] PORTS = { 6876, 7876 };   // try to detect both testnet and real servers
+    private static final int[] PORTS = { 6886, 7886 };   // try to detect both testnet and real servers
     private static final String VAR_PREFIX = "nxt.installer.";
 
     public static final String FILE_PATH = "conf/nxt-installer.properties";

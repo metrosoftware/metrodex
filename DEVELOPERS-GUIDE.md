@@ -13,9 +13,9 @@
 ## Tools and Tips ##
 ### Usable URLs ###
 
-  - **API** - http://localhost:7876/test
-  - **DB Interface** - http://localhost:7876/dbshell
-  - **Java Class Browser** - http://localhost:7876/doc
+  - **API** - http://localhost:7886/test
+  - **DB Interface** - http://localhost:7886/dbshell
+  - **Java Class Browser** - http://localhost:7886/doc
 
 ### Database ###
   
@@ -57,7 +57,7 @@
 ### Testing ###
 
   - [to be filled by Lior, kushti]
-  - all API calls can be tested manually from the auto-generated http://localhost:7876/test page
+  - all API calls can be tested manually from the auto-generated http://localhost:7886/test page
   - many tests need blocks to be generated, see the examples how to fake the forging process
   - write your tests against the http API or the public java API, which are relatively stable
   

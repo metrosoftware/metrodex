@@ -39,7 +39,7 @@ download the full blockchain.
 
 The add-on downloadJPLSnapshot API should be available under:
 
-http://localhost:7876/test?requestTag=ADDONS
+http://localhost:7886/test?requestTag=ADDONS
 
 
 Below is the documentation for how to use this API:

@@ -137,6 +137,13 @@ public final class Convert {
         return bigInteger.longValue();
     }
 
+    public static BigInteger fullHashToBigInteger(byte[] hash) {
+        if (hash == null || hash.length < 8) {
+            throw new IllegalArgumentException("Invalid hash: " + Arrays.toString(hash));
+        }
+        return new BigInteger(1, new byte[] {hash[7], hash[6], hash[5], hash[4], hash[3], hash[2], hash[1], hash[0]});
+    }
+
     public static byte[] generationSignature(byte[] previousGenerationSignature, byte[] generatorPublicKey) {
         MessageDigest digest = Crypto.sha256();
         digest.update(previousGenerationSignature);

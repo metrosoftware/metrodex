@@ -236,7 +236,7 @@ final class BlockDb {
 
     static BlockImpl findLastKeyBlock(int height) {
         try (Connection con = Db.db.getConnection();
-             PreparedStatement pstmt = con.prepareStatement("SELECT * FROM block WHERE nonce IS NULL AND next_block_id <> 0 OR next_block_id IS NULL AND height <= ? ORDER BY timestamp DESC LIMIT 1")) {
+             PreparedStatement pstmt = con.prepareStatement("SELECT * FROM block WHERE nonce IS NOT NULL AND (next_block_id <> 0 OR next_block_id IS NULL) AND height <= ? ORDER BY timestamp DESC LIMIT 1")) {
             pstmt.setInt(1, height);
             BlockImpl block = null;
             try (ResultSet rs = pstmt.executeQuery()) {

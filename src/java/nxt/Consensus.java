@@ -1,12 +1,14 @@
 package nxt;
 
+import nxt.crypto.HashFunction;
 import nxt.util.BitcoinJUtils;
 
 import java.math.BigInteger;
 
 public class Consensus {
+    public static final HashFunction HASH_FUNCTION = HashFunction.SHA3;
+
     public static final short GENESIS_BLOCK_VERSION = 0;
-    public static final short KEY_BLOCK_VERSION = (short)0x8001;
 
     public static final int DIFFICULTY_TRANSITION_INTERVAL = 2016;
     public final static int TARGET_TIMESPAN = 1209600;

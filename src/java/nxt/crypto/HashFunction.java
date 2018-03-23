@@ -16,6 +16,8 @@
 
 package nxt.crypto;
 
+import java.security.MessageDigest;
+
 public enum HashFunction {
 
     /**
@@ -25,6 +27,11 @@ public enum HashFunction {
         public byte[] hash(byte[] input) {
             return Crypto.sha256().digest(input);
         }
+
+        @Override
+        public MessageDigest messageDigest() {
+            return Crypto.sha256();
+        }
     },
     /**
      * Use Bouncy Castle implementation of SHA3 (code 3). As of Bouncy Castle 1.53, this has been renamed to Keccak.
@@ -32,6 +39,11 @@ public enum HashFunction {
     SHA3((byte)3) {
         public byte[] hash(byte[] input) {
             return Crypto.sha3().digest(input);
+        }
+
+        @Override
+        public MessageDigest messageDigest() {
+            return Crypto.sha3();
         }
     },
     /**
@@ -53,6 +65,11 @@ public enum HashFunction {
     RIPEMD160((byte)6) {
         public byte[] hash(byte[] input) {
             return Crypto.ripemd160().digest(input);
+        }
+
+        @Override
+        public MessageDigest messageDigest() {
+            return Crypto.ripemd160();
         }
     },
     RIPEMD160_SHA256((byte)62) {
@@ -88,4 +105,8 @@ public enum HashFunction {
     }
 
     public abstract byte[] hash(byte[] input);
+
+    public MessageDigest messageDigest() {
+        throw new IllegalArgumentException(String.format("messageDigest() not supported for algorithm %d", id));
+    }
 }

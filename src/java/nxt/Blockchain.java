@@ -73,7 +73,7 @@ public interface Blockchain {
 
     Block getECBlock(int timestamp);
 
-    Block processBlockHeader(byte[] headerData) throws NxtException.NotValidException;
+    Block processBlockHeader(byte[] headerData);
 
     Transaction getTransaction(long transactionId);
 

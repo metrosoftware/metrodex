@@ -488,6 +488,13 @@ final class TransactionImpl implements Transaction {
         return result;
     }
 
+    /**
+     * Since commit https://bitbucket.org/JeanLucPicard/nxt/src/3968e80f7e5119bdc94f09fa608d9b856797736b/src/java/nxt/TransactionImpl.java?fileviewer=file-view-default
+     * "use sha256(signature) instead of plain signature for full hash calculation" 2014-04-22
+     * the code was changed to use signatureHash = Crypto.sha256().digest(signature);
+     *
+     * @return long represented by 8 lowest bytes of transaction hash
+     */
     @Override
     public long getId() {
         if (id == 0) {
@@ -496,10 +503,10 @@ final class TransactionImpl implements Transaction {
             }
             byte[] data = zeroSignature(getBytes());
             byte[] signatureHash = Crypto.sha256().digest(signature);
-            MessageDigest digest = Crypto.sha256();
+            MessageDigest digest = Consensus.HASH_FUNCTION.messageDigest();
             digest.update(data);
             fullHash = digest.digest(signatureHash);
-            BigInteger bigInteger = new BigInteger(1, new byte[] {fullHash[7], fullHash[6], fullHash[5], fullHash[4], fullHash[3], fullHash[2], fullHash[1], fullHash[0]});
+            BigInteger bigInteger = Convert.fullHashToBigInteger(fullHash);
             id = bigInteger.longValue();
             stringId = bigInteger.toString();
         }

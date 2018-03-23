@@ -372,14 +372,14 @@ final class BlockchainImpl implements Blockchain {
     }
 
     @Override
-    public Block processBlockHeader(byte[] headerData) throws NxtException.NotValidException {
+    public Block processBlockHeader(byte[] headerData) {
         ByteBuffer header = ByteBuffer.wrap(headerData);
         header.order(ByteOrder.LITTLE_ENDIAN);
         short version = header.getShort();
         final boolean isKeyBlock = BlockImpl.isKeyBlockVersion(version);
         int timestamp = header.getInt();
         long totalFeeNQT = header.getLong();
-        final int hashSize = Convert.EMPTY_HASH.length;
+        final int hashSize = Convert.HASH_SIZE;
         // in stage 2, we will have txMerkleRoot rather than payload_hash in Slot #3:
         byte[] txMerkleRoot = new byte[hashSize];
         header.get(txMerkleRoot);

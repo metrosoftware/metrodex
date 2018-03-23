@@ -16,9 +16,9 @@
 
 package nxt.http;
 
+import nxt.Consensus;
 import nxt.NxtException;
 import nxt.Transaction;
-import nxt.crypto.Crypto;
 import nxt.util.Convert;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONStreamAware;
@@ -49,7 +49,7 @@ public final class CalculateFullHash extends APIServlet.APIRequestHandler {
         JSONObject response = new JSONObject();
         try {
             Transaction transaction = ParameterParser.parseTransaction(unsignedTransactionJSONString, unsignedBytesString, null).build();
-            MessageDigest digest = Crypto.sha256();
+            MessageDigest digest = Consensus.HASH_FUNCTION.messageDigest();
             digest.update(transaction.getUnsignedBytes());
             byte[] fullHash = digest.digest(Convert.parseHexString(signatureHashString));
             response.put("fullHash", Convert.toHexString(fullHash));

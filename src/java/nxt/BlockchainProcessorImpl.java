@@ -62,6 +62,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static nxt.Consensus.HASH_FUNCTION;
 import static nxt.Consensus.getKeyBlockVersion;
 import static nxt.Consensus.getPosBlockVersion;
 import static nxt.Consensus.getTransactionVersion;
@@ -1400,7 +1401,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             throw new BlockNotAcceptedException("Block timestamp " + block.getTimestamp() + " is before previous block timestamp "
                     + previousLastBlock.getTimestamp(), block);
         }
-        if (!Arrays.equals(Crypto.sha256().digest(previousLastBlock.bytes()), block.getPreviousBlockHash())) {
+        if (!Arrays.equals(HASH_FUNCTION.hash(previousLastBlock.bytes()), block.getPreviousBlockHash())) {
             throw new BlockNotAcceptedException("Previous block hash doesn't match", block);
         }
         if (block.isKeyBlock()) {
@@ -1409,7 +1410,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                     throw new BlockNotAcceptedException("Previous keyBlock hash for the 1st ever keyBlock needs to have 32 zeros", block);
                 }
             } else {
-                if (!Arrays.equals(Crypto.sha256().digest(previousLastKeyBlock.bytes()), block.getPreviousKeyBlockHash())) {
+                if (!Arrays.equals(HASH_FUNCTION.hash(previousLastKeyBlock.bytes()), block.getPreviousKeyBlockHash())) {
                     throw new BlockNotAcceptedException("Previous keyBlock hash doesn't match", block);
                 }
             }
@@ -1466,7 +1467,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             return Block.ValidationResult.DIFFICULTY_TARGET_OUT_OF_RANGE;
         }
         // TODO #129
-        BigInteger hash = new BigInteger(Crypto.sha256().digest(keyblock.getBytes()));
+        BigInteger hash = new BigInteger(HASH_FUNCTION.hash(keyblock.getBytes()));
         if (hash.compareTo(target) > 0) {
             return Block.ValidationResult.INSUFFICIENT_WORK;
         }
@@ -1869,7 +1870,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
         final byte[] publicKey = Crypto.getPublicKey(secretPhrase);
         final byte[] generationSignature = Convert.generationSignature(previousBlock.getGenerationSignature(), publicKey);
-        final byte[] previousBlockHash = Crypto.sha256().digest(previousBlock.bytes());
+        final byte[] previousBlockHash = HASH_FUNCTION.hash(previousBlock.bytes());
 
         BlockImpl block = new BlockImpl(getPosBlockVersion(previousBlock.getHeight()), blockTimestamp, previousBlock.getId(), 0, 0, totalAmountNQT, totalFeeNQT, payloadLength,
                 payloadHash, publicKey, generationSignature, previousBlockHash, null, null, null, blockTransactions, secretPhrase);

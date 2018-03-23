@@ -80,7 +80,7 @@ public final class BlockImpl implements Block {
                 new byte[HASH_SIZE], new byte[HASH_SIZE], new byte[HASH_SIZE], new byte[HASH_SIZE], Collections.emptyList());
         this.height = 0;
         this.localHeight = 0;
-        this.stakeBatchDifficulty = BigInteger.ZERO;
+        this.stakeBatchDifficulty = Convert.two64.divide(BigInteger.valueOf(Constants.INITIAL_BASE_TARGET));
     }
 
     /**
@@ -305,8 +305,8 @@ public final class BlockImpl implements Block {
             if (!isKeyBlock() && blockSignature == null) {
                 throw new IllegalStateException("Block is not signed yet");
             }
-            byte[] hash = Crypto.sha256().digest(bytes());
-            BigInteger bigInteger = new BigInteger(1, new byte[] {hash[7], hash[6], hash[5], hash[4], hash[3], hash[2], hash[1], hash[0]});
+            byte[] hash = Consensus.HASH_FUNCTION.hash(bytes());
+            BigInteger bigInteger = Convert.fullHashToBigInteger(hash);
             id = bigInteger.longValue();
             stringId = bigInteger.toString();
         }

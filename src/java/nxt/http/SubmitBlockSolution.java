@@ -2,20 +2,18 @@ package nxt.http;
 
 import nxt.Block;
 import nxt.BlockImpl;
+import nxt.Consensus;
 import nxt.Nxt;
 import nxt.NxtException;
-import nxt.crypto.Crypto;
 import nxt.util.Convert;
 import nxt.util.JSON;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONStreamAware;
 
 import javax.servlet.http.HttpServletRequest;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import static nxt.Consensus.KEY_BLOCK_VERSION;
 import static nxt.http.JSONResponses.REPLACEMENT_BLOCK_IGNORED;
 
 public class SubmitBlockSolution extends APIServlet.APIRequestHandler {
@@ -49,7 +47,7 @@ public class SubmitBlockSolution extends APIServlet.APIRequestHandler {
             ByteBuffer buffer = ByteBuffer.allocate(keyBlockHeaderSize - headerTemplatePart2.length() / 2);
             buffer.order(ByteOrder.LITTLE_ENDIAN);
             // version
-            buffer.putShort(KEY_BLOCK_VERSION);
+            buffer.putShort(Consensus.getKeyBlockVersion(lastBlock.getHeight()));
 
             // timestamp
             buffer.putInt(Nxt.getEpochTime());
@@ -57,10 +55,10 @@ public class SubmitBlockSolution extends APIServlet.APIRequestHandler {
             // template part #1
             buffer.put(headerTemplate);
             // prev block hashes
-            byte[] previousBlockHash = Crypto.sha256().digest(lastBlock.getBytes());
+            byte[] previousBlockHash = Consensus.HASH_FUNCTION.hash(lastBlock.getBytes());
             buffer.put(previousBlockHash);
             if (lastKeyBlock != null) {
-                buffer.put(Crypto.sha256().digest(lastKeyBlock.getBytes()));
+                buffer.put(Consensus.HASH_FUNCTION.hash(lastKeyBlock.getBytes()));
             } else {
                 buffer.put(Convert.EMPTY_HASH);
             }
@@ -70,7 +68,11 @@ public class SubmitBlockSolution extends APIServlet.APIRequestHandler {
         }
         if (blockHeader.length() != keyBlockHeaderSize * 2) {
             JSONObject response = new JSONObject();
-            response.put("error", "Wrong block header length, was " + blockHeader.length() / 2 + " rather than " + keyBlockHeaderSize + " bytes");
+            if (blockHeader.length() % 2 == 0) {
+                response.put("error", "Wrong block header length, was " + blockHeader.length() / 2 + " rather than " + keyBlockHeaderSize + " bytes");
+            } else {
+                response.put("error", "Incorrect hex string length, was " + blockHeader.length() + " but must be even");
+            }
             return JSON.prepare(response);
         }
         byte[] headerBytes = Convert.parseHexString(blockHeader.toLowerCase());
@@ -93,7 +95,7 @@ public class SubmitBlockSolution extends APIServlet.APIRequestHandler {
     0000000000000000000000000000000000000000000000000000000000000000
     F39F29090a00000000000000
     in one line:
-    0180694782010000000000000000e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8551259ec21d31a30898d7cd1609f80d9668b4778e3d97e941044b39f0c44d2e51be437cbb0b9216e2df0fa0b5b97b5697d25f7d642d151717678a32a69ca12cdc9259c7fed3feeb0b860a7db2145a9b5921f8409f310a14780c1c7ccf23c44e1e400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000F39F29090a00000000000000
+    018026858F010000000000000000e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8551259ec21d31a30898d7cd1609f80d9668b4778e3d97e941044b39f0c44d2e51b5f7f66720a4d19c9478306f8fdb2f0860afe373fb91e9661344cfc0d133fed905f7f66720a4d19c9478306f8fdb2f0860afe373fb91e9661344cfc0d133fed9000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000F39F29090a00000000000000
 
      */
 

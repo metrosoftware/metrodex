@@ -433,21 +433,6 @@ public class AccountLedger {
         // TYPE_ACCOUNT_CONTROL
             ACCOUNT_CONTROL_EFFECTIVE_BALANCE_LEASING(32, true),
             ACCOUNT_CONTROL_PHASING_ONLY(55, true),
-        // TYPE_CURRENCY
-            CURRENCY_DELETION(33, true),
-            CURRENCY_DISTRIBUTION(34, true),
-            CURRENCY_EXCHANGE(35, true),
-            CURRENCY_EXCHANGE_BUY(36, true),
-            CURRENCY_EXCHANGE_SELL(37, true),
-            CURRENCY_ISSUANCE(38, true),
-            CURRENCY_MINTING(39, true),
-            CURRENCY_OFFER_EXPIRED(40, true),
-            CURRENCY_OFFER_REPLACED(41, true),
-            CURRENCY_PUBLISH_EXCHANGE_OFFER(42, true),
-            CURRENCY_RESERVE_CLAIM(43, true),
-            CURRENCY_RESERVE_INCREASE(44, true),
-            CURRENCY_TRANSFER(45, true),
-            CURRENCY_UNDO_CROWDFUNDING(46, true),
         // TYPE_DATA
             TAGGED_DATA_UPLOAD(47, true),
             TAGGED_DATA_EXTEND(48, true),
@@ -528,9 +513,7 @@ public class AccountLedger {
         UNCONFIRMED_NXT_BALANCE(1, true),
         NXT_BALANCE(2, false),
         UNCONFIRMED_ASSET_BALANCE(3, true),
-        ASSET_BALANCE(4, false),
-        UNCONFIRMED_CURRENCY_BALANCE(5, true),
-        CURRENCY_BALANCE(6, false);
+        ASSET_BALANCE(4, false);
 
         /** Holding code mapping */
         private static final Map<Integer, LedgerHolding> holdingMap = new HashMap<>();

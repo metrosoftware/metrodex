@@ -49,7 +49,7 @@ import javax.servlet.http.HttpServletRequest;
  *     </tr>
  *     <tr>
  *       <td>includeHoldingInfo</td>
- *       <td>Specify TRUE to include the corresponding asset or currency info (name, decimals) with each ledger entry.  The default is FALSE.</td>
+ *       <td>Specify TRUE to include the corresponding asset info (name, decimals) with each ledger entry.  The default is FALSE.</td>
  *     </tr>
  *   </tbody>
  * </table>
@@ -99,11 +99,11 @@ import javax.servlet.http.HttpServletRequest;
  *     </tr>
  *     <tr>
  *       <td>holding</td>
- *       <td>The item identifier for an asset or currency balance.</td>
+ *       <td>The item identifier for an asset balance.</td>
  *     </tr>
  *     <tr>
  *       <td>holdingType</td>
- *       <td>The item being changed (account balance, asset balance or currency balance).</td>
+ *       <td>The item being changed (account balance, asset balance balance).</td>
  *     </tr>
  *     <tr>
  *       <td>isTransactionEvent</td>
@@ -143,20 +143,12 @@ import javax.servlet.http.HttpServletRequest;
  *       <td>Change in the asset balance.  The asset identifier is the 'holding'.</td>
  *     </tr>
  *     <tr>
- *       <td>CURRENCY_BALANCE</td>
- *       <td>Change in the currency balance.  The currency identifier is the 'holding'.</td>
- *     </tr>
- *     <tr>
  *       <td>NXT_BALANCE</td>
  *       <td>Change in the NXT balance for the account.  There is no 'holding'.</td>
  *     </tr>
  *     <tr>
  *       <td>UNCONFIRMED_ASSET_BALANCE</td>
  *       <td>Change in the unconfirmed asset balance.  The asset identifier is the 'holding'.</td>
- *     </tr>
- *     <tr>
- *       <td>UNCONFIRMED_CURRENCY_BALANCE</td>
- *       <td>Change in the unconfirmed currency balance.  The currency identifier is the 'holding'.</td>
  *     </tr>
  *     <tr>
  *       <td>UNCONFIRMED_NXT_BALANCE</td>

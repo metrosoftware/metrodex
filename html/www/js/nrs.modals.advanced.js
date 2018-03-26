@@ -212,17 +212,6 @@ var NRS = (function(NRS, $, undefined) {
 		$elems.find('input').prop("disabled", true);
 
 		context = {
-			labelText: "Currency Units",
-			labelI18n: "currency_units",
-			helpI18n: "approve_transaction_amount_help",
-			inputName: "phasingQuorumQNTf",
-			addonText: "Units",
-			addonI18n: "units"
-		};
-		$elems = NRS.initModalUIElement($modal, '.approve_transaction_currency_units', 'simple_input_with_addon_modal_ui_element', context);
-		$elems.find('input').prop("disabled", true);
-
-		context = {
 			labelText: "Accounts (Whitelist)",
 			labelI18n: "accounts_whitelist",
 			helpI18n: "approve_transaction_accounts_requested_help",
@@ -248,9 +237,6 @@ var NRS = (function(NRS, $, undefined) {
 			if ($mbGroup.hasClass("approve_mb_asset")) {
 				$mbGroup.find('option[value="1"], option[value="3"]').remove();
 			}
-			if ($mbGroup.hasClass("approve_mb_currency")) {
-				$mbGroup.find('option[value="1"], option[value="2"]').remove();
-			}
 		});
 
 		context = {
@@ -275,13 +261,6 @@ var NRS = (function(NRS, $, undefined) {
 		$elems.find('input').prop("disabled", true);
 		$elems.hide();
 
-		context['inputName'] = 'phasingMinBalanceQNTf';
-		context['addonText'] = 'Units';
-		context['addonI18n'] = 'units';
-		$elems = NRS.initModalUIElement($modal, '.approve_min_balance_currency_units', 'simple_input_with_addon_modal_ui_element', context);
-		$elems.find('input').prop("disabled", true);
-		$elems.hide();
-
 		context = {
 			labelText: "Asset",
 			labelI18n: "asset",
@@ -294,19 +273,6 @@ var NRS = (function(NRS, $, undefined) {
 		$elems = NRS.initModalUIElement($modal, '.approve_holding_asset_optional', 'add_asset_modal_ui_element', context);
 		$elems.find('input').prop("disabled", true);
 		$elems.hide();
-
-		context = {
-			labelText: "Currency",
-			labelI18n: "currency",
-			inputCodeName: "phasingHoldingCurrencyCode",
-			inputIdName: "phasingHolding",
-			inputDecimalsName: "phasingHoldingDecimals",
-			helpI18n: "add_currency_modal_help"
-		};
-		$elems = NRS.initModalUIElement($modal, '.approve_holding_currency', 'add_currency_modal_ui_element', context);
-		$elems.find('input').prop("disabled", true);
-		$elems = NRS.initModalUIElement($modal, '.approve_holding_currency_optional', 'add_currency_modal_ui_element', context);
-		$elems.find('input').prop("disabled", true);
 
 		var selectName = $modal.attr('id') == "hash_modal" ? "hashAlgorithm" : "phasingHashedSecretAlgorithm";
 		context = {

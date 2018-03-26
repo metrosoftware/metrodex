@@ -58,16 +58,6 @@ var NRS = (function(NRS, $) {
 		var $elems = NRS.initModalUIElement($modal, '.phasing_only_asset_quantity', 'simple_input_with_addon_modal_ui_element', context);
 		$elems.find('input').prop("disabled", true);
 
-		var context = {
-			labelText: "Currency Units",
-			labelI18n: "currency_units",
-			helpI18n: "approve_transaction_amount_help",
-			inputName: "controlQuorumQNTf",
-			addonText: "Units",
-			addonI18n: "units"
-		}
-		var $elems = NRS.initModalUIElement($modal, '.phasing_only_currency_units', 'simple_input_with_addon_modal_ui_element', context);
-		$elems.find('input').prop("disabled", true);
 
 		var context = {
 			labelText: "Accounts (Whitelist)",
@@ -95,9 +85,6 @@ var NRS = (function(NRS, $) {
 			if ($mbGroup.hasClass("approve_mb_asset")) {
 				$mbGroup.find('option[value="1"], option[value="3"]').remove();
 			}
-			if ($mbGroup.hasClass("approve_mb_currency")) {
-				$mbGroup.find('option[value="1"], option[value="2"]').remove();
-			}
 		});
 
 		var context = {
@@ -122,13 +109,6 @@ var NRS = (function(NRS, $) {
 		$elems.find('input').prop("disabled", true);
 		$elems.hide();
 
-		context['inputName'] = 'controlMinBalanceQNTf';
-		context['addonText'] = 'Units';
-		context['addonI18n'] = 'units';
-		var $elems = NRS.initModalUIElement($modal, '.phasing_only_min_balance_currency_units', 'simple_input_with_addon_modal_ui_element', context);
-		$elems.find('input').prop("disabled", true);
-		$elems.hide();
-
 		context = {
 			labelText: "Asset",
 			labelI18n: "asset",
@@ -139,20 +119,6 @@ var NRS = (function(NRS, $) {
 		$elems = NRS.initModalUIElement($modal, '.phasing_only_holding_asset', 'add_asset_modal_ui_element', context);
 		$elems.find('input').prop("disabled", true);
 		$elems = NRS.initModalUIElement($modal, '.phasing_only_holding_asset_optional', 'add_asset_modal_ui_element', context);
-		$elems.find('input').prop("disabled", true);
-		$elems.hide();
-
-		context = {
-			labelText: "Currency",
-			labelI18n: "currency",
-			inputCodeName: "controlHoldingCurrencyCode",
-			inputIdName: "controlHolding",
-			inputDecimalsName: "controlHoldingDecimals",
-			helpI18n: "add_currency_modal_help"
-		}
-		$elems = NRS.initModalUIElement($modal, '.phasing_only_holding_currency', 'add_currency_modal_ui_element', context);
-		$elems.find('input').prop("disabled", true);
-		$elems = NRS.initModalUIElement($modal, '.phasing_only_holding_currency_optional', 'add_currency_modal_ui_element', context);
 		$elems.find('input').prop("disabled", true);
 		$elems.hide();
 

@@ -61,7 +61,7 @@ var NRS = (function(NRS) {
     };
 
     var prunableAttachments = [
-        "PrunablePlainMessage", "PrunableEncryptedMessage", "UnencryptedPrunableEncryptedMessage", "ShufflingProcessing", "TaggedDataUpload"
+        "PrunablePlainMessage", "PrunableEncryptedMessage", "UnencryptedPrunableEncryptedMessage", "ShufflingProcessing"
     ];
 
     function normalizePrunableAttachment(transaction) {

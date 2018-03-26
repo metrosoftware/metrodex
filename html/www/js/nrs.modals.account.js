@@ -261,60 +261,6 @@ var NRS = (function(NRS, $) {
 		});
 	};
 
-	NRS.userInfoModal.marketplace = function() {
-		NRS.sendRequest("getDGSGoods", {
-			"seller": NRS.userInfoModal.user,
-			"firstIndex": 0,
-			"lastIndex": 100
-		}, function(response) {
-			var rows = "";
-			var quantityDecimals = NRS.getNumberOfDecimals(response.goods, "quantity", function(val) {
-				return NRS.format(val.quantity);
-			});
-			var priceDecimals = NRS.getNumberOfDecimals(response.goods, "priceNQT", function(val) {
-				return NRS.formatAmount(val.priceNQT);
-			});
-			if (response.goods && response.goods.length) {
-				for (var i = 0; i < response.goods.length; i++) {
-					var good = response.goods[i];
-					if (good.name.length > 150) {
-						good.name = good.name.substring(0, 150) + "...";
-					}
-					rows += "<tr><td><a href='#' data-goto-goods='" + NRS.escapeRespStr(good.goods) + "' data-seller='" + NRS.escapeRespStr(NRS.userInfoModal.user) + "'>" + NRS.escapeRespStr(good.name) + "</a></td><td class='numeric'>" + NRS.formatAmount(good.priceNQT, false, false, priceDecimals) + " " + NRS.constants.COIN_SYMBOL + "</td><td class='numeric'>" + NRS.format(good.quantity, false, quantityDecimals) + "</td></tr>";
-				}
-			}
-            var infoModalMarketplaceTable = $("#user_info_modal_marketplace_table");
-            infoModalMarketplaceTable.find("tbody").empty().append(rows);
-			NRS.dataLoadFinished(infoModalMarketplaceTable);
-		});
-	};
-	
-	NRS.userInfoModal.currencies = function() {
-		NRS.sendRequest("getAccountCurrencies+", {
-			"account": NRS.userInfoModal.user,
-			"includeCurrencyInfo": true
-		}, function(response) {
-			var rows = "";
-			var unitsDecimals = NRS.getNumberOfDecimals(response.accountCurrencies, "unconfirmedUnits", function(val) {
-				return NRS.formatQuantity(val.unconfirmedUnits, val.decimals);
-			});
-			if (response.accountCurrencies && response.accountCurrencies.length) {
-				for (var i = 0; i < response.accountCurrencies.length; i++) {
-					var currency = response.accountCurrencies[i];
-					var code = NRS.escapeRespStr(currency.code);
-					rows += "<tr>" +
-						"<td>" + NRS.getTransactionLink(NRS.escapeRespStr(currency.currency), code) + "</td>" +
-						"<td>" + currency.name + "</td>" +
-						"<td class='numeric'>" + NRS.formatQuantity(currency.unconfirmedUnits, currency.decimals, false, unitsDecimals) + "</td>" +
-					"</tr>";
-				}
-			}
-            var infoModalCurrenciesTable = $("#user_info_modal_currencies_table");
-            infoModalCurrenciesTable.find("tbody").empty().append(rows);
-			NRS.dataLoadFinished(infoModalCurrenciesTable);
-		});
-	};
-
 	NRS.userInfoModal.assets = function() {
 		NRS.sendRequest("getAccount", {
 			"account": NRS.userInfoModal.user,

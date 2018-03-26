@@ -34,7 +34,6 @@ class ShufflingUtil {
     static final long defaultShufflingAmount = 1500000000;
     static final long defaultHoldingShufflingAmount = 40000;
     static final long shufflingAsset = 3320741880585366286L;
-    static final long shufflingCurrency = -5643814336689018857L;
 
     static JSONObject create(Tester creator) {
         return create(creator, 4);
@@ -62,21 +61,6 @@ class ShufflingUtil {
                 param("registrationPeriod", 10).
                 param("holding", Long.toUnsignedString(shufflingAsset)).
                 param("holdingType", String.valueOf(HoldingType.ASSET.getCode())).
-                build();
-        JSONObject response = apiCall.invoke();
-        Logger.logMessage("shufflingCreateResponse: " + response.toJSONString());
-        return response;
-    }
-
-    static JSONObject createCurrencyShuffling(Tester creator) {
-        APICall apiCall = new APICall.Builder("shufflingCreate").
-                secretPhrase(creator.getSecretPhrase()).
-                feeNQT(Constants.ONE_NXT).
-                param("amount", String.valueOf(defaultHoldingShufflingAmount)).
-                param("participantCount", "4").
-                param("registrationPeriod", 10).
-                param("holding", Long.toUnsignedString(shufflingCurrency)).
-                param("holdingType", String.valueOf(HoldingType.CURRENCY.getCode())).
                 build();
         JSONObject response = apiCall.invoke();
         Logger.logMessage("shufflingCreateResponse: " + response.toJSONString());

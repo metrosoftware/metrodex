@@ -60,17 +60,12 @@ var NRS = (function(NRS, $) {
 	};
 
 	NRS.setup.messages = function() {
-		NRS.addTreeviewSidebarMenuItem({
+		NRS.addSimpleSidebarMenuItem({
 			"id": 'sidebar_messages',
-			"titleHTML": '<i class="fa fa-envelope"></i> <span data-i18n="messages">Messages</span>',
-			"page": 'my_messages',
+			"titleHTML": '<i class="fa fa-comment"></i> <span data-i18n="chat">Chat</span>',
+			"page": 'messages',
 			"desiredPosition": 90,
 			"depends": {tags: [NRS.constants.API_TAGS.MESSAGES]}
-		});
-		NRS.appendMenuItemToTSMenuItem('sidebar_messages', {
-			"titleHTML": '<i class="fa fa-comment"></i> <span data-i18n="chat">Chat</span>',
-			"type": 'PAGE',
-			"page": 'messages'
 		});
 	};
 
@@ -628,7 +623,7 @@ var NRS = (function(NRS, $) {
 	});
 
 	NRS.isTextMessage = function(transaction) {
-		return transaction.goodsIsText || transaction.attachment.messageIsText ||
+		return transaction.attachment.messageIsText ||
 			(transaction.attachment.encryptedMessage && transaction.attachment.encryptedMessage.isText) ||
 			(transaction.attachment.encryptToSelfMessage && transaction.attachment.encryptToSelfMessage.isText);
 	};

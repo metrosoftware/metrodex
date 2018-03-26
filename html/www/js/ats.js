@@ -149,7 +149,7 @@ var ATS = (function(ATS, $, undefined) {
                 }
             }
         }
-        if (params["requestType"] == "downloadPrunableMessage" || params["requestType"] == "downloadTaggedData") {
+        if (params["requestType"] == "downloadPrunableMessage") {
             return true;
         }
         var contentType;
@@ -160,7 +160,7 @@ var ATS = (function(ATS, $, undefined) {
             uploadField = $('#' + fileParameter + params["requestType"]);
         }
         /*
-        if (params["requestType"] == "downloadPrunableMessage" || params["requestType"] == "downloadTaggedData") {
+        if (params["requestType"] == "downloadPrunableMessage") {
             url += "?";
             for (key in params) {
                 if (!params.hasOwnProperty(key)) {

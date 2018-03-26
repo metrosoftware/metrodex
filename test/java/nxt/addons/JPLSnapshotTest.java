@@ -48,7 +48,7 @@ public class JPLSnapshotTest extends BlockchainTest {
             }
         }
         Assert.assertEquals(aliceCurrentBalance, aliceSnapshotBalance);
-        Assert.assertTrue(total > Constants.MAX_BALANCE_NQT - 100000 * Constants.ONE_NXT); // some funds were sent to genesis or are locked in claimable currency
+        Assert.assertTrue(total > Constants.MAX_BALANCE_NQT - 100000 * Constants.ONE_NXT); // some funds were sent to genesis
     }
 
     @Test

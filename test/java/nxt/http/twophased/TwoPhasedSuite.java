@@ -30,7 +30,6 @@ import org.junit.runners.Suite;
         TestGetPhasingPoll.class,
         TestGetAccountPhasedTransactions.class,
         TestGetAssetPhasedTransactions.class,
-        TestGetCurrencyPhasedTransactions.class,
         TestTrustlessAssetSwap.class
 })
 

@@ -36,7 +36,6 @@ import javax.servlet.http.HttpServletRequest;
  *  <li>ACCOUNT(0) - only by-account voting is allowed</li>
  *  <li>NQT(1) - only balance voting is allowed</li>
  *  <li>ASSET(2) - only asset voting is allowed</li>
- *  <li>CURRENCY(3) - only currency voting is allowed</li>
  *  </ul>
  * </li>
  * <li>controlQuorum - The expected quorum.</li>
@@ -46,10 +45,9 @@ import javax.servlet.http.HttpServletRequest;
  *  <li>NONE(0) No minimum balance restriction</li>
  *  <li>NQT(1) Nxt balance threshold</li>
  *  <li>ASSET(2) Asset balance threshold</li>
- *  <li>CURRENCY(3) Currency balance threshold</li>
  * </ul>
  * </li>
- * <li>controlHolding - The expected holding ID - asset ID or currency ID.</li>
+ * <li>controlHolding - The expected holding ID - asset ID.</li>
  * <li>controlWhitelisted - multiple values - the expected whitelisted accounts</li>
  * <li>controlMaxFees - The maximum allowed accumulated total fees for not yet finished phased transactions.</li>
  * <li>controlMinDuration - The minimum phasing duration (finish height minus current height).</li>

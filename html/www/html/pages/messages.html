@@ -17,6 +17,11 @@
 <div id="messages_page" class="page">
     <section class="content-header">
         <h1 data-i18n="chat">Chat</h1>
+        <div style="position:absolute;top:9px;right:9px;">
+            <div class="btn-group" data-toggle="buttons">
+                <a href="#" class="btn btn-sm btn-default goto-page" data-page="my_messages"><span data-i18n="my_messages">My messages</span> <i class="fa fa-envelope"></i></a>
+            </div>
+        </div>
     </section>
     <section class="content content-stretch" style="position:fixed;margin-top:3px;padding:0; width:100%; height:100%; height: calc(100% - 101px); overflow:hidden;">
         <div class="content-spliter">
@@ -66,7 +71,12 @@
 
 <div id="my_messages_page" class="paginated page">
     <section class="content-header">
-        <h1 data-i18n="my_messages">My Messages</h1>
+        <h1 data-i18n="my_messages" class="with_buttons">My Messages</h1>
+        <div style="position:absolute;top:9px;right:9px;">
+            <div class="btn-group" data-toggle="buttons">
+                <a href="#" class="btn btn-sm btn-default goto-page" data-page="messages"><span data-i18n="chat">Chat</span> <i class="fa fa-comment"></i></a>
+            </div>
+        </div>
     </section>
     <section class="content" id="my_messages_section">
         <script type="text/x-handlebars-template">

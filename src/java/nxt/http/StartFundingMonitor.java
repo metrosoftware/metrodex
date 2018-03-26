@@ -18,7 +18,6 @@ package nxt.http;
 
 import nxt.Account;
 import nxt.Asset;
-import nxt.Currency;
 import nxt.FundingMonitor;
 import nxt.HoldingType;
 import nxt.NxtException;
@@ -35,11 +34,11 @@ import static nxt.http.JSONResponses.incorrect;
 /**
  * Start a funding monitor
  * <p>
- * A funding monitor will transfer NXT, ASSET or CURRENCY from the funding account
+ * A funding monitor will transfer NXT or ASSET from the funding account
  * to a recipient account when the amount held by the recipient account drops below
  * the threshold.  The transfer will not be done until the current block
  * height is greater than equal to the block height of the last transfer plus the
- * interval. Holding type codes are listed in getConstants. The asset or currency is
+ * interval. Holding type codes are listed in getConstants. The asset is
  * specified by the holding identifier.
  * <p>
  * The funding account is identified by the secret phrase.  The secret phrase must
@@ -55,8 +54,8 @@ import static nxt.http.JSONResponses.incorrect;
  * For example, {"amount":25,"threshold":10,"interval":1440}.  The specified values will
  * override the default values specified when the account monitor is started.
  * <p>
- * NXT amounts are specified with 8 decimal places.  Asset and Currency decimal places
- * are determined by the asset or currency definition.
+ * NXT amounts are specified with 8 decimal places.  Asset decimal places
+ * are determined by the asset definition.
  */
 public final class StartFundingMonitor extends APIServlet.APIRequestHandler {
 
@@ -94,12 +93,6 @@ public final class StartFundingMonitor extends APIServlet.APIRequestHandler {
                 Asset asset = Asset.getAsset(holdingId);
                 if (asset == null) {
                     throw new ParameterException(JSONResponses.UNKNOWN_ASSET);
-                }
-                break;
-            case CURRENCY:
-                Currency currency = Currency.getCurrency(holdingId);
-                if (currency == null) {
-                    throw new ParameterException(JSONResponses.UNKNOWN_CURRENCY);
                 }
                 break;
         }

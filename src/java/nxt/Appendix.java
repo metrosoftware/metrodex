@@ -1378,7 +1378,6 @@ public interface Appendix {
 
         @Override
         void validateAtFinish(Transaction transaction) throws NxtException.ValidationException {
-            params.checkApprovable();
         }
 
         @Override

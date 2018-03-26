@@ -16,7 +16,15 @@
 
 package nxt.http;
 
-import nxt.*;
+import nxt.Constants;
+import nxt.Genesis;
+import nxt.HoldingType;
+import nxt.Nxt;
+import nxt.PhasingPoll;
+import nxt.Shuffling;
+import nxt.ShufflingParticipant;
+import nxt.TransactionType;
+import nxt.VoteWeighting;
 import nxt.crypto.HashFunction;
 import nxt.peer.Peer;
 import nxt.util.JSON;
@@ -87,12 +95,6 @@ public final class GetConstants extends APIServlet.APIRequestHandler {
                 response.put("transactionTypes", transactionJSON);
                 response.put("transactionSubTypes", transactionSubTypesJSON);
 
-                JSONObject currencyTypes = new JSONObject();
-                for (CurrencyType currencyType : CurrencyType.values()) {
-                    currencyTypes.put(currencyType.toString(), currencyType.getCode());
-                }
-                response.put("currencyTypes", currencyTypes);
-
                 JSONObject votingModels = new JSONObject();
                 for (VoteWeighting.VotingModel votingModel : VoteWeighting.VotingModel.values()) {
                     votingModels.put(votingModel.toString(), votingModel.getCode());
@@ -119,18 +121,11 @@ public final class GetConstants extends APIServlet.APIRequestHandler {
 
                 response.put("maxPhasingDuration", Constants.MAX_PHASING_DURATION);
 
-                JSONObject mintingHashFunctions = new JSONObject();
-                for (HashFunction hashFunction : CurrencyMinting.acceptedHashFunctions) {
-                    mintingHashFunctions.put(hashFunction.toString(), hashFunction.getId());
-                }
-                response.put("mintingHashAlgorithms", mintingHashFunctions);
-
                 JSONObject peerStates = new JSONObject();
                 for (Peer.State peerState : Peer.State.values()) {
                     peerStates.put(peerState.toString(), peerState.ordinal());
                 }
                 response.put("peerStates", peerStates);
-                response.put("maxTaggedDataDataLength", Constants.MAX_TAGGED_DATA_DATA_LENGTH);
 
                 JSONObject requestTypes = new JSONObject();
                 for (Map.Entry<String, APIServlet.APIRequestHandler> handlerEntry : APIServlet.apiRequestHandlers.entrySet()) {

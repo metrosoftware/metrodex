@@ -25,7 +25,6 @@ import nxt.db.DbKey;
 import nxt.db.DbUtils;
 import nxt.db.VersionedEntityDbTable;
 import nxt.util.Convert;
-import nxt.util.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -137,12 +136,6 @@ public final class AccountRestrictions {
                 throw new AccountControlException(String.format("Maximum total fees limit of %f %s exceeded", ((double)maxFees)/Constants.ONE_NXT, Constants.COIN_SYMBOL));
             }
             if (transaction.getType() == TransactionType.Messaging.PHASING_VOTE_CASTING) {
-                return;
-            }
-            try {
-                phasingParams.checkApprovable();
-            } catch (NxtException.NotCurrentlyValidException e) {
-                Logger.logDebugMessage("Account control no longer valid: " + e.getMessage());
                 return;
             }
             Appendix.Phasing phasingAppendix = transaction.getPhasing();

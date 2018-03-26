@@ -42,7 +42,7 @@ import java.util.List;
  * funding account will be returned.
  * <p>
  * Holding type codes are listed in getConstants.
- * In addition, the holding identifier must be specified when the holding type is ASSET or CURRENCY.
+ * In addition, the holding identifier must be specified when the holding type is ASSET.
  */
 public class GetFundingMonitor extends APIServlet.APIRequestHandler {
 

@@ -107,8 +107,6 @@ var NRS = (function (NRS, $) {
             NRS.constants.MIN_BALANCE_MODELS = response.minBalanceModels;
             NRS.constants.HASH_ALGORITHMS = response.hashAlgorithms;
             NRS.constants.PHASING_HASH_ALGORITHMS = response.phasingHashAlgorithms;
-            NRS.constants.MINTING_HASH_ALGORITHMS = response.mintingHashAlgorithms;
-            NRS.constants.MAX_TAGGED_DATA_DATA_LENGTH = response.maxTaggedDataDataLength;
             NRS.constants.MAX_PRUNABLE_MESSAGE_LENGTH = response.maxPrunableMessageLength;
             NRS.constants.GENESIS = response.genesisAccountId;
             NRS.constants.EPOCH_BEGINNING = response.epochBeginning;
@@ -134,7 +132,6 @@ var NRS = (function (NRS, $) {
             NRS.constants.ACCOUNT_MASK_PREFIX = response.accountPrefix + "-";
             NRS.constants.GENESIS_RS = converters.convertNumericToRSAccountFormat(response.genesisAccountId);
             NRS.constants.INITIAL_BASE_TARGET = parseInt(response.initialBaseTarget);
-            NRS.constants.CURRENCY_TYPES = response.currencyTypes;
             console.log("done loading server constants");
             if (resolve) {
                 resolve();
@@ -263,19 +260,7 @@ var NRS = (function (NRS, $) {
 
     NRS.getFileUploadConfig = function (requestType, data) {
         var config = {};
-        if (requestType == "uploadTaggedData") {
-            config.selector = "#upload_file";
-            config.requestParam = "file";
-            config.errorDescription = "error_file_too_big";
-            config.maxSize = NRS.constants.MAX_TAGGED_DATA_DATA_LENGTH;
-            return config;
-        } else if (requestType == "dgsListing") {
-            config.selector = "#dgs_listing_image";
-            config.requestParam = "messageFile";
-            config.errorDescription = "error_image_too_big";
-            config.maxSize = NRS.constants.MAX_PRUNABLE_MESSAGE_LENGTH;
-            return config;
-        } else if (requestType == "sendMessage") {
+        if (requestType == "sendMessage") {
             config.selector = "#upload_file_message";
             if (data.encrypt_message) {
                 config.requestParam = "encryptedMessageFile";

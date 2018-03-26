@@ -31,7 +31,7 @@ public final class GetAccount extends APIServlet.APIRequestHandler {
     static final GetAccount instance = new GetAccount();
 
     private GetAccount() {
-        super(new APITag[] {APITag.ACCOUNTS}, "account", "includeLessors", "includeAssets", "includeCurrencies", "includeEffectiveBalance");
+        super(new APITag[] {APITag.ACCOUNTS}, "account", "includeLessors", "includeAssets", "includeEffectiveBalance");
     }
 
     @Override
@@ -40,7 +40,6 @@ public final class GetAccount extends APIServlet.APIRequestHandler {
         Account account = ParameterParser.getAccount(req);
         boolean includeLessors = "true".equalsIgnoreCase(req.getParameter("includeLessors"));
         boolean includeAssets = "true".equalsIgnoreCase(req.getParameter("includeAssets"));
-        boolean includeCurrencies = "true".equalsIgnoreCase(req.getParameter("includeCurrencies"));
         boolean includeEffectiveBalance = "true".equalsIgnoreCase(req.getParameter("includeEffectiveBalance"));
 
         JSONObject response = JSONData.accountBalance(account, includeEffectiveBalance);
@@ -112,18 +111,6 @@ public final class GetAccount extends APIServlet.APIRequestHandler {
                 }
                 if (unconfirmedAssetBalances.size() > 0) {
                     response.put("unconfirmedAssetBalances", unconfirmedAssetBalances);
-                }
-            }
-        }
-
-        if (includeCurrencies) {
-            try (DbIterator<Account.AccountCurrency> accountCurrencies = account.getCurrencies(0, -1)) {
-                JSONArray currencyJSON = new JSONArray();
-                while (accountCurrencies.hasNext()) {
-                    currencyJSON.add(JSONData.accountCurrency(accountCurrencies.next(), false, true));
-                }
-                if (currencyJSON.size() > 0) {
-                    response.put("accountCurrencies", currencyJSON);
                 }
             }
         }

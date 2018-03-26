@@ -121,15 +121,6 @@ public abstract class ShufflingTransaction extends TransactionType {
                 if (amount <= 0 || amount > asset.getInitialQuantityQNT()) {
                     throw new NxtException.NotValidException("Invalid asset quantity " + amount);
                 }
-            } else if (holdingType == HoldingType.CURRENCY) {
-                Currency currency = Currency.getCurrency(attachment.getHoldingId());
-                CurrencyType.validate(currency, transaction);
-                if (!currency.isActive()) {
-                    throw new NxtException.NotCurrentlyValidException("Currency is not active: " + currency.getCode());
-                }
-                if (amount <= 0 || amount > Constants.MAX_CURRENCY_TOTAL_SUPPLY) {
-                    throw new NxtException.NotValidException("Invalid currency amount " + amount);
-                }
             } else {
                 throw new RuntimeException("Unsupported holding type " + holdingType);
             }
@@ -183,18 +174,7 @@ public abstract class ShufflingTransaction extends TransactionType {
 
         @Override
         boolean isDuplicate(Transaction transaction, Map<TransactionType, Map<String, Integer>> duplicates) {
-            Attachment.ShufflingCreation attachment = (Attachment.ShufflingCreation) transaction.getAttachment();
-            if (attachment.getHoldingType() != HoldingType.CURRENCY) {
-                return false;
-            }
-            Currency currency = Currency.getCurrency(attachment.getHoldingId());
-            String nameLower = currency.getName().toLowerCase();
-            String codeLower = currency.getCode().toLowerCase();
-            boolean isDuplicate = TransactionType.isDuplicate(MonetarySystem.CURRENCY_ISSUANCE, nameLower, duplicates, false);
-            if (! nameLower.equals(codeLower)) {
-                isDuplicate = isDuplicate || TransactionType.isDuplicate(MonetarySystem.CURRENCY_ISSUANCE, codeLower, duplicates, false);
-            }
-            return isDuplicate;
+            return false;
         }
 
     };

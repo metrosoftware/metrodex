@@ -41,9 +41,6 @@
                                 <li role="presentation" class="show_popover" data-toggle="popover" data-placement="top" data-content="Transaction has to be approved by asset holders with a certain stake" data-container="#mandatory_approval_modal" data-i18n="[data-content]approve_modal_by_asset_tab_help">
                                     <a href="#mandatory_approval_tab_asset_holders" aria-controls="mandatory_approval_tab_asset_holders" class="at_asset_holders" role="tab" data-toggle="tab"><span class="label label-default"><i class="fa fa-gavel"></i></span> <span class="label label-warning"><i class="fa fa-signal"></i></span></a>
                                 </li>
-                                <li role="presentation" class="show_popover" data-toggle="popover" data-placement="top" data-content="Transaction has to be approved by currency holders with a certain stake" data-container="#mandatory_approval_modal" data-i18n="[data-content]approve_modal_by_currency_tab_help">
-                                    <a href="#mandatory_approval_tab_currency_holders" aria-controls="mandatory_approval_tab_currency_holders" class="at_currency_holders" role="tab" data-toggle="tab"><span class="label label-default"><i class="fa fa-gavel"></i></span> <span class="label label-warning"><i class="fa fa-bank"></i></span></a>
-                                </li>
                             </ul>
                 
                             <!-- Tab panes -->
@@ -71,13 +68,11 @@
                                         <div class="col-xs-6">
                                             <div class="form-group approve_mb_model_1 phasing_only_min_balance_nxt" data-modal-ui-element="simple_input_with_addon_modal_ui_element"></div>
                                             <div class="form-group approve_mb_model_2 phasing_only_min_balance_asset_quantity" data-modal-ui-element="simple_input_with_addon_modal_ui_element"></div>
-                                            <div class="form-group approve_mb_model_3 phasing_only_min_balance_currency_units" data-modal-ui-element="simple_input_with_addon_modal_ui_element"></div>
                                         </div>
                                     </div>
                                     <div class="row">
                                         <div class="col-xs-12">
                                             <div class="form-group phasing_only_holding_asset_optional approve_mb_model_2" data-modal-ui-element="add_asset_modal_ui_element"></div>
-                                            <div class="form-group phasing_only_holding_currency_optional approve_mb_model_3" data-modal-ui-element="add_currency_modal_ui_element"></div>
                                         </div>
                                     </div>
                                     <input type="hidden" name="controlVotingModel" value="0" disabled />
@@ -123,28 +118,6 @@
                                     <input type="hidden" name="controlVotingModel" value="2" disabled />
                                 </div>
                 
-                                <div role="tabpanel" class="tab-pane tab_pane_approve" id="mandatory_approval_tab_currency_holders">
-                                    <div class="row">
-                                        <div class="col-xs-6">
-                                            <div class="form-group phasing_only_currency_units" data-modal-ui-element="simple_input_with_addon_modal_ui_element"></div>
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-xs-12">
-                                            <div class="form-group phasing_only_holding_currency" data-modal-ui-element="add_currency_modal_ui_element"></div>
-                                        </div>
-                                    </div>
-                                    <div class="form-group add_phasing_only_whitelist_group" data-modal-ui-element="multi_accounts_modal_ui_element"></div>
-                                    <div class="row">
-                                        <div class="col-xs-6">
-                                            <div class="form-group phasing_only_min_balance_model_group approve_mb_currency" data-modal-ui-element="min_balance_model_modal_ui_element"></div>
-                                        </div>
-                                        <div class="col-xs-6">
-                                            <div class="form-group approve_mb_model_3 phasing_only_min_balance_currency_units" data-modal-ui-element="simple_input_with_addon_modal_ui_element"></div>
-                                        </div>
-                                    </div>
-                                    <input type="hidden" name="controlVotingModel" value="3" disabled />
-                                </div>
                             </div>
                         </div>
                         <!--Minimum fees and phasing duration-->

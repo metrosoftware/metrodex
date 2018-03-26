@@ -38,7 +38,7 @@ import javax.servlet.http.HttpServletRequest;
  * <p>
  * The holding type and account property name must be specified when the secret
  * phrase or account is specified. Holding type codes are listed in getConstants.
- * In addition, the holding identifier must be specified when the holding type is ASSET or CURRENCY.
+ * In addition, the holding identifier must be specified when the holding type is ASSET.
  */
 public class StopFundingMonitor extends APIServlet.APIRequestHandler {
 

@@ -119,7 +119,6 @@ var NRS = (function(NRS, $) {
                 switch (response.holdingType) {
                     case 0: return 'NXT';
                     case 1: return NRS.getTransactionLink(response.holding) + " (" + $.t('asset') + ")";
-                    case 2: return NRS.getTransactionLink(response.holding, response.holdingInfo.code)  + " (" + $.t('currency') + ")";
                 }
             })(),
             participants: NRS.escapeRespStr(response.registrantCount) + " / " + NRS.escapeRespStr(response.participantCount),
@@ -136,27 +135,12 @@ var NRS = (function(NRS, $) {
             return;
         }
         var sidebarId = 'sidebar_shuffling';
-        NRS.addTreeviewSidebarMenuItem({
+        NRS.addSimpleSidebarMenuItem({
             "id": sidebarId,
             "titleHTML": '<i class="fa fa-random"></i> <span data-i18n="shuffling">Shuffling</span>',
             "page": 'active_shufflings',
             "desiredPosition": 80,
             "depends": { tags: [ NRS.constants.API_TAGS.SHUFFLING ] }
-        });
-        NRS.appendMenuItemToTSMenuItem(sidebarId, {
-            "titleHTML": '<span data-i18n="active_shufflings">Active Shufflings</span>',
-            "type": 'PAGE',
-            "page": 'active_shufflings'
-        });
-        NRS.appendMenuItemToTSMenuItem(sidebarId, {
-            "titleHTML": '<span data-i18n="my_shufflings">My Shufflings</span>',
-            "type": 'PAGE',
-            "page": 'my_shufflings'
-        });
-        NRS.appendMenuItemToTSMenuItem(sidebarId, {
-            "titleHTML": '<span data-i18n="create_shuffling">Create Shuffling</span>',
-            "type": 'MODAL',
-            "modalId": 'm_shuffling_create_modal'
         });
 
         $('#m_shuffling_create_holding_type').change();
@@ -164,24 +148,17 @@ var NRS = (function(NRS, $) {
 
     /**
      * Create shuffling modal holding type onchange listener.
-     * Hides holding field unless type is asset or currency.
+     * Hides holding field unless type is asset
      */
     $('#m_shuffling_create_holding_type').change(function () {
         var holdingType = $("#m_shuffling_create_holding_type");
-        if(holdingType.val() == "0") {
+        if (holdingType.val() == "0") {
             $("#shuffling_asset_id_group").css("display", "none");
-            $("#shuffling_ms_currency_group").css("display", "none");
             $('#m_shuffling_create_unit').html($.t('amount'));
             $('#m_shuffling_create_amount').attr('name', 'shufflingAmountNXT');
-        } if(holdingType.val() == "1") {
+        } else if(holdingType.val() == "1") {
 			$("#shuffling_asset_id_group").css("display", "inline");
-			$("#shuffling_ms_currency_group").css("display", "none");
             $('#m_shuffling_create_unit').html($.t('quantity'));
-            $('#m_shuffling_create_amount').attr('name', 'amountQNTf');
-		} else if(holdingType.val() == "2") {
-			$("#shuffling_asset_id_group").css("display", "none");
-			$("#shuffling_ms_currency_group").css("display", "inline");
-            $('#m_shuffling_create_unit').html($.t('units'));
             $('#m_shuffling_create_amount').attr('name', 'amountQNTf');
 		}
     });
@@ -297,7 +274,7 @@ var NRS = (function(NRS, $) {
             },
             function(shufflers, callback) {
                 NRS.hasMorePages = false;
-                var view = NRS.simpleview.get('my_shufflings_page', {
+                var view = NRS.simpleview.get('my_shufflings', {
                     errorMessage: null,
                     isLoading: true,
                     isEmpty: false,
@@ -351,15 +328,6 @@ var NRS = (function(NRS, $) {
     };
 
     $("#m_shuffling_create_modal").on("show.bs.modal", function() {
-   		var context = {
-   			labelText: "Currency",
-   			labelI18n: "currency",
-   			inputCodeName: "shuffling_ms_code",
-   			inputIdName: "holding",
-   			inputDecimalsName: "shuffling_ms_decimals",
-   			helpI18n: "add_currency_modal_help"
-   		};
-   		NRS.initModalUIElement($(this), '.shuffling_holding_currency', 'add_currency_modal_ui_element', context);
 
    		context = {
    			labelText: "Asset",

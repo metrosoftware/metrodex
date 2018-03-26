@@ -72,9 +72,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import static nxt.http.JSONResponses.MISSING_ADMIN_PASSWORD;
 import static nxt.http.JSONResponses.INCORRECT_ADMIN_PASSWORD;
 import static nxt.http.JSONResponses.LOCKED_ADMIN_PASSWORD;
+import static nxt.http.JSONResponses.MISSING_ADMIN_PASSWORD;
 import static nxt.http.JSONResponses.NO_PASSWORD_IN_CONFIG;
 
 public final class API {
@@ -238,14 +238,15 @@ public final class API {
             }
 
             ServletHolder servletHolder = apiHandler.addServlet(APIServlet.class, "/nxt");
+
             servletHolder.getRegistration().setMultipartConfig(new MultipartConfigElement(
-                    null, Math.max(Nxt.getIntProperty("nxt.maxUploadFileSize"), Constants.MAX_TAGGED_DATA_DATA_LENGTH), -1L, 0));
+                    null, Math.max(Nxt.getIntProperty("nxt.maxUploadFileSize"), Constants.MAX_MESSAGE_DATA_LENGTH), -1L, 0));
 
             servletHolder = apiHandler.addServlet(APIProxyServlet.class, "/nxt-proxy");
             servletHolder.setInitParameters(Collections.singletonMap("idleTimeout",
                     "" + Math.max(apiServerIdleTimeout - APIProxyServlet.PROXY_IDLE_TIMEOUT_DELTA, 0)));
             servletHolder.getRegistration().setMultipartConfig(new MultipartConfigElement(
-                    null, Math.max(Nxt.getIntProperty("nxt.maxUploadFileSize"), Constants.MAX_TAGGED_DATA_DATA_LENGTH), -1L, 0));
+                    null, Math.max(Nxt.getIntProperty("nxt.maxUploadFileSize"), Constants.MAX_MESSAGE_DATA_LENGTH), -1L, 0));
 
             GzipHandler gzipHandler = new GzipHandler();
             if (!Nxt.getBooleanProperty("nxt.enableAPIServerGZIPFilter", isOpenAPI)) {

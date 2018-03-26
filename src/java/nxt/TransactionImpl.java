@@ -728,14 +728,6 @@ final class TransactionImpl implements Transaction {
             if (shufflingProcessing != null) {
                 builder.appendix(shufflingProcessing);
             }
-            Attachment.TaggedDataUpload taggedDataUpload = Attachment.TaggedDataUpload.parse(prunableAttachments);
-            if (taggedDataUpload != null) {
-                builder.appendix(taggedDataUpload);
-            }
-            Attachment.TaggedDataExtend taggedDataExtend = Attachment.TaggedDataExtend.parse(prunableAttachments);
-            if (taggedDataExtend != null) {
-                builder.appendix(taggedDataExtend);
-            }
             Appendix.PrunablePlainMessage prunablePlainMessage = Appendix.PrunablePlainMessage.parse(prunableAttachments);
             if (prunablePlainMessage != null) {
                 builder.appendix(prunablePlainMessage);

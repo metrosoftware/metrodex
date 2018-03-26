@@ -162,150 +162,6 @@ var NRS = (function(NRS, $, undefined) {
             }
         },
         3: {
-            'title': "Marketplace",
-            'i18nKeyTitle': 'marketplace',
-            'iconHTML': '<i class="fa fa-shopping-cart"></i>',
-            'subTypes': {
-                0: {
-                    'title': "Marketplace Listing",
-                    'i18nKeyTitle': 'marketplace_listing',
-                    'iconHTML': '<i class="fa fa-bullhorn"></i>'
-                },
-                1: {
-                    'title': "Marketplace Removal",
-                    'i18nKeyTitle': 'marketplace_removal',
-                    'iconHTML': '<i class="fa fa-times"></i>'
-                },
-                2: {
-                    'title': "Marketplace Price Change",
-                    'i18nKeyTitle': 'marketplace_price_change',
-                    'iconHTML': '<i class="fa fa-line-chart"></i>'
-                },
-                3: {
-                    'title': "Marketplace Quantity Change",
-                    'i18nKeyTitle': 'marketplace_quantity_change',
-                    'iconHTML': '<i class="fa fa-sort"></i>'
-                },
-                4: {
-                    'title': "Marketplace Purchase",
-                    'i18nKeyTitle': 'marketplace_purchase',
-                    'iconHTML': '<i class="fa fa-money"></i>',
-                    'receiverPage': "pending_orders_dgs"
-                },
-                5: {
-                    'title': "Marketplace Delivery",
-                    'i18nKeyTitle': 'marketplace_delivery',
-                    'iconHTML': '<i class="fa fa-cube"></i>',
-                    'receiverPage': "purchased_dgs"
-                },
-                6: {
-                    'title': "Marketplace Feedback",
-                    'i18nKeyTitle': 'marketplace_feedback',
-                    'iconHTML': '<i class="ion-android-social"></i>',
-                    'receiverPage': "completed_orders_dgs"
-                },
-                7: {
-                    'title': "Marketplace Refund",
-                    'i18nKeyTitle': 'marketplace_refund',
-                    'iconHTML': '<i class="fa fa-reply"></i>',
-                    'receiverPage': "purchased_dgs"
-                }
-            }
-        },
-        4: {
-            'title': "Account Control",
-            'i18nKeyTitle': 'account_control',
-            'iconHTML': '<i class="ion-locked"></i>',
-            'subTypes': {
-                0: {
-                    'title': "Balance Leasing",
-                    'i18nKeyTitle': 'balance_leasing',
-                    'iconHTML': '<i class="fa fa-arrow-circle-o-right"></i>',
-                    'receiverPage': "transactions"
-                },
-                1: {
-                    'title': "Mandatory Approval",
-                    'i18nKeyTitle': 'phasing_only',
-                    'iconHTML': '<i class="fa fa-gavel"></i>',
-                    'receiverPage': "transactions"
-                }
-            }
-        },
-        5: {
-            'title': "Monetary System",
-            'i18nKeyTitle': 'monetary_system',
-            'iconHTML': '<i class="fa fa-bank"></i>',
-            'subTypes': {
-                0: {
-                    'title': "Issue Currency",
-                    'i18nKeyTitle': 'issue_currency',
-                    'iconHTML': '<i class="fa fa-bullhorn"></i>'
-                },
-                1: {
-                    'title': "Reserve Increase",
-                    'i18nKeyTitle': 'reserve_increase',
-                    'iconHTML': '<i class="fa fa-cubes"></i>'
-                },
-                2: {
-                    'title': "Reserve Claim",
-                    'i18nKeyTitle': 'reserve_claim',
-                    'iconHTML': '<i class="fa fa-truck"></i>',
-                    'receiverPage': "currencies"
-                },
-                3: {
-                    'title': "Currency Transfer",
-                    'i18nKeyTitle': 'currency_transfer',
-                    'iconHTML': '<i class="ion-arrow-swap"></i>',
-                    'receiverPage': "currencies"
-                },
-                4: {
-                    'title': "Publish Exchange Offer",
-                    'i18nKeyTitle': 'publish_exchange_offer',
-                    'iconHTML': '<i class="fa fa-list-alt "></i>'
-                },
-                5: {
-                    'title': "Buy Currency",
-                    'i18nKeyTitle': 'currency_buy',
-                    'iconHTML': '<i class="ion-arrow-graph-up-right"></i>',
-                    'receiverPage': "currencies"
-                },
-                6: {
-                    'title': "Sell Currency",
-                    'i18nKeyTitle': 'currency_sell',
-                    'iconHTML': '<i class="ion-arrow-graph-down-right"></i>',
-                    'receiverPage': "currencies"
-                },
-                7: {
-                    'title': "Mint Currency",
-                    'i18nKeyTitle': 'mint_currency',
-                    'iconHTML': '<i class="fa fa-money"></i>',
-                    'receiverPage': "currencies"
-                },
-                8: {
-                    'title': "Delete Currency",
-                    'i18nKeyTitle': 'delete_currency',
-                    'iconHTML': '<i class="fa fa-times"></i>'
-                }
-            }
-        },
-        6: {
-            'title': "Data Cloud",
-            'i18nKeyTitle': 'tagged_data',
-            'iconHTML': '<i class="fa fa-dashboard"></i>',
-            'subTypes': {
-                0: {
-                    'title': "Upload Data",
-                    'i18nKeyTitle': 'upload_tagged_data',
-                    'iconHTML': '<i class="fa fa-upload"></i>'
-                },
-                1: {
-                    'title': "Extend Data Lifetime",
-                    'i18nKeyTitle': 'extend_tagged_data',
-                    'iconHTML': '<i class="fa fa-expand"></i>'
-                }
-            }
-        },
-        7: {
             'title': "Shuffling",
             'i18nKeyTitle': 'shuffling',
             'iconHTML': '<i class="fa fa-random"></i>',
@@ -339,6 +195,31 @@ var NRS = (function(NRS, $, undefined) {
                     'title': "Shuffling Cancellation",
                     'i18nKeyTitle': 'shuffling_cancellation',
                     'iconHTML': '<i class="fa fa-thumbs-down"></i>'
+                }
+            }
+        },
+        4: {
+            'title': "Account Control",
+            'i18nKeyTitle': 'account_control',
+            'iconHTML': '<i class="fa fa-dashboard"></i>',
+            'subTypes': {
+                0: {
+                    'title': "Balance Leasing",
+                    'i18nKeyTitle': 'balance_leasing',
+                    'iconHTML': '<i class="fa fa-arrow-circle-o-right"></i>',
+                    'receiverPage': "transactions"
+                },
+                1: {
+                    'title': "Mandatory Approval",
+                    'i18nKeyTitle': 'phasing_only',
+                    'iconHTML': '<i class="fa fa-gavel"></i>',
+                    'receiverPage': "transactions"
+                },
+                2: {
+                    'title': "Keep Treasure",
+                    'i18nKeyTitle': 'keep_treasure',
+                    'iconHTML': '<i class="ion-locked"></i>',
+                    'receiverPage': "transactions"
                 }
             }
         }

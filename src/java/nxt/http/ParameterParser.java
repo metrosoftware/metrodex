@@ -20,12 +20,7 @@ import nxt.Account;
 import nxt.Alias;
 import nxt.Appendix;
 import nxt.Asset;
-import nxt.Attachment;
 import nxt.Constants;
-import nxt.Currency;
-import nxt.CurrencyBuyOffer;
-import nxt.CurrencySellOffer;
-import nxt.DigitalGoodsStore;
 import nxt.HoldingType;
 import nxt.Nxt;
 import nxt.NxtException;
@@ -52,7 +47,25 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.StringJoiner;
 
-import static nxt.http.JSONResponses.*;
+import static nxt.http.JSONResponses.INCORRECT_ACCOUNT;
+import static nxt.http.JSONResponses.INCORRECT_ALIAS;
+import static nxt.http.JSONResponses.INCORRECT_ARBITRARY_MESSAGE;
+import static nxt.http.JSONResponses.INCORRECT_HEIGHT;
+import static nxt.http.JSONResponses.INCORRECT_MESSAGE_TO_ENCRYPT;
+import static nxt.http.JSONResponses.MISSING_ACCOUNT;
+import static nxt.http.JSONResponses.MISSING_ALIAS_OR_ALIAS_NAME;
+import static nxt.http.JSONResponses.MISSING_PROPERTY;
+import static nxt.http.JSONResponses.MISSING_RECIPIENT_PUBLIC_KEY;
+import static nxt.http.JSONResponses.MISSING_SECRET_PHRASE;
+import static nxt.http.JSONResponses.MISSING_TRANSACTION_BYTES_OR_JSON;
+import static nxt.http.JSONResponses.UNKNOWN_ACCOUNT;
+import static nxt.http.JSONResponses.UNKNOWN_ALIAS;
+import static nxt.http.JSONResponses.UNKNOWN_ASSET;
+import static nxt.http.JSONResponses.UNKNOWN_POLL;
+import static nxt.http.JSONResponses.UNKNOWN_SHUFFLING;
+import static nxt.http.JSONResponses.either;
+import static nxt.http.JSONResponses.incorrect;
+import static nxt.http.JSONResponses.missing;
 
 public final class ParameterParser {
 
@@ -265,34 +278,6 @@ public final class ParameterParser {
         return asset;
     }
 
-    public static Currency getCurrency(HttpServletRequest req) throws ParameterException {
-        return getCurrency(req, true);
-    }
-
-    public static Currency getCurrency(HttpServletRequest req, boolean isMandatory) throws ParameterException {
-        Currency currency = Currency.getCurrency(getUnsignedLong(req, "currency", isMandatory));
-        if (isMandatory && currency == null) {
-            throw new ParameterException(UNKNOWN_CURRENCY);
-        }
-        return currency;
-    }
-
-    public static CurrencyBuyOffer getBuyOffer(HttpServletRequest req) throws ParameterException {
-        CurrencyBuyOffer offer = CurrencyBuyOffer.getOffer(getUnsignedLong(req, "offer", true));
-        if (offer == null) {
-            throw new ParameterException(UNKNOWN_OFFER);
-        }
-        return offer;
-    }
-
-    public static CurrencySellOffer getSellOffer(HttpServletRequest req) throws ParameterException {
-        CurrencySellOffer offer = CurrencySellOffer.getOffer(getUnsignedLong(req, "offer", true));
-        if (offer == null) {
-            throw new ParameterException(UNKNOWN_OFFER);
-        }
-        return offer;
-    }
-
     public static Shuffling getShuffling(HttpServletRequest req) throws ParameterException {
         Shuffling shuffling = Shuffling.getShuffling(getUnsignedLong(req, "shuffling", true));
         if (shuffling == null) {
@@ -307,18 +292,6 @@ public final class ParameterParser {
 
     public static long getAmountNQTPerQNT(HttpServletRequest req) throws ParameterException {
         return getLong(req, "amountNQTPerQNT", 1L, Constants.MAX_BALANCE_NQT, true);
-    }
-
-    public static DigitalGoodsStore.Goods getGoods(HttpServletRequest req) throws ParameterException {
-        DigitalGoodsStore.Goods goods = DigitalGoodsStore.Goods.getGoods(getUnsignedLong(req, "goods", true));
-        if (goods == null) {
-            throw new ParameterException(UNKNOWN_GOODS);
-        }
-        return goods;
-    }
-
-    public static int getGoodsQuantity(HttpServletRequest req) throws ParameterException {
-        return getInt(req, "quantity", 0, Constants.MAX_DGS_LISTING_QUANTITY, true);
     }
 
     public static EncryptedData getEncryptedData(HttpServletRequest req, String messageType) throws ParameterException {
@@ -385,14 +358,6 @@ public final class ParameterParser {
         } else {
             return new Appendix.UnencryptedEncryptToSelfMessage(plainMessageBytes, isText, compress);
         }
-    }
-
-    public static DigitalGoodsStore.Purchase getPurchase(HttpServletRequest req) throws ParameterException {
-        DigitalGoodsStore.Purchase purchase = DigitalGoodsStore.Purchase.getPurchase(getUnsignedLong(req, "purchase", true));
-        if (purchase == null) {
-            throw new ParameterException(INCORRECT_PURCHASE);
-        }
-        return purchase;
     }
 
     public static String getSecretPhrase(HttpServletRequest req, boolean isMandatory) throws ParameterException {
@@ -704,88 +669,6 @@ public final class ParameterParser {
                 return new Appendix.UnencryptedEncryptedMessage(plainMessageBytes, isText, compress, recipientPublicKey);
             }
         }
-    }
-
-    public static Attachment.TaggedDataUpload getTaggedData(HttpServletRequest req) throws ParameterException, NxtException.NotValidException {
-        String name = Convert.emptyToNull(req.getParameter("name"));
-        String description = Convert.nullToEmpty(req.getParameter("description"));
-        String tags = Convert.nullToEmpty(req.getParameter("tags"));
-        String type = Convert.nullToEmpty(req.getParameter("type")).trim();
-        String channel = Convert.nullToEmpty(req.getParameter("channel"));
-        boolean isText = !"false".equalsIgnoreCase(req.getParameter("isText"));
-        String filename = Convert.nullToEmpty(req.getParameter("filename")).trim();
-        String dataValue = Convert.emptyToNull(req.getParameter("data"));
-        byte[] data;
-        if (dataValue == null) {
-            try {
-                Part part = req.getPart("file");
-                if (part == null) {
-                    throw new ParameterException(INCORRECT_TAGGED_DATA_FILE);
-                }
-                FileData fileData = new FileData(part).invoke();
-                data = fileData.getData();
-                // Depending on how the client submits the form, the filename, can be a regular parameter
-                // or encoded in the multipart form. If its not a parameter we take from the form
-                if (filename.isEmpty() && fileData.getFilename() != null) {
-                    filename = fileData.getFilename().trim();
-                }
-                if (name == null) {
-                    name = filename;
-                }
-            } catch (IOException | ServletException e) {
-                Logger.logDebugMessage("error in reading file data", e);
-                throw new ParameterException(INCORRECT_TAGGED_DATA_FILE);
-            }
-        } else {
-            data = isText ? Convert.toBytes(dataValue) : Convert.parseHexString(dataValue);
-        }
-
-        String detectedMimeType = Search.detectMimeType(data, filename);
-        if (detectedMimeType != null) {
-            isText = detectedMimeType.startsWith("text/");
-            if (type.isEmpty()) {
-                type = detectedMimeType.substring(0, Math.min(detectedMimeType.length(), Constants.MAX_TAGGED_DATA_TYPE_LENGTH));
-            }
-        }
-
-        if (name == null) {
-            throw new ParameterException(MISSING_NAME);
-        }
-        name = name.trim();
-        if (name.length() > Constants.MAX_TAGGED_DATA_NAME_LENGTH) {
-            throw new ParameterException(INCORRECT_TAGGED_DATA_NAME);
-        }
-
-        if (description.length() > Constants.MAX_TAGGED_DATA_DESCRIPTION_LENGTH) {
-            throw new ParameterException(INCORRECT_TAGGED_DATA_DESCRIPTION);
-        }
-
-        if (tags.length() > Constants.MAX_TAGGED_DATA_TAGS_LENGTH) {
-            throw new ParameterException(INCORRECT_TAGGED_DATA_TAGS);
-        }
-
-        type = type.trim();
-        if (type.length() > Constants.MAX_TAGGED_DATA_TYPE_LENGTH) {
-            throw new ParameterException(INCORRECT_TAGGED_DATA_TYPE);
-        }
-
-        channel = channel.trim();
-        if (channel.length() > Constants.MAX_TAGGED_DATA_CHANNEL_LENGTH) {
-            throw new ParameterException(INCORRECT_TAGGED_DATA_CHANNEL);
-        }
-
-        if (data.length == 0) {
-            throw new ParameterException(INCORRECT_DATA_ZERO_LENGTH);
-        }
-
-        if (data.length > Constants.MAX_TAGGED_DATA_DATA_LENGTH) {
-            throw new ParameterException(INCORRECT_DATA_TOO_LONG);
-        }
-
-        if (filename.length() > Constants.MAX_TAGGED_DATA_FILENAME_LENGTH) {
-            throw new ParameterException(INCORRECT_TAGGED_DATA_FILENAME);
-        }
-        return new Attachment.TaggedDataUpload(name, description, tags, type, channel, isText, filename, data);
     }
 
     private ParameterParser() {} // never

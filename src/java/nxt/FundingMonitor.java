@@ -37,7 +37,7 @@ import java.util.concurrent.Semaphore;
 /**
  * Monitor account balances based on account properties
  * <p>
- * NXT, ASSET and CURRENCY balances can be monitored.  If a balance falls below the threshold, a transaction
+ * NXT and ASSET balances can be monitored.  If a balance falls below the threshold, a transaction
  * will be submitted to transfer units from the funding account to the monitored account.  A transfer will
  * remain pending if the number of blocks since the previous transfer transaction is less than the monitor
  * interval.
@@ -108,7 +108,7 @@ public final class FundingMonitor {
      * Create a monitor
      *
      * @param   holdingType         Holding type
-     * @param   holdingId           Asset or Currency identifier, ignored for NXT monitor
+     * @param   holdingId           Asset identifier, ignored for NXT monitor
      * @param   property            Account property name
      * @param   amount              Fund amount
      * @param   threshold           Fund threshold
@@ -143,7 +143,7 @@ public final class FundingMonitor {
     /**
      * Return the holding identifier
      *
-     * @return                      Holding identifier for asset or currency
+     * @return                      Holding identifier for asset
      */
     public long getHoldingId() {
         return holdingId;
@@ -210,7 +210,7 @@ public final class FundingMonitor {
      * string: {"amount":"long","threshold":"long","interval":integer}
      *
      * @param   holdingType         Holding type
-     * @param   holdingId           Asset or currency identifier, ignored for NXT monitor
+     * @param   holdingId           Asset identifier, ignored for NXT monitor
      * @param   property            Account property name
      * @param   amount              Fund amount
      * @param   threshold           Fund threshold
@@ -354,7 +354,7 @@ public final class FundingMonitor {
      * Pending fund transactions will still be processed
      *
      * @param   holdingType         Monitor holding type
-     * @param   holdingId           Asset or currency identifier, ignored for NXT monitor
+     * @param   holdingId           Asset identifier, ignored for NXT monitor
      * @param   property            Account property
      * @param   accountId           Fund account identifier
      * @return                      TRUE if the monitor was stopped
@@ -472,7 +472,6 @@ public final class FundingMonitor {
             //
             Account.addListener(new AccountEventHandler(), Account.Event.BALANCE);
             Account.addAssetListener(new AssetEventHandler(), Account.Event.ASSET_BALANCE);
-            Account.addCurrencyListener(new CurrencyEventHandler(), Account.Event.CURRENCY_BALANCE);
             Account.addPropertyListener(new SetPropertyEventHandler(), Account.Event.SET_PROPERTY);
             Account.addPropertyListener(new DeletePropertyEventHandler(), Account.Event.DELETE_PROPERTY);
             Nxt.getBlockchainProcessor().addListener(new BlockEventHandler(), BlockchainProcessor.Event.BLOCK_PUSHED);
@@ -572,9 +571,6 @@ public final class FundingMonitor {
                                     case ASSET:
                                         processAssetEvent(monitoredAccount, targetAccount, fundingAccount);
                                         break;
-                                    case CURRENCY:
-                                        processCurrencyEvent(monitoredAccount, targetAccount, fundingAccount);
-                                        break;
                                 }
                             }
                         } catch (Exception exc) {
@@ -657,43 +653,6 @@ public final class FundingMonitor {
                 Nxt.getTransactionProcessor().broadcast(transaction);
                 monitoredAccount.height = Nxt.getBlockchain().getHeight();
                 Logger.logDebugMessage(String.format("ASSET funding transaction %s submitted for %d units from %s to %s",
-                        transaction.getStringId(), monitoredAccount.amount,
-                        monitor.accountName, monitoredAccount.accountName));
-            }
-        }
-    }
-
-    /**
-     * Process a CURRENCY event
-     *
-     * @param   monitoredAccount            Monitored account
-     * @param   targetAccount               Target account
-     * @param   fundingAccount              Funding account
-     * @throws  NxtException                Unable to create transaction
-     */
-    private static void processCurrencyEvent(MonitoredAccount monitoredAccount, Account targetAccount, Account fundingAccount)
-                                            throws NxtException {
-        FundingMonitor monitor = monitoredAccount.monitor;
-        Account.AccountCurrency targetCurrency = Account.getAccountCurrency(targetAccount.getId(), monitor.holdingId);
-        Account.AccountCurrency fundingCurrency = Account.getAccountCurrency(fundingAccount.getId(), monitor.holdingId);
-        if (fundingCurrency == null || fundingCurrency.getUnconfirmedUnits() < monitoredAccount.amount) {
-            Logger.logWarningMessage(
-                    String.format("Funding account %s has insufficient quantity for currency %s; funding transaction discarded",
-                            monitor.accountName, Long.toUnsignedString(monitor.holdingId)));
-        } else if (targetCurrency == null || targetCurrency.getUnits() < monitoredAccount.threshold) {
-            Attachment attachment = new Attachment.MonetarySystemCurrencyTransfer(monitor.holdingId, monitoredAccount.amount);
-            Transaction.Builder builder = Nxt.newTransactionBuilder(monitor.publicKey,
-                    0, 0, (short)1440, attachment);
-            builder.recipientId(monitoredAccount.accountId)
-                   .timestamp(Nxt.getBlockchain().getLastBlockTimestamp());
-            Transaction transaction = builder.build(monitor.secretPhrase);
-            if (transaction.getFeeNQT() > fundingAccount.getUnconfirmedBalanceNQT()) {
-                Logger.logWarningMessage(String.format("Funding account %s has insufficient funds; funding transaction discarded",
-                        monitor.accountName));
-            } else {
-                Nxt.getTransactionProcessor().broadcast(transaction);
-                monitoredAccount.height = Nxt.getBlockchain().getHeight();
-                Logger.logDebugMessage(String.format("CURRENCY funding transaction %s submitted for %d units from %s to %s",
                         transaction.getStringId(), monitoredAccount.amount,
                         monitor.accountName, monitoredAccount.accountName));
             }
@@ -858,42 +817,6 @@ public final class FundingMonitor {
                     accountList.forEach((maccount) -> {
                         if (maccount.monitor.holdingType == HoldingType.ASSET &&
                                 maccount.monitor.holdingId == assetId &&
-                                balance < maccount.threshold &&
-                                !pendingEvents.contains(maccount)) {
-                            pendingEvents.add(maccount);
-                        }
-                    });
-                }
-            }
-        }
-    }
-
-    /**
-     * Currency event handler (CURRENCY_BALANCE event)
-     */
-    private static final class CurrencyEventHandler implements Listener<Account.AccountCurrency> {
-
-        /**
-         * Currency event notification
-         *
-         * @param   currency                Account currency
-         */
-        @Override
-        public void notify(Account.AccountCurrency currency) {
-            if (stopped) {
-                return;
-            }
-            long balance = currency.getUnits();
-            long currencyId = currency.getCurrencyId();
-            //
-            // Check the currency balance for monitored accounts
-            //
-            synchronized(monitors) {
-                List<MonitoredAccount> accountList = accounts.get(currency.getAccountId());
-                if (accountList != null) {
-                    accountList.forEach((maccount) -> {
-                        if (maccount.monitor.holdingType == HoldingType.CURRENCY &&
-                                maccount.monitor.holdingId == currencyId &&
                                 balance < maccount.threshold &&
                                 !pendingEvents.contains(maccount)) {
                             pendingEvents.add(maccount);

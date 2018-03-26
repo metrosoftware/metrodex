@@ -328,10 +328,6 @@ var NRS = (function(NRS, $, undefined) {
 			$('#min_voting_balance_label_unit').html($.t('asset'));
 			$('#create_poll_min_balance').attr('name', 'minBalanceQNTf');
 		}
-		if ((pollType == 0 && mbType == 3) || pollType == 3) {
-			$('#min_voting_balance_label_unit').html($.t('currency'));
-			$('#create_poll_min_balance').attr('name', 'minBalanceQNTf');
-		}
 	}
 
 	$("#create_poll_type").change(function() {
@@ -339,13 +335,8 @@ var NRS = (function(NRS, $, undefined) {
 		var pollType = $("#create_poll_type").val();
         if (pollType == "2") {
 			$("#create_poll_asset_id_group").css("display", "inline");
-			$("#create_poll_ms_currency_group").css("display", "none");
-		} else if(pollType == "3") {
-			$("#create_poll_asset_id_group").css("display", "none");
-			$("#create_poll_ms_currency_group").css("display", "inline");
 		} else {
 			$("#create_poll_asset_id_group").css("display", "none");
-			$("#create_poll_ms_currency_group").css("display", "none");
 		}
 
 		if(pollType == "0") {
@@ -360,13 +351,8 @@ var NRS = (function(NRS, $, undefined) {
 		var value = $(this).val();
 		if(value == "2") {
 			$("#create_poll_asset_id_group").css("display", "block");
-			$("#create_poll_ms_currency_group").css("display", "none");
-		} else if(value == "3") {
-			$("#create_poll_asset_id_group").css("display", "none");
-			$("#create_poll_ms_currency_group").css("display", "block");
 		} else {
 			$("#create_poll_asset_id_group").css("display", "none");
-			$("#create_poll_ms_currency_group").css("display", "none");
 		}
 		_setMinBalanceForm();
 	});
@@ -631,16 +617,6 @@ var NRS = (function(NRS, $, undefined) {
 	$("#create_poll_modal").on("show.bs.modal", function() {
 		$('#create_poll_min_balance_type_group').show();
 		$('#create_poll_min_balance_type_0').click();
-
-		context = {
-			labelText: "Currency",
-			labelI18n: "currency",
-			inputCodeName: "create_poll_ms_code",
-			inputIdName: "create_poll_ms_id",
-			inputDecimalsName: "create_poll_ms_decimals",
-			helpI18n: "add_currency_modal_help"
-		};
-		NRS.initModalUIElement($(this), '.poll_holding_currency', 'add_currency_modal_ui_element', context);
 
 		context = {
 			labelText: "Asset",

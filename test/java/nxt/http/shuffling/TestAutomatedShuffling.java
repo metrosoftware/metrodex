@@ -42,7 +42,6 @@ import static nxt.http.shuffling.ShufflingUtil.broadcast;
 import static nxt.http.shuffling.ShufflingUtil.cancel;
 import static nxt.http.shuffling.ShufflingUtil.create;
 import static nxt.http.shuffling.ShufflingUtil.createAssetShuffling;
-import static nxt.http.shuffling.ShufflingUtil.createCurrencyShuffling;
 import static nxt.http.shuffling.ShufflingUtil.defaultHoldingShufflingAmount;
 import static nxt.http.shuffling.ShufflingUtil.defaultShufflingAmount;
 import static nxt.http.shuffling.ShufflingUtil.getShuffling;
@@ -50,7 +49,6 @@ import static nxt.http.shuffling.ShufflingUtil.getShufflingParticipants;
 import static nxt.http.shuffling.ShufflingUtil.process;
 import static nxt.http.shuffling.ShufflingUtil.register;
 import static nxt.http.shuffling.ShufflingUtil.shufflingAsset;
-import static nxt.http.shuffling.ShufflingUtil.shufflingCurrency;
 import static nxt.http.shuffling.ShufflingUtil.startShuffler;
 import static nxt.http.shuffling.ShufflingUtil.stopShuffler;
 import static nxt.http.shuffling.ShufflingUtil.verify;
@@ -287,70 +285,6 @@ public class TestAutomatedShuffling extends BlockchainTest {
     }
 
     @Test
-    public void successfulCurrencyShuffling() {
-        JSONObject shufflingCreate = createCurrencyShuffling(ALICE);
-        String shufflingId = (String)shufflingCreate.get("transaction");
-        String shufflingFullHash = (String)shufflingCreate.get("fullHash");
-        generateBlock();
-        startShuffler(ALICE, ALICE_RECIPIENT, shufflingFullHash);
-        startShuffler(BOB, BOB_RECIPIENT, shufflingFullHash);
-        startShuffler(CHUCK, CHUCK_RECIPIENT, shufflingFullHash);
-        startShuffler(DAVE, DAVE_RECIPIENT, shufflingFullHash);
-
-        for (int i = 0; i < 6; i++) {
-            generateBlock();
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ignore) {}
-        }
-
-        JSONObject getShufflingResponse = getShuffling(shufflingId);
-        Assert.assertEquals((long) Shuffling.Stage.DONE.getCode(), getShufflingResponse.get("stage"));
-        String shufflingAssignee = (String) getShufflingResponse.get("assignee");
-        Assert.assertNull(shufflingAssignee);
-
-        Assert.assertEquals(-(Constants.SHUFFLING_DEPOSIT_NQT + 12 * Constants.ONE_NXT), ALICE.getBalanceDiff());
-        Assert.assertEquals(-(Constants.SHUFFLING_DEPOSIT_NQT + 12 * Constants.ONE_NXT), ALICE.getUnconfirmedBalanceDiff());
-        Assert.assertEquals(-(Constants.SHUFFLING_DEPOSIT_NQT + 12 * Constants.ONE_NXT), BOB.getBalanceDiff());
-        Assert.assertEquals(-(Constants.SHUFFLING_DEPOSIT_NQT + 12 * Constants.ONE_NXT), BOB.getUnconfirmedBalanceDiff());
-        Assert.assertEquals(-(Constants.SHUFFLING_DEPOSIT_NQT + 12 * Constants.ONE_NXT), CHUCK.getBalanceDiff());
-        Assert.assertEquals(-(Constants.SHUFFLING_DEPOSIT_NQT + 12 * Constants.ONE_NXT), CHUCK.getUnconfirmedBalanceDiff());
-        Assert.assertEquals(-(Constants.SHUFFLING_DEPOSIT_NQT + 12 * Constants.ONE_NXT), DAVE.getBalanceDiff());
-        Assert.assertEquals(-(Constants.SHUFFLING_DEPOSIT_NQT + 12 * Constants.ONE_NXT), DAVE.getUnconfirmedBalanceDiff());
-
-        Assert.assertEquals(Constants.SHUFFLING_DEPOSIT_NQT, ALICE_RECIPIENT.getBalanceDiff());
-        Assert.assertEquals(Constants.SHUFFLING_DEPOSIT_NQT, ALICE_RECIPIENT.getUnconfirmedBalanceDiff());
-        Assert.assertEquals(Constants.SHUFFLING_DEPOSIT_NQT, BOB_RECIPIENT.getBalanceDiff());
-        Assert.assertEquals(Constants.SHUFFLING_DEPOSIT_NQT, BOB_RECIPIENT.getUnconfirmedBalanceDiff());
-        Assert.assertEquals(Constants.SHUFFLING_DEPOSIT_NQT, CHUCK_RECIPIENT.getBalanceDiff());
-        Assert.assertEquals(Constants.SHUFFLING_DEPOSIT_NQT, CHUCK_RECIPIENT.getUnconfirmedBalanceDiff());
-        Assert.assertEquals(Constants.SHUFFLING_DEPOSIT_NQT, DAVE_RECIPIENT.getBalanceDiff());
-        Assert.assertEquals(Constants.SHUFFLING_DEPOSIT_NQT, DAVE_RECIPIENT.getUnconfirmedBalanceDiff());
-
-        Assert.assertEquals(48 * Constants.ONE_NXT, FORGY.getBalanceDiff());
-        Assert.assertEquals(48 * Constants.ONE_NXT, FORGY.getUnconfirmedBalanceDiff());
-
-        Assert.assertEquals(defaultHoldingShufflingAmount, ALICE_RECIPIENT.getCurrencyUnitsDiff(shufflingCurrency));
-        Assert.assertEquals(defaultHoldingShufflingAmount, ALICE_RECIPIENT.getUnconfirmedCurrencyUnitsDiff(shufflingCurrency));
-        Assert.assertEquals(defaultHoldingShufflingAmount, BOB_RECIPIENT.getCurrencyUnitsDiff(shufflingCurrency));
-        Assert.assertEquals(defaultHoldingShufflingAmount, BOB_RECIPIENT.getUnconfirmedCurrencyUnitsDiff(shufflingCurrency));
-        Assert.assertEquals(defaultHoldingShufflingAmount, CHUCK_RECIPIENT.getCurrencyUnitsDiff(shufflingCurrency));
-        Assert.assertEquals(defaultHoldingShufflingAmount, CHUCK_RECIPIENT.getUnconfirmedCurrencyUnitsDiff(shufflingCurrency));
-        Assert.assertEquals(defaultHoldingShufflingAmount, DAVE_RECIPIENT.getCurrencyUnitsDiff(shufflingCurrency));
-        Assert.assertEquals(defaultHoldingShufflingAmount, DAVE_RECIPIENT.getUnconfirmedCurrencyUnitsDiff(shufflingCurrency));
-
-        Assert.assertEquals(-defaultHoldingShufflingAmount, ALICE.getCurrencyUnitsDiff(shufflingCurrency));
-        Assert.assertEquals(-defaultHoldingShufflingAmount, ALICE.getUnconfirmedCurrencyUnitsDiff(shufflingCurrency));
-        Assert.assertEquals(-defaultHoldingShufflingAmount, BOB.getCurrencyUnitsDiff(shufflingCurrency));
-        Assert.assertEquals(-defaultHoldingShufflingAmount, BOB.getUnconfirmedCurrencyUnitsDiff(shufflingCurrency));
-        Assert.assertEquals(-defaultHoldingShufflingAmount, CHUCK.getCurrencyUnitsDiff(shufflingCurrency));
-        Assert.assertEquals(-defaultHoldingShufflingAmount, CHUCK.getUnconfirmedCurrencyUnitsDiff(shufflingCurrency));
-        Assert.assertEquals(-defaultHoldingShufflingAmount, DAVE.getCurrencyUnitsDiff(shufflingCurrency));
-        Assert.assertEquals(-defaultHoldingShufflingAmount, DAVE.getUnconfirmedCurrencyUnitsDiff(shufflingCurrency));
-
-    }
-
-    @Test
     public void registrationNotFinished() {
         JSONObject shufflingCreate = create(ALICE);
         String shufflingId = (String)shufflingCreate.get("transaction");
@@ -470,60 +404,6 @@ public class TestAutomatedShuffling extends BlockchainTest {
         Assert.assertNull(BOB_RECIPIENT.getAccount());
         Assert.assertNull(CHUCK_RECIPIENT.getAccount());
         Assert.assertNull(DAVE_RECIPIENT.getAccount());
-
-        Assert.assertEquals(4 * Constants.ONE_NXT + Constants.SHUFFLING_DEPOSIT_NQT, FORGY.getBalanceDiff());
-        Assert.assertEquals(4 * Constants.ONE_NXT + Constants.SHUFFLING_DEPOSIT_NQT, FORGY.getUnconfirmedBalanceDiff());
-
-    }
-
-    @Test
-    public void processingNotStartedCurrency() {
-        JSONObject shufflingCreate = createCurrencyShuffling(ALICE);
-        String shufflingId = (String)shufflingCreate.get("transaction");
-        String shufflingFullHash = (String)shufflingCreate.get("fullHash");
-        generateBlock();
-        startShuffler(BOB, BOB_RECIPIENT, shufflingFullHash);
-        startShuffler(CHUCK, CHUCK_RECIPIENT, shufflingFullHash);
-        startShuffler(DAVE, DAVE_RECIPIENT, shufflingFullHash);
-
-        for (int i = 0; i < 10; i++) {
-            generateBlock();
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException ignore) {}
-        }
-
-        JSONObject getShufflingResponse = getShuffling(shufflingId);
-        Assert.assertEquals((long) Shuffling.Stage.CANCELLED.getCode(), getShufflingResponse.get("stage"));
-
-        JSONObject getParticipantsResponse = getShufflingParticipants(shufflingId);
-        JSONArray participants = (JSONArray)getParticipantsResponse.get("participants");
-        Assert.assertEquals(4, participants.size());
-        String shufflingAssignee = (String) getShufflingResponse.get("assignee");
-        Assert.assertEquals(ALICE.getStrId(), shufflingAssignee);
-
-        Assert.assertEquals(-(Constants.SHUFFLING_DEPOSIT_NQT + Constants.ONE_NXT), ALICE.getBalanceDiff());
-        Assert.assertEquals(-(Constants.SHUFFLING_DEPOSIT_NQT + Constants.ONE_NXT), ALICE.getUnconfirmedBalanceDiff());
-        Assert.assertEquals(-Constants.ONE_NXT, BOB.getBalanceDiff());
-        Assert.assertEquals(-Constants.ONE_NXT, BOB.getUnconfirmedBalanceDiff());
-        Assert.assertEquals(-Constants.ONE_NXT, CHUCK.getBalanceDiff());
-        Assert.assertEquals(-Constants.ONE_NXT, CHUCK.getUnconfirmedBalanceDiff());
-        Assert.assertEquals(-Constants.ONE_NXT, DAVE.getBalanceDiff());
-        Assert.assertEquals(-Constants.ONE_NXT, DAVE.getUnconfirmedBalanceDiff());
-
-        Assert.assertNull(ALICE_RECIPIENT.getAccount());
-        Assert.assertNull(BOB_RECIPIENT.getAccount());
-        Assert.assertNull(CHUCK_RECIPIENT.getAccount());
-        Assert.assertNull(DAVE_RECIPIENT.getAccount());
-
-        Assert.assertEquals(0, ALICE.getCurrencyUnitsDiff(shufflingCurrency));
-        Assert.assertEquals(0, ALICE.getUnconfirmedCurrencyUnitsDiff(shufflingCurrency));
-        Assert.assertEquals(0, BOB.getCurrencyUnitsDiff(shufflingCurrency));
-        Assert.assertEquals(0, BOB.getUnconfirmedCurrencyUnitsDiff(shufflingCurrency));
-        Assert.assertEquals(0, CHUCK.getCurrencyUnitsDiff(shufflingCurrency));
-        Assert.assertEquals(0, CHUCK.getUnconfirmedCurrencyUnitsDiff(shufflingCurrency));
-        Assert.assertEquals(0, DAVE.getCurrencyUnitsDiff(shufflingCurrency));
-        Assert.assertEquals(0, DAVE.getUnconfirmedCurrencyUnitsDiff(shufflingCurrency));
 
         Assert.assertEquals(4 * Constants.ONE_NXT + Constants.SHUFFLING_DEPOSIT_NQT, FORGY.getBalanceDiff());
         Assert.assertEquals(4 * Constants.ONE_NXT + Constants.SHUFFLING_DEPOSIT_NQT, FORGY.getUnconfirmedBalanceDiff());

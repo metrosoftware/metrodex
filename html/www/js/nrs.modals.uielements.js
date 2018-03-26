@@ -80,46 +80,6 @@ var NRS = (function(NRS, $, undefined) {
 		_updateBlockHeightEstimates($bhmElem);
 	});
 
-
-	//add_currency_modal_ui_element
-	_currencyCode = null;
-	_acmElem = null;
-	_setAssetInfoNotExisting = function() {
-		$(_acmElem).find('.acm_ue_currency_id').html($.t('not_existing', 'Not existing'));
-		$(_acmElem).find('.acm_ue_currency_id_input').val("");
-		$(_acmElem).find('.acm_ue_currency_id_input').prop("disabled", true);
-		$(_acmElem).find('.acm_ue_currency_decimals_input').val("");
-		$(_acmElem).find('.acm_ue_currency_decimals_input').prop("disabled", true);
-	}
-
-	_loadCurrencyInfoForCode = function() {
-		if (_currencyCode && _currencyCode.length >= 3) {
-			NRS.sendRequest("getCurrency", {
-				"code": _currencyCode
-			}, function(response) {
-				if (response && response.currency) {
-					var idString = String(response.currency) + "&nbsp; (" + $.t('decimals', 'Decimals') + ": " + String(response.decimals) + ")";
-					$(_acmElem).find('.acm_ue_currency_id').html(idString);
-					$(_acmElem).find('.acm_ue_currency_id_input').val(String(response.currency));
-					$(_acmElem).find('.acm_ue_currency_id_input').prop("disabled", false);
-					$(_acmElem).find('.acm_ue_currency_decimals').html(String(response.decimals));
-					$(_acmElem).find('.acm_ue_currency_decimals_input').val(String(response.decimals));
-					$(_acmElem).find('.acm_ue_currency_decimals_input').prop("disabled", false);
-				} else {
-					_setAssetInfoNotExisting();
-				}
-			});
-		} else {
-			_setAssetInfoNotExisting();
-		}
-	}
-
-	$('body').on('keyup', '.modal div[data-modal-ui-element="add_currency_modal_ui_element"] .acm_ue_currency_code_input', function(e) {
-		_acmElem = $(this).closest('div[data-modal-ui-element="add_currency_modal_ui_element"]');
-		_currencyCode = $(this).val();
-		_delay(_loadCurrencyInfoForCode, 1000 );
-	});
-
 	//add_asset_modal_ui_element
 	_assetId = null;
 	_aamElem = null;

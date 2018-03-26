@@ -608,9 +608,8 @@ var NRS = (function(NRS, $) {
 						// Singleton asset no need to warn
 					} else {
 						NRS.showedFormWarning = true;
-						var entity = (requestType == 'issueCurrency' ? 'currency' : 'asset');
 						$form.find(".error_message").html($.t("error_decimal_positions_warning", {
-							"entity": entity
+							"entity": 'asset'
 						})).show();
 						if (formErrorFunction) {
 							formErrorFunction(false, data);

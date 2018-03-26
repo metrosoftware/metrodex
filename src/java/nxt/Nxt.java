@@ -365,7 +365,6 @@ public final class Nxt {
                 AccountLedger.init();
                 Alias.init();
                 Asset.init();
-                DigitalGoodsStore.init();
                 Order.init();
                 Poll.init();
                 PhasingPoll.init();
@@ -375,18 +374,9 @@ public final class Nxt {
                 AssetDividend.init();
                 Vote.init();
                 PhasingVote.init();
-                Currency.init();
-                CurrencyBuyOffer.init();
-                CurrencySellOffer.init();
-                CurrencyFounder.init();
-                CurrencyMint.init();
-                CurrencyTransfer.init();
-                Exchange.init();
-                ExchangeRequest.init();
                 Shuffling.init();
                 ShufflingParticipant.init();
                 PrunableMessage.init();
-                TaggedData.init();
                 Peers.init();
                 APIProxy.init();
                 Generator.init();

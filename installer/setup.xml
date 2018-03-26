@@ -152,7 +152,6 @@
             <file src="nxtservice.exe" targetdir="${INSTALL_PATH}" override="true"/>
             <file src="nxtservice.jar" targetdir="${INSTALL_PATH}" override="true"/>
             <file src="run.bat" targetdir="${INSTALL_PATH}" override="true"/>
-            <file src="mint.bat" targetdir="${INSTALL_PATH}" override="true"/>
             <file src="compact.bat" targetdir="${INSTALL_PATH}" override="true"/>
             <file src="sign.bat" targetdir="${INSTALL_PATH}" override="true"/>
             <file src="passphraseRecovery.bat" targetdir="${INSTALL_PATH}" override="true"/>
@@ -173,8 +172,6 @@
             <executable targetfile="${INSTALL_PATH}/start.sh"/>
             <file src="stop.sh" targetdir="${INSTALL_PATH}" override="true"/>
             <executable targetfile="${INSTALL_PATH}/stop.sh"/>
-            <file src="mint.sh" targetdir="${INSTALL_PATH}" override="true"/>
-            <executable targetfile="${INSTALL_PATH}/mint.sh"/>
             <file src="compile.sh" targetdir="${INSTALL_PATH}" override="true"/>
             <executable targetfile="${INSTALL_PATH}/compile.sh"/>
             <file src="jar.sh" targetdir="${INSTALL_PATH}" override="true"/>

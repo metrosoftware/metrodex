@@ -455,27 +455,6 @@ var NRS = (function(NRS, $, undefined) {
 								}
 							}, { isAsync: false });
 						}
-						if (vm == 3 || mbModel == 3) {
-							NRS.sendRequest("getCurrency", {
-								"currency": attachment.phasingHolding
-							}, function(phResponse) {
-								if (phResponse && phResponse.currency) {
-									if (vm == 3) {
-										$popoverTypeTR.find("td:first").html($.t('currency', 'Currency') + ":");
-										$popoverTypeTR.find("td:last").html(String(phResponse.code));
-										var votesFormatted = NRS.convertToQNTf(responsePoll.result, phResponse.decimals) + " / ";
-										votesFormatted += NRS.convertToQNTf(attachment.phasingQuorum, phResponse.decimals) + " Units";
-										$popoverVotesTR.find("td:last").html(votesFormatted);
-									}
-									if (mbModel == 3) {
-										if (minBalance > 0) {
-											minBalanceFormatted = NRS.convertToQNTf(minBalance, phResponse.decimals) + " Units (" + phResponse.code + ")";
-											$approveBtn.data('minBalanceFormatted', minBalanceFormatted.escapeHTML());
-										}
-									}
-								}
-							}, { isAsync: false });
-						}
 					});
 				} else {
 					$tdPhasing.html("&nbsp;");
@@ -616,14 +595,6 @@ var NRS = (function(NRS, $, undefined) {
                 balance = NRS.formatQuantity(balance, response.decimals, false, decimalParams.holdingBalanceDecimals);
                 holdingIcon = "<i class='fa fa-signal'></i> ";
             }, { isAsync: false });
-        } else if (/CURRENCY_BALANCE/i.test(entry.holdingType)) {
-            NRS.sendRequest("getCurrency", {"currency": entry.holding}, function (response) {
-                balanceType = "currency";
-                balanceEntity = response.name;
-                change = NRS.formatQuantity(change, response.decimals, false, decimalParams.holdingChangeDecimals);
-                balance = NRS.formatQuantity(balance, response.decimals, false, decimalParams.holdingBalanceDecimals);
-                holdingIcon =  "<i class='fa fa-bank'></i> ";
-            }, { isAsync: false });
         } else {
             change = NRS.formatAmount(change, false, false, decimalParams.changeDecimals);
             balance = NRS.formatAmount(balance, false, false, decimalParams.balanceDecimals);
@@ -637,7 +608,7 @@ var NRS = (function(NRS, $, undefined) {
 			sign = "-";
         }
         var eventType = NRS.escapeRespStr(entry.eventType);
-        if (eventType.indexOf("ASSET") == 0 || eventType.indexOf("CURRENCY") == 0) {
+        if (eventType.indexOf("ASSET") == 0) {
             eventType = eventType.substring(eventType.indexOf("_") + 1);
         }
         eventType = $.t(eventType.toLowerCase());
@@ -805,7 +776,7 @@ var NRS = (function(NRS, $, undefined) {
 	};
 
 	var isHoldingEntry = function (entry){
-		return /ASSET_BALANCE/i.test(entry.holdingType) || /CURRENCY_BALANCE/i.test(entry.holdingType);
+		return /ASSET_BALANCE/i.test(entry.holdingType);
 	};
 
     NRS.getLedgerNumberOfDecimals = function (entries){

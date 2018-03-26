@@ -65,17 +65,6 @@ public final class VoteWeighting {
                 return MinBalanceModel.ASSET;
             }
         },
-        CURRENCY(3) {
-            @Override
-            public final long calcWeight(VoteWeighting voteWeighting, long voterId, int height) {
-                long units = Account.getCurrencyUnits(voterId, voteWeighting.holdingId, height);
-                return units >= voteWeighting.minBalance ? units : 0;
-            }
-            @Override
-            public final MinBalanceModel getMinBalanceModel() {
-                return MinBalanceModel.CURRENCY;
-            }
-        },
         TRANSACTION(4) {
             @Override
             public final boolean acceptsVotes() {
@@ -147,12 +136,6 @@ public final class VoteWeighting {
             public final long getBalance(VoteWeighting voteWeighting, long voterId, int height) {
                 return Account.getAssetBalanceQNT(voterId, voteWeighting.holdingId, height);
             }
-        },
-        CURRENCY(3) {
-            @Override
-            public final long getBalance(VoteWeighting voteWeighting, long voterId, int height) {
-                return Account.getCurrencyUnits(voterId, voteWeighting.holdingId, height);
-            }
         };
 
         private final byte code;
@@ -213,11 +196,8 @@ public final class VoteWeighting {
         if (minBalanceModel == null) {
             throw new NxtException.NotValidException("Invalid min balance model");
         }
-        if ((votingModel == VotingModel.ASSET || votingModel == VotingModel.CURRENCY) && holdingId == 0) {
+        if ((votingModel == VotingModel.ASSET) && holdingId == 0) {
             throw new NxtException.NotValidException("No holdingId provided");
-        }
-        if (votingModel == VotingModel.CURRENCY && Currency.getCurrency(holdingId) == null) {
-            throw new NxtException.NotCurrentlyValidException("Currency " + Long.toUnsignedString(holdingId) + " not found");
         }
         if (votingModel == VotingModel.ASSET && Asset.getAsset(holdingId) == null) {
             throw new NxtException.NotCurrentlyValidException("Asset " + Long.toUnsignedString(holdingId) + " not found");
@@ -232,14 +212,11 @@ public final class VoteWeighting {
             if (votingModel.getMinBalanceModel() != MinBalanceModel.NONE && votingModel.getMinBalanceModel() != minBalanceModel) {
                 throw new NxtException.NotValidException("Invalid min balance model: " + minBalanceModel + " for voting model " + votingModel);
             }
-            if ((minBalanceModel == MinBalanceModel.ASSET || minBalanceModel == MinBalanceModel.CURRENCY) && holdingId == 0) {
+            if ((minBalanceModel == MinBalanceModel.ASSET) && holdingId == 0) {
                 throw new NxtException.NotValidException("No holdingId provided");
             }
             if (minBalanceModel == MinBalanceModel.ASSET && Asset.getAsset(holdingId) == null) {
                 throw new NxtException.NotCurrentlyValidException("Invalid min balance asset: " + Long.toUnsignedString(holdingId));
-            }
-            if (minBalanceModel == MinBalanceModel.CURRENCY && Currency.getCurrency(holdingId) == null) {
-                throw new NxtException.NotCurrentlyValidException("Invalid min balance currency: " + Long.toUnsignedString(holdingId));
             }
         }
         if (minBalance == 0 && votingModel == VotingModel.ACCOUNT && holdingId != 0) {

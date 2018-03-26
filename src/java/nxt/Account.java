@@ -50,7 +50,7 @@ import java.util.concurrent.ConcurrentMap;
 public final class Account {
 
     public enum Event {
-        BALANCE, UNCONFIRMED_BALANCE, ASSET_BALANCE, UNCONFIRMED_ASSET_BALANCE, CURRENCY_BALANCE, UNCONFIRMED_CURRENCY_BALANCE,
+        BALANCE, UNCONFIRMED_BALANCE, ASSET_BALANCE, UNCONFIRMED_ASSET_BALANCE,
         LEASE_SCHEDULED, LEASE_STARTED, LEASE_ENDED, SET_PROPERTY, DELETE_PROPERTY
     }
 
@@ -125,78 +125,6 @@ public final class Account {
         public String toString() {
             return "AccountAsset account_id: " + Long.toUnsignedString(accountId) + " asset_id: " + Long.toUnsignedString(assetId)
                     + " quantity: " + quantityQNT + " unconfirmedQuantity: " + unconfirmedQuantityQNT;
-        }
-
-    }
-
-    @SuppressWarnings("UnusedDeclaration")
-    public static final class AccountCurrency {
-
-        private final long accountId;
-        private final long currencyId;
-        private final DbKey dbKey;
-        private long units;
-        private long unconfirmedUnits;
-
-        private AccountCurrency(long accountId, long currencyId, long quantityQNT, long unconfirmedQuantityQNT) {
-            this.accountId = accountId;
-            this.currencyId = currencyId;
-            this.dbKey = accountCurrencyDbKeyFactory.newKey(this.accountId, this.currencyId);
-            this.units = quantityQNT;
-            this.unconfirmedUnits = unconfirmedQuantityQNT;
-        }
-
-        private AccountCurrency(ResultSet rs, DbKey dbKey) throws SQLException {
-            this.accountId = rs.getLong("account_id");
-            this.currencyId = rs.getLong("currency_id");
-            this.dbKey = dbKey;
-            this.units = rs.getLong("units");
-            this.unconfirmedUnits = rs.getLong("unconfirmed_units");
-        }
-
-        private void save(Connection con) throws SQLException {
-            try (PreparedStatement pstmt = con.prepareStatement("MERGE INTO account_currency "
-                    + "(account_id, currency_id, units, unconfirmed_units, height, latest) "
-                    + "KEY (account_id, currency_id, height) VALUES (?, ?, ?, ?, ?, TRUE)")) {
-                int i = 0;
-                pstmt.setLong(++i, this.accountId);
-                pstmt.setLong(++i, this.currencyId);
-                pstmt.setLong(++i, this.units);
-                pstmt.setLong(++i, this.unconfirmedUnits);
-                pstmt.setInt(++i, Nxt.getBlockchain().getHeight());
-                pstmt.executeUpdate();
-            }
-        }
-
-        public long getAccountId() {
-            return accountId;
-        }
-
-        public long getCurrencyId() {
-            return currencyId;
-        }
-
-        public long getUnits() {
-            return units;
-        }
-
-        public long getUnconfirmedUnits() {
-            return unconfirmedUnits;
-        }
-
-        private void save() {
-            checkBalance(this.accountId, this.units, this.unconfirmedUnits);
-            if (this.units > 0 || this.unconfirmedUnits > 0) {
-                accountCurrencyTable.insert(this);
-            } else if (this.units == 0 && this.unconfirmedUnits == 0) {
-                accountCurrencyTable.delete(this);
-            }
-        }
-
-        @Override
-        public String toString() {
-            return "AccountCurrency account_id: " + Long.toUnsignedString(accountId) + " currency_id: " + Long.toUnsignedString(currencyId)
-                    + " quantity: " + units + " unconfirmedQuantity: " + unconfirmedUnits;
         }
 
     }
@@ -621,35 +549,7 @@ public final class Account {
 
     };
 
-    private static final DbKey.LinkKeyFactory<AccountCurrency> accountCurrencyDbKeyFactory = new DbKey.LinkKeyFactory<AccountCurrency>("account_id", "currency_id") {
-
-        @Override
-        public DbKey newKey(AccountCurrency accountCurrency) {
-            return accountCurrency.dbKey;
-        }
-
-    };
-
-    private static final VersionedEntityDbTable<AccountCurrency> accountCurrencyTable = new VersionedEntityDbTable<AccountCurrency>("account_currency", accountCurrencyDbKeyFactory) {
-
-        @Override
-        protected AccountCurrency load(Connection con, ResultSet rs, DbKey dbKey) throws SQLException {
-            return new AccountCurrency(rs, dbKey);
-        }
-
-        @Override
-        protected void save(Connection con, AccountCurrency accountCurrency) throws SQLException {
-            accountCurrency.save(con);
-        }
-
-        @Override
-        protected String defaultSort() {
-            return " ORDER BY units DESC, account_id, currency_id ";
-        }
-
-    };
-
-    private static final DerivedDbTable accountGuaranteedBalanceTable = new DerivedDbTable("account_guaranteed_balance") {
+    private static final DerivedDbTable accountGuaranteedBaseBalanceTable = new DerivedDbTable("account_guaranteed_balance") {
 
         @Override
         public void trim(int height) {
@@ -699,8 +599,6 @@ public final class Account {
 
     private static final Listeners<AccountAsset,Event> assetListeners = new Listeners<>();
 
-    private static final Listeners<AccountCurrency,Event> currencyListeners = new Listeners<>();
-
     private static final Listeners<AccountLease,Event> leaseListeners = new Listeners<>();
 
     private static final Listeners<AccountProperty,Event> propertyListeners = new Listeners<>();
@@ -719,14 +617,6 @@ public final class Account {
 
     public static boolean removeAssetListener(Listener<AccountAsset> listener, Event eventType) {
         return assetListeners.removeListener(listener, eventType);
-    }
-
-    public static boolean addCurrencyListener(Listener<AccountCurrency> listener, Event eventType) {
-        return currencyListeners.addListener(listener, eventType);
-    }
-
-    public static boolean removeCurrencyListener(Listener<AccountCurrency> listener, Event eventType) {
-        return currencyListeners.removeListener(listener, eventType);
     }
 
     public static boolean addLeaseListener(Listener<AccountLease> listener, Event eventType) {
@@ -763,22 +653,6 @@ public final class Account {
 
     public static int getAccountAssetCount(long accountId, int height) {
         return accountAssetTable.getCount(new DbClause.LongClause("account_id", accountId), height);
-    }
-
-    public static int getCurrencyAccountCount(long currencyId) {
-        return accountCurrencyTable.getCount(new DbClause.LongClause("currency_id", currencyId));
-    }
-
-    public static int getCurrencyAccountCount(long currencyId, int height) {
-        return accountCurrencyTable.getCount(new DbClause.LongClause("currency_id", currencyId), height);
-    }
-
-    public static int getAccountCurrencyCount(long accountId) {
-        return accountCurrencyTable.getCount(new DbClause.LongClause("account_id", accountId));
-    }
-
-    public static int getAccountCurrencyCount(long accountId, int height) {
-        return accountCurrencyTable.getCount(new DbClause.LongClause("account_id", accountId), height);
     }
 
     public static int getAccountLeaseCount() {
@@ -959,30 +833,6 @@ public final class Account {
         return accountAssetTable.getManyBy(new DbClause.LongClause("asset_id", assetId), height, from, to, " ORDER BY quantity DESC, account_id ");
     }
 
-    public static AccountCurrency getAccountCurrency(long accountId, long currencyId) {
-        return accountCurrencyTable.get(accountCurrencyDbKeyFactory.newKey(accountId, currencyId));
-    }
-
-    public static AccountCurrency getAccountCurrency(long accountId, long currencyId, int height) {
-        return accountCurrencyTable.get(accountCurrencyDbKeyFactory.newKey(accountId, currencyId), height);
-    }
-
-    public static DbIterator<AccountCurrency> getAccountCurrencies(long accountId, int from, int to) {
-        return accountCurrencyTable.getManyBy(new DbClause.LongClause("account_id", accountId), from, to);
-    }
-
-    public static DbIterator<AccountCurrency> getAccountCurrencies(long accountId, int height, int from, int to) {
-        return accountCurrencyTable.getManyBy(new DbClause.LongClause("account_id", accountId), height, from, to);
-    }
-
-    public static DbIterator<AccountCurrency> getCurrencyAccounts(long currencyId, int from, int to) {
-        return accountCurrencyTable.getManyBy(new DbClause.LongClause("currency_id", currencyId), from, to);
-    }
-
-    public static DbIterator<AccountCurrency> getCurrencyAccounts(long currencyId, int height, int from, int to) {
-        return accountCurrencyTable.getManyBy(new DbClause.LongClause("currency_id", currencyId), height, from, to);
-    }
-
     public static long getAssetBalanceQNT(long accountId, long assetId, int height) {
         AccountAsset accountAsset = accountAssetTable.get(accountAssetDbKeyFactory.newKey(accountId, assetId), height);
         return accountAsset == null ? 0 : accountAsset.quantityQNT;
@@ -996,21 +846,6 @@ public final class Account {
     public static long getUnconfirmedAssetBalanceQNT(long accountId, long assetId) {
         AccountAsset accountAsset = accountAssetTable.get(accountAssetDbKeyFactory.newKey(accountId, assetId));
         return accountAsset == null ? 0 : accountAsset.unconfirmedQuantityQNT;
-    }
-
-    public static long getCurrencyUnits(long accountId, long currencyId, int height) {
-        AccountCurrency accountCurrency = accountCurrencyTable.get(accountCurrencyDbKeyFactory.newKey(accountId, currencyId), height);
-        return accountCurrency == null ? 0 : accountCurrency.units;
-    }
-
-    public static long getCurrencyUnits(long accountId, long currencyId) {
-        AccountCurrency accountCurrency = accountCurrencyTable.get(accountCurrencyDbKeyFactory.newKey(accountId, currencyId));
-        return accountCurrency == null ? 0 : accountCurrency.units;
-    }
-
-    public static long getUnconfirmedCurrencyUnits(long accountId, long currencyId) {
-        AccountCurrency accountCurrency = accountCurrencyTable.get(accountCurrencyDbKeyFactory.newKey(accountId, currencyId));
-        return accountCurrency == null ? 0 : accountCurrency.unconfirmedUnits;
     }
 
     public static DbIterator<AccountInfo> searchAccounts(String query, int from, int to) {
@@ -1339,14 +1174,6 @@ public final class Account {
         return AssetTransfer.getAccountAssetTransfers(this.id, from, to);
     }
 
-    public DbIterator<CurrencyTransfer> getCurrencyTransfers(int from, int to) {
-        return CurrencyTransfer.getAccountCurrencyTransfers(this.id, from, to);
-    }
-
-    public DbIterator<Exchange> getExchanges(int from, int to) {
-        return Exchange.getAccountExchanges(this.id, from, to);
-    }
-
     public AccountAsset getAsset(long assetId) {
         return accountAssetTable.get(accountAssetDbKeyFactory.newKey(this.id, assetId));
     }
@@ -1365,34 +1192,6 @@ public final class Account {
 
     public long getUnconfirmedAssetBalanceQNT(long assetId) {
         return getUnconfirmedAssetBalanceQNT(this.id, assetId);
-    }
-
-    public AccountCurrency getCurrency(long currencyId) {
-        return accountCurrencyTable.get(accountCurrencyDbKeyFactory.newKey(this.id, currencyId));
-    }
-
-    public AccountCurrency getCurrency(long currencyId, int height) {
-        return accountCurrencyTable.get(accountCurrencyDbKeyFactory.newKey(this.id, currencyId), height);
-    }
-
-    public DbIterator<AccountCurrency> getCurrencies(int from, int to) {
-        return accountCurrencyTable.getManyBy(new DbClause.LongClause("account_id", this.id), from, to);
-    }
-
-    public DbIterator<AccountCurrency> getCurrencies(int height, int from, int to) {
-        return accountCurrencyTable.getManyBy(new DbClause.LongClause("account_id", this.id), height, from, to);
-    }
-
-    public long getCurrencyUnits(long currencyId) {
-        return getCurrencyUnits(this.id, currencyId);
-    }
-
-    public long getCurrencyUnits(long currencyId, int height) {
-        return getCurrencyUnits(this.id, currencyId, height);
-    }
-
-    public long getUnconfirmedCurrencyUnits(long currencyId) {
-        return getUnconfirmedCurrencyUnits(this.id, currencyId);
     }
 
     public Set<ControlType> getControls() {
@@ -1583,83 +1382,6 @@ public final class Account {
             AccountLedger.logEntry(new LedgerEntry(event, eventId, this.id,
                     LedgerHolding.ASSET_BALANCE, assetId,
                     quantityQNT, assetBalance));
-        }
-    }
-
-    void addToCurrencyUnits(LedgerEvent event, long eventId, long currencyId, long units) {
-        if (units == 0) {
-            return;
-        }
-        AccountCurrency accountCurrency;
-        accountCurrency = accountCurrencyTable.get(accountCurrencyDbKeyFactory.newKey(this.id, currencyId));
-        long currencyUnits = accountCurrency == null ? 0 : accountCurrency.units;
-        currencyUnits = Math.addExact(currencyUnits, units);
-        if (accountCurrency == null) {
-            accountCurrency = new AccountCurrency(this.id, currencyId, currencyUnits, 0);
-        } else {
-            accountCurrency.units = currencyUnits;
-        }
-        accountCurrency.save();
-        listeners.notify(this, Event.CURRENCY_BALANCE);
-        currencyListeners.notify(accountCurrency, Event.CURRENCY_BALANCE);
-        if (AccountLedger.mustLogEntry(this.id, false)) {
-            AccountLedger.logEntry(new LedgerEntry(event, eventId, this.id, LedgerHolding.CURRENCY_BALANCE, currencyId,
-                    units, currencyUnits));
-        }
-    }
-
-    void addToUnconfirmedCurrencyUnits(LedgerEvent event, long eventId, long currencyId, long units) {
-        if (units == 0) {
-            return;
-        }
-        AccountCurrency accountCurrency = accountCurrencyTable.get(accountCurrencyDbKeyFactory.newKey(this.id, currencyId));
-        long unconfirmedCurrencyUnits = accountCurrency == null ? 0 : accountCurrency.unconfirmedUnits;
-        unconfirmedCurrencyUnits = Math.addExact(unconfirmedCurrencyUnits, units);
-        if (accountCurrency == null) {
-            accountCurrency = new AccountCurrency(this.id, currencyId, 0, unconfirmedCurrencyUnits);
-        } else {
-            accountCurrency.unconfirmedUnits = unconfirmedCurrencyUnits;
-        }
-        accountCurrency.save();
-        listeners.notify(this, Event.UNCONFIRMED_CURRENCY_BALANCE);
-        currencyListeners.notify(accountCurrency, Event.UNCONFIRMED_CURRENCY_BALANCE);
-        if (AccountLedger.mustLogEntry(this.id, true)) {
-            AccountLedger.logEntry(new LedgerEntry(event, eventId, this.id,
-                    LedgerHolding.UNCONFIRMED_CURRENCY_BALANCE, currencyId,
-                    units, unconfirmedCurrencyUnits));
-        }
-    }
-
-    void addToCurrencyAndUnconfirmedCurrencyUnits(LedgerEvent event, long eventId, long currencyId, long units) {
-        if (units == 0) {
-            return;
-        }
-        AccountCurrency accountCurrency;
-        accountCurrency = accountCurrencyTable.get(accountCurrencyDbKeyFactory.newKey(this.id, currencyId));
-        long currencyUnits = accountCurrency == null ? 0 : accountCurrency.units;
-        currencyUnits = Math.addExact(currencyUnits, units);
-        long unconfirmedCurrencyUnits = accountCurrency == null ? 0 : accountCurrency.unconfirmedUnits;
-        unconfirmedCurrencyUnits = Math.addExact(unconfirmedCurrencyUnits, units);
-        if (accountCurrency == null) {
-            accountCurrency = new AccountCurrency(this.id, currencyId, currencyUnits, unconfirmedCurrencyUnits);
-        } else {
-            accountCurrency.units = currencyUnits;
-            accountCurrency.unconfirmedUnits = unconfirmedCurrencyUnits;
-        }
-        accountCurrency.save();
-        listeners.notify(this, Event.CURRENCY_BALANCE);
-        listeners.notify(this, Event.UNCONFIRMED_CURRENCY_BALANCE);
-        currencyListeners.notify(accountCurrency, Event.CURRENCY_BALANCE);
-        currencyListeners.notify(accountCurrency, Event.UNCONFIRMED_CURRENCY_BALANCE);
-        if (AccountLedger.mustLogEntry(this.id, true)) {
-            AccountLedger.logEntry(new LedgerEntry(event, eventId, this.id,
-                    LedgerHolding.UNCONFIRMED_CURRENCY_BALANCE, currencyId,
-                    units, unconfirmedCurrencyUnits));
-        }
-        if (AccountLedger.mustLogEntry(this.id, false)) {
-            AccountLedger.logEntry(new LedgerEntry(event, eventId, this.id,
-                    LedgerHolding.CURRENCY_BALANCE, currencyId,
-                    units, currencyUnits));
         }
     }
 

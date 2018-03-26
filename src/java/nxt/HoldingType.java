@@ -89,35 +89,6 @@ public enum HoldingType {
             account.addToAssetAndUnconfirmedAssetBalanceQNT(event, eventId, holdingId, amount);
         }
 
-    },
-
-    CURRENCY((byte)2) {
-
-        @Override
-        public long getBalance(Account account, long holdingId) {
-            return account.getCurrencyUnits(holdingId);
-        }
-
-        @Override
-        public long getUnconfirmedBalance(Account account, long holdingId) {
-            return account.getUnconfirmedCurrencyUnits(holdingId);
-        }
-
-        @Override
-        void addToBalance(Account account, AccountLedger.LedgerEvent event, long eventId, long holdingId, long amount) {
-            account.addToCurrencyUnits(event, eventId, holdingId, amount);
-        }
-
-        @Override
-        void addToUnconfirmedBalance(Account account, AccountLedger.LedgerEvent event, long eventId, long holdingId, long amount) {
-            account.addToUnconfirmedCurrencyUnits(event, eventId, holdingId, amount);
-        }
-
-        @Override
-        void addToBalanceAndUnconfirmedBalance(Account account, AccountLedger.LedgerEvent event, long eventId, long holdingId, long amount) {
-            account.addToCurrencyAndUnconfirmedCurrencyUnits(event, eventId, holdingId, amount);
-        }
-
     };
 
     public static HoldingType get(byte code) {

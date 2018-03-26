@@ -369,7 +369,6 @@ var NRS = (function(NRS, $, undefined) {
 				// has to be enabled by activating this code on the specific widget
 				$("[data-toggle='tooltip']").tooltip();
 
-				$("#dgs_search_account_center").mask(NRS.getAccountMask("*"));
 				console.log("done initialization");
 				if (NRS.getUrlParameter("account")) {
 					NRS.login(false, NRS.getUrlParameter("account"));
@@ -1104,7 +1103,6 @@ var NRS = (function(NRS, $, undefined) {
 		NRS.sendRequest("getAccount", {
 			"account": NRS.account,
 			"includeAssets": true,
-			"includeCurrencies": true,
 			"includeLessors": true,
 			"includeEffectiveBalance": true
 		}, function(response) {
@@ -1112,7 +1110,7 @@ var NRS = (function(NRS, $, undefined) {
 			NRS.accountInfo = response;
 			if (response.errorCode) {
 				NRS.logConsole("Get account info error (" + response.errorCode + ") " + response.errorDescription);
-				$("#account_balance, #account_balance_sidebar, #account_currencies_balance, #account_nr_currencies, #account_purchase_count, #account_pending_sale_count, #account_completed_sale_count, #account_message_count, #account_alias_count").html("0");
+				$("#account_balance, #account_balance_sidebar, #account_nr_currencies, #account_message_count, #account_alias_count").html("0");
                 NRS.updateDashboardMessage();
 			} else {
 				if (NRS.accountRS && NRS.accountInfo.accountRS != NRS.accountRS) {
@@ -1199,37 +1197,6 @@ var NRS = (function(NRS, $, undefined) {
                         }
                     }
 
-                    if (response.accountCurrencies) {
-                        var currencies = [];
-                        var currencyBalances = response.accountCurrencies;
-                        var numberOfCurrencies = currencyBalances.length;
-                        $("#account_nr_currencies").html(numberOfCurrencies);
-                        var currencyBalancesMap = {};
-                        for (i = 0; i < numberOfCurrencies; i++) {
-                            if (currencyBalances[i].units != "0") {
-                                currencies.push(currencyBalances[i].currency);
-                                currencyBalancesMap[currencyBalances[i].currency] = currencyBalances[i].units;
-                            }
-                        }
-                        NRS.sendRequest("getLastExchanges", {
-                            "currencies": currencies
-                        }, function (response) {
-                            if (response.exchanges && response.exchanges.length) {
-                                var currencyTotal = 0;
-                                for (i = 0; i < response.exchanges.length; i++) {
-                                    var exchange = response.exchanges[i];
-                                    currencyTotal += currencyBalancesMap[exchange.currency] * exchange.rateNQT / 100000000;
-                                }
-                                $("#account_currencies_balance").html(NRS.formatStyledAmount(new Big(currencyTotal).toFixed(8)));
-                            } else {
-                                $("#account_currencies_balance").html(0);
-                            }
-                        });
-                    } else {
-                        $("#account_currencies_balance").html(0);
-                        $("#account_nr_currencies").html(0);
-                    }
-
                     /* Display message count in top and limit to 100 for now because of possible performance issues*/
                     NRS.sendRequest("getBlockchainTransactions+", {
                         "account": NRS.account,
@@ -1256,32 +1223,6 @@ var NRS = (function(NRS, $, undefined) {
                         }
                     });
 
-                    NRS.sendRequest("getDGSPurchaseCount+", {
-                        "buyer": NRS.account
-                    }, function (response) {
-                        if (response.numberOfPurchases != null) {
-                            $("#account_purchase_count").empty().append(response.numberOfPurchases);
-                        }
-                    });
-
-                    NRS.sendRequest("getDGSPendingPurchases+", {
-                        "seller": NRS.account
-                    }, function (response) {
-                        if (response.purchases && response.purchases.length) {
-                            $("#account_pending_sale_count").empty().append(response.purchases.length);
-                        } else {
-                            $("#account_pending_sale_count").empty().append("0");
-                        }
-                    });
-
-                    NRS.sendRequest("getDGSPurchaseCount+", {
-                        "seller": NRS.account,
-                        "completed": true
-                    }, function (response) {
-                        if (response.numberOfPurchases != null) {
-                            $("#account_completed_sale_count").empty().append(response.numberOfPurchases);
-                        }
-                    });
                     $(".optional_dashboard_tile").show();
                 } else {
                     // Hide the optional tiles and move the block info tile to the first row
@@ -1317,7 +1258,7 @@ var NRS = (function(NRS, $, undefined) {
 			}
 
 			if (firstRun) {
-				$("#account_balance, #account_balance_sidebar, #account_assets_balance, #account_nr_assets, #account_currencies_balance, #account_nr_currencies, #account_purchase_count, #account_pending_sale_count, #account_completed_sale_count, #account_message_count, #account_alias_count").removeClass("loading_dots");
+				$("#account_balance, #account_balance_sidebar, #account_assets_balance, #account_nr_assets, #account_nr_currencies, #account_message_count, #account_alias_count").removeClass("loading_dots");
 			}
 
 			if (callback) {

@@ -689,7 +689,7 @@ var NRS = (function (NRS, $, undefined) {
         var backLink = $(".back-link");
         if (NRS.modalStack.length > 0) {
             var backModalInfo = NRS.modalStack[NRS.modalStack.length - 1];
-            backLink.removeClass("show_transaction_modal_action show_account_modal_action show_block_modal_action show_ledger_modal_action dgs_show_modal_action_purchase dgs_show_modal_action_product");
+            backLink.removeClass("show_transaction_modal_action show_account_modal_action show_block_modal_action show_ledger_modal_action");
             backLink.addClass(backModalInfo.class);
             backLink.data(backModalInfo.key, backModalInfo.value);
             backLink.data("back", "true");
@@ -911,7 +911,7 @@ var NRS = (function (NRS, $, undefined) {
                     }
 					if (unconfirmedTransaction[key] == fields[key]) {
 						if (single) {
-							return NRS.completeUnconfirmedTransactionDetails(unconfirmedTransaction);
+							return unconfirmedTransaction;
 						} else {
 							unconfirmedTransactions.push(unconfirmedTransaction);
 						}
@@ -919,7 +919,7 @@ var NRS = (function (NRS, $, undefined) {
 				}
 			} else {
 				if (single) {
-					return NRS.completeUnconfirmedTransactionDetails(unconfirmedTransaction);
+					return unconfirmedTransaction;
 				} else {
 					unconfirmedTransactions.push(unconfirmedTransaction);
 				}
@@ -930,29 +930,11 @@ var NRS = (function (NRS, $, undefined) {
 			return false;
 		} else {
             $.each(unconfirmedTransactions, function (key, val) {
-				unconfirmedTransactions[key] = NRS.completeUnconfirmedTransactionDetails(val);
+				unconfirmedTransactions[key] = val;
 			});
 
 			return unconfirmedTransactions;
 		}
-	};
-
-    NRS.completeUnconfirmedTransactionDetails = function (unconfirmedTransaction) {
-		if (unconfirmedTransaction.type == 3 && unconfirmedTransaction.subtype == 4 && !unconfirmedTransaction.name) {
-			NRS.sendRequest("getDGSGood", {
-				"goods": unconfirmedTransaction.attachment.goods
-            }, function (response) {
-				unconfirmedTransaction.name = response.name;
-				unconfirmedTransaction.buyer = unconfirmedTransaction.sender;
-				unconfirmedTransaction.buyerRS = unconfirmedTransaction.senderRS;
-				unconfirmedTransaction.seller = response.seller;
-				unconfirmedTransaction.sellerRS = response.sellerRS;
-			}, { isAsync: false });
-		} else if (unconfirmedTransaction.type == 3 && unconfirmedTransaction.subtype == 0) {
-			unconfirmedTransaction.goods = unconfirmedTransaction.transaction;
-		}
-
-		return unconfirmedTransaction;
 	};
 
     NRS.hasTransactionUpdates = function (transactions) {
@@ -1114,12 +1096,6 @@ var NRS = (function (NRS, $, undefined) {
 					case "Only text public messages allowed":
 						return $.t("error_public_text_messages_only");
 						break;
-					case "Purchase does not exist yet or not yet delivered":
-						return $.t("error_purchase_delivery");
-						break;
-					case "Purchase does not exist or is not delivered or is already refunded":
-						return $.t("error_purchase_refund");
-						break;
 					case "Recipient account does not have a public key, must attach a public key announcement":
 						return $.t("error_recipient_no_public_key_announcement");
 						break;
@@ -1159,18 +1135,6 @@ var NRS = (function (NRS, $, undefined) {
 							return $.t("error_invalid_ask_order");
 						} else if (response.errorDescription.indexOf("Invalid bid order") != -1) {
 							return $.t("error_invalid_bid_order");
-						} else if (response.errorDescription.indexOf("Goods price or quantity changed") != -1) {
-							return $.t("error_dgs_price_quantity_changed");
-						} else if (response.errorDescription.indexOf("Invalid digital goods price change") != -1) {
-							return $.t("error_invalid_dgs_price_change");
-						} else if (response.errorDescription.indexOf("Invalid digital goods refund") != -1) {
-							return $.t("error_invalid_dgs_refund");
-						} else if (response.errorDescription.indexOf("Purchase does not exist yet, or already delivered") != -1) {
-							return $.t("error_purchase_not_exist_or_delivered");
-						} else if (response.errorDescription.match(/Goods.*not yet listed or already delisted/)) {
-							return $.t("error_dgs_not_listed");
-						} else if (response.errorDescription.match(/Delivery deadline has already expired/)) {
-							return $.t("error_dgs_delivery_deadline_expired");
 						} else if (response.errorDescription.match(/Invalid effective balance leasing:.*recipient account.*not found or no public key published/)) {
 							return $.t("error_invalid_balance_leasing_no_public_key");
 						} else if (response.errorDescription.indexOf("Invalid effective balance leasing") != -1) {
@@ -1272,17 +1236,11 @@ var NRS = (function (NRS, $, undefined) {
 				break;
 			case 8:
 				switch (response.errorDescription) {
-					case "Goods have not been delivered yet":
-						return $.t("error_goods_not_delivered_yet");
-						break;
 					case "Feedback already sent":
 						return $.t("error_feedback_already_sent");
 						break;
 					case "Refund already sent":
 						return $.t("error_refund_already_sent");
-						break;
-					case "Purchase already delivered":
-						return $.t("error_purchase_already_delivered");
 						break;
 					case "Decryption failed":
 						return $.t("error_decryption_failed");

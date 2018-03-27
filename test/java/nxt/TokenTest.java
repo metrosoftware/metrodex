@@ -43,9 +43,9 @@ public class TokenTest extends BlockchainTest {
 
     @Test
     public void testGenerateToken() throws Exception {
-        int start = Nxt.getEpochTime();
+        long start = Nxt.getEpochTime();
         String tokenString = Token.generateToken("secret", "http://nxt.org");
-        int end = Nxt.getEpochTime();
+        long end = Nxt.getEpochTime();
         Token token = Token.parseToken(tokenString, "http://nxt.org");
 
         assertTrue(token.isValid());

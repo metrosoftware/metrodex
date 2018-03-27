@@ -168,7 +168,7 @@ final class TransactionDb {
 
             byte type = rs.getByte("type");
             byte subtype = rs.getByte("subtype");
-            int timestamp = rs.getInt("timestamp");
+            long timestamp = rs.getLong("timestamp");
             short deadline = rs.getShort("deadline");
             long amountNQT = rs.getLong("amount");
             long feeNQT = rs.getLong("fee");
@@ -181,7 +181,7 @@ final class TransactionDb {
             long id = rs.getLong("id");
             long senderId = rs.getLong("sender_id");
             byte[] attachmentBytes = rs.getBytes("attachment_bytes");
-            int blockTimestamp = rs.getInt("block_timestamp");
+            long blockTimestamp = rs.getLong("block_timestamp");
             byte[] fullHash = rs.getBytes("full_hash");
             byte version = rs.getByte("version");
             short transactionIndex = rs.getShort("transaction_index");
@@ -277,7 +277,7 @@ final class TransactionDb {
         }
     }
 
-    static List<PrunableTransaction> findPrunableTransactions(Connection con, int minTimestamp, int maxTimestamp) {
+    static List<PrunableTransaction> findPrunableTransactions(Connection con, long minTimestamp, long maxTimestamp) {
         List<PrunableTransaction> result = new ArrayList<>();
         try (PreparedStatement pstmt = con.prepareStatement("SELECT id, type, subtype, "
                 + "has_prunable_attachment AS prunable_attachment, "
@@ -285,8 +285,8 @@ final class TransactionDb {
                 + "has_prunable_encrypted_message AS prunable_encrypted_message "
                 + "FROM transaction WHERE (timestamp BETWEEN ? AND ?) AND "
                 + "(has_prunable_attachment = TRUE OR has_prunable_message = TRUE OR has_prunable_encrypted_message = TRUE)")) {
-            pstmt.setInt(1, minTimestamp);
-            pstmt.setInt(2, maxTimestamp);
+            pstmt.setLong(1, minTimestamp);
+            pstmt.setLong(2, maxTimestamp);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
                     long id = rs.getLong("id");
@@ -326,7 +326,7 @@ final class TransactionDb {
                     pstmt.setInt(++i, transaction.getHeight());
                     pstmt.setLong(++i, transaction.getBlockId());
                     pstmt.setBytes(++i, transaction.getSignature());
-                    pstmt.setInt(++i, transaction.getTimestamp());
+                    pstmt.setLong(++i, transaction.getTimestamp());
                     pstmt.setByte(++i, transaction.getType().getType());
                     pstmt.setByte(++i, transaction.getType().getSubtype());
                     pstmt.setLong(++i, transaction.getSenderId());
@@ -344,7 +344,7 @@ final class TransactionDb {
                         }
                         pstmt.setBytes(++i, buffer.array());
                     }
-                    pstmt.setInt(++i, transaction.getBlockTimestamp());
+                    pstmt.setLong(++i, transaction.getBlockTimestamp());
                     pstmt.setBytes(++i, transaction.fullHash());
                     pstmt.setByte(++i, transaction.getVersion());
                     pstmt.setBoolean(++i, transaction.getMessage() != null);

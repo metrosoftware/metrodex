@@ -39,7 +39,7 @@ public final class GetPrunableMessages extends APIServlet.APIRequestHandler {
         String secretPhrase = ParameterParser.getSecretPhrase(req, false);
         int firstIndex = ParameterParser.getFirstIndex(req);
         int lastIndex = ParameterParser.getLastIndex(req);
-        final int timestamp = ParameterParser.getTimestamp(req);
+        final long timestamp = ParameterParser.getTimestamp(req);
         long otherAccountId = ParameterParser.getAccountId(req, "otherAccount", false);
 
         JSONObject response = new JSONObject();

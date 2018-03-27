@@ -39,7 +39,7 @@ import static org.bouncycastle.pqc.math.linearalgebra.IntegerFunctions.squareRoo
 public final class BlockImpl implements Block {
 
     private final short version;
-    private final int timestamp;
+    private final long timestamp;
     private final long previousBlockId;
     private final long previousKeyBlockId;
     private final long nonce;
@@ -87,7 +87,7 @@ public final class BlockImpl implements Block {
      * Constructs and signs a new block, by passing a secretPhrase
      *
      */
-    BlockImpl(short version, int timestamp, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountNQT, long totalFeeNQT, int payloadLength, byte[] payloadHash,
+    BlockImpl(short version, long timestamp, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountNQT, long totalFeeNQT, int payloadLength, byte[] payloadHash,
               byte[] generatorPublicKey, byte[] generationSignature, byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] posBlocksSummary, byte[] stakeMerkleRoot, List<TransactionImpl> transactions, String secretPhrase) {
         this(version, timestamp, 0, previousBlockId, previousKeyBlockId, nonce, totalAmountNQT, totalFeeNQT, payloadLength, payloadHash,
                 generatorPublicKey, generationSignature, null, previousBlockHash, previousKeyBlockHash, posBlocksSummary, stakeMerkleRoot, transactions);
@@ -99,7 +99,7 @@ public final class BlockImpl implements Block {
      * Typical constructor called for a block not yet in DB
      *
      */
-    BlockImpl(short version, int timestamp, long baseTarget, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountNQT, long totalFeeNQT, int payloadLength, byte[] payloadHash,
+    BlockImpl(short version, long timestamp, long baseTarget, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountNQT, long totalFeeNQT, int payloadLength, byte[] payloadHash,
               byte[] generatorPublicKey, byte[] generationSignature, byte[] blockSignature, byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] posBlocksSummary, byte[] stakeMerkleRoot, List<TransactionImpl> transactions) {
         this.version = version;
         this.timestamp = timestamp;
@@ -129,7 +129,7 @@ public final class BlockImpl implements Block {
      * Constructor used after existing block is loaded from DB
      *
      */
-    BlockImpl(short version, int timestamp, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountNQT, long totalFeeNQT, int payloadLength,
+    BlockImpl(short version, long timestamp, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountNQT, long totalFeeNQT, int payloadLength,
               byte[] payloadHash, long generatorId, byte[] generationSignature, byte[] blockSignature,
               byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] posBlocksSummary, byte[] stakeMerkleRoot,
               BigInteger cumulativeDifficulty, BigInteger stakeBatchDifficulty, long baseTarget, long nextBlockId, int height, int localHeight, long id,
@@ -161,7 +161,7 @@ public final class BlockImpl implements Block {
     }
 
     @Override
-    public int getTimestamp() {
+    public long getTimestamp() {
         return timestamp;
     }
 
@@ -376,7 +376,7 @@ public final class BlockImpl implements Block {
         try {
             short version = ((Long) blockData.get("version")).shortValue();
             boolean keyBlock = isKeyBlockVersion(version);
-            int timestamp = ((Long) blockData.get("timestamp")).intValue();
+            long timestamp = ((Long) blockData.get("timestamp")).intValue();
             long previousKeyBlock = 0, nonce = 0, baseTarget = 0;
             int payloadLength = 0;
             byte[] previousKeyBlockHash = null, posBlocksSummary = null, stakeMerkleRoot = null, payloadHash = null, generationSignature = null;
@@ -423,7 +423,7 @@ public final class BlockImpl implements Block {
     }
 
     public static int getHeaderSize(boolean keyBlock, boolean signed) {
-        return 2 + 4 + 8 + 32*3 + (keyBlock ? (32*3 + 4 + 8) : 56) + (signed ? 64 : 0);
+        return 2 + 8 + 8 + 32*3 + (keyBlock ? (32*3 + 4 + 8) : 56) + (signed ? 64 : 0);
     }
 
     /**
@@ -445,15 +445,11 @@ public final class BlockImpl implements Block {
 
             // Block.version: the most significant bit to differentiate between block (0x0001...) and keyblock (0x8001...)
             buffer.putShort(version);
-            // Block.timestamp: 4 bytes, seconds since NxtEpoch
-            buffer.putInt(timestamp);
-
+            // Block.timestamp: 8 bytes, seconds since NxtEpoch
+            buffer.putLong(timestamp);
             buffer.putLong(totalFeeNQT);
-
             buffer.put(payloadHash);
-
             buffer.put(getGeneratorPublicKey());
-
             buffer.put(previousBlockHash);
 
             if (isKeyBlock) {
@@ -625,7 +621,7 @@ public final class BlockImpl implements Block {
         int blockchainHeight = posBlock.localHeight;
         if (blockchainHeight > 2 && blockchainHeight % 2 == 0) {
             BlockImpl block = BlockDb.findBlockAtLocalHeight(blockchainHeight - 2, false);
-            int blocktimeAverage = (this.timestamp - block.timestamp) / 3;
+            long blocktimeAverage = (this.timestamp - block.timestamp) / 3;
             if (blocktimeAverage > Constants.BLOCK_TIME) {
                 baseTarget = (prevBaseTarget * Math.min(blocktimeAverage, Constants.MAX_BLOCKTIME_LIMIT)) / Constants.BLOCK_TIME;
             } else {

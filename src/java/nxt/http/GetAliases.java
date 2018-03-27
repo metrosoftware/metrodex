@@ -35,7 +35,7 @@ public final class GetAliases extends APIServlet.APIRequestHandler {
 
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws NxtException {
-        final int timestamp = ParameterParser.getTimestamp(req);
+        final long timestamp = ParameterParser.getTimestamp(req);
         final long accountId = ParameterParser.getAccountId(req, true);
         int firstIndex = ParameterParser.getFirstIndex(req);
         int lastIndex = ParameterParser.getLastIndex(req);

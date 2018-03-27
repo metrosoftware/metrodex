@@ -166,7 +166,7 @@ public final class Trade {
     static void init() {}
 
 
-    private final int timestamp;
+    private final long timestamp;
     private final long assetId;
     private final long blockId;
     private final int height;
@@ -214,7 +214,7 @@ public final class Trade {
         this.dbKey = dbKey;
         this.quantityQNT = rs.getLong("quantity");
         this.priceNQT = rs.getLong("price");
-        this.timestamp = rs.getInt("timestamp");
+        this.timestamp = rs.getLong("timestamp");
         this.height = rs.getInt("height");
         this.isBuy = rs.getBoolean("is_buy");
     }
@@ -235,7 +235,7 @@ public final class Trade {
             pstmt.setLong(++i, this.quantityQNT);
             pstmt.setLong(++i, this.priceNQT);
             pstmt.setBoolean(++i, this.isBuy);
-            pstmt.setInt(++i, this.timestamp);
+            pstmt.setLong(++i, this.timestamp);
             pstmt.setInt(++i, this.height);
             pstmt.executeUpdate();
         }
@@ -269,7 +269,7 @@ public final class Trade {
     
     public long getAssetId() { return assetId; }
     
-    public int getTimestamp() { return timestamp; }
+    public long getTimestamp() { return timestamp; }
 
     public int getHeight() {
         return height;

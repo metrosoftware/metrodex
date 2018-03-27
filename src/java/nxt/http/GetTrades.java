@@ -43,7 +43,7 @@ public final class GetTrades extends APIServlet.APIRequestHandler {
             return JSONResponses.MISSING_ASSET_ACCOUNT;
         }
 
-        int timestamp = ParameterParser.getTimestamp(req);
+        long timestamp = ParameterParser.getTimestamp(req);
         int firstIndex = ParameterParser.getFirstIndex(req);
         int lastIndex = ParameterParser.getLastIndex(req);
         boolean includeAssetInfo = "true".equalsIgnoreCase(req.getParameter("includeAssetInfo"));

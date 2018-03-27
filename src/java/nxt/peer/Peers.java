@@ -353,7 +353,7 @@ public final class Peers {
 
                 @Override
                 public void run() {
-                    final int now = Nxt.getEpochTime();
+                    final long now = Nxt.getEpochTime();
                     wellKnownPeers.forEach(address -> entries.add(new PeerDb.Entry(address, 0, now)));
                     if (usePeersDb) {
                         Logger.logDebugMessage("Loading known peers from the database...");
@@ -480,7 +480,7 @@ public final class Peers {
         try {
             try {
 
-                int curTime = Nxt.getEpochTime();
+                long curTime = Nxt.getEpochTime();
                 for (PeerImpl peer : peers.values()) {
                     peer.updateBlacklistedStatus(curTime);
                 }
@@ -503,7 +503,7 @@ public final class Peers {
             try {
                 try {
 
-                    final int now = Nxt.getEpochTime();
+                    final long now = Nxt.getEpochTime();
                     if (!hasEnoughConnectedPublicPeers(Peers.maxNumberOfConnectedPublicPeers)) {
                         List<Future<?>> futures = new ArrayList<>();
                         List<Peer> hallmarkedPeers = getPeers(peer -> !peer.isBlacklisted()
@@ -638,7 +638,7 @@ public final class Peers {
                     if (peers != null) {
                         JSONArray services = (JSONArray)response.get("services");
                         boolean setServices = (services != null && services.size() == peers.size());
-                        int now = Nxt.getEpochTime();
+                        long now = Nxt.getEpochTime();
                         for (int i=0; i<peers.size(); i++) {
                             String announcedAddress = (String)peers.get(i);
                             PeerImpl newPeer = findOrCreatePeer(announcedAddress, true);
@@ -692,7 +692,7 @@ public final class Peers {
         }
 
         private void updateSavedPeers() {
-            int now = Nxt.getEpochTime();
+            long now = Nxt.getEpochTime();
             //
             // Load the current database entries and map announced address to database entry
             //

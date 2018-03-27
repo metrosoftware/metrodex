@@ -141,7 +141,7 @@ public final class AssetTransfer {
     private final long senderId;
     private final long recipientId;
     private final long quantityQNT;
-    private final int timestamp;
+    private final long timestamp;
 
     private AssetTransfer(Transaction transaction, Attachment.ColoredCoinsAssetTransfer attachment) {
         this.id = transaction.getId();
@@ -161,7 +161,7 @@ public final class AssetTransfer {
         this.senderId = rs.getLong("sender_id");
         this.recipientId = rs.getLong("recipient_id");
         this.quantityQNT = rs.getLong("quantity");
-        this.timestamp = rs.getInt("timestamp");
+        this.timestamp = rs.getLong("timestamp");
         this.height = rs.getInt("height");
     }
 
@@ -175,7 +175,7 @@ public final class AssetTransfer {
             pstmt.setLong(++i, this.senderId);
             pstmt.setLong(++i, this.recipientId);
             pstmt.setLong(++i, this.quantityQNT);
-            pstmt.setInt(++i, this.timestamp);
+            pstmt.setLong(++i, this.timestamp);
             pstmt.setInt(++i, this.height);
             pstmt.executeUpdate();
         }
@@ -197,7 +197,7 @@ public final class AssetTransfer {
 
     public long getQuantityQNT() { return quantityQNT; }
 
-    public int getTimestamp() {
+    public long getTimestamp() {
         return timestamp;
     }
 

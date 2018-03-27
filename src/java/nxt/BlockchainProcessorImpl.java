@@ -91,7 +91,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
     private int initialScanHeight;
     private volatile int lastTrimHeight;
-    private volatile int lastRestoreTime = 0;
+    private volatile long lastRestoreTime = 0;
     private final Set<Long> prunableTransactions = new HashSet<>();
 
     private final Listeners<Block, Event> blockListeners = new Listeners<>();
@@ -146,7 +146,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 //
                 // Restore prunable data
                 //
-                int now = Nxt.getEpochTime();
+                long now = Nxt.getEpochTime();
                 if (!isRestoring && !prunableTransactions.isEmpty() && now - lastRestoreTime > 60 * 60) {
                     isRestoring = true;
                     lastRestoreTime = now;
@@ -1150,9 +1150,9 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     public int restorePrunedData() {
         Db.db.beginTransaction();
         try (Connection con = Db.db.getConnection()) {
-            int now = Nxt.getEpochTime();
-            int minTimestamp = Math.max(1, now - Constants.MAX_PRUNABLE_LIFETIME);
-            int maxTimestamp = Math.max(minTimestamp, now - Constants.MIN_PRUNABLE_LIFETIME) - 1;
+            long now = Nxt.getEpochTime();
+            long minTimestamp = Math.max(1, now - Constants.MAX_PRUNABLE_LIFETIME);
+            long maxTimestamp = Math.max(minTimestamp, now - Constants.MIN_PRUNABLE_LIFETIME) - 1;
             List<TransactionDb.PrunableTransaction> transactionList =
                     TransactionDb.findPrunableTransactions(con, minTimestamp, maxTimestamp);
             transactionList.forEach(prunableTransaction -> {
@@ -1286,7 +1286,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
     private void pushBlock(final BlockImpl block) throws BlockNotAcceptedException {
 
-        int curTime = Nxt.getEpochTime();
+        long curTime = Nxt.getEpochTime();
 
         blockchain.writeLock();
         try {
@@ -1384,7 +1384,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         }
     }
 
-    private void validate(BlockImpl block, BlockImpl previousLastBlock, BlockImpl previousLastKeyBlock, int curTime) throws BlockNotAcceptedException {
+    private void validate(BlockImpl block, BlockImpl previousLastBlock, BlockImpl previousLastKeyBlock, long curTime) throws BlockNotAcceptedException {
         if (previousLastBlock.getId() != block.getPreviousBlockId()) {
             throw new BlockOutOfOrderException("Previous block id doesn't match", block);
         }
@@ -1487,7 +1487,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                     Logger.logDebugMessage("blockIntervalAgo found=" + Convert.toHexString(blockIntervalAgo.bytes()));
                     long prevTimestamp = prevLastKeyBlock.getTimestamp();
                     long oldTimestamp = blockIntervalAgo.getTimestamp();
-                    int timespan = (int) (prevTimestamp - oldTimestamp);
+                    long timespan = prevTimestamp - oldTimestamp;
                     // Limit the adjustment step
                     if (timespan < Consensus.TARGET_TIMESPAN / 4)
                         timespan = Consensus.TARGET_TIMESPAN / 4;
@@ -1519,7 +1519,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         return Block.ValidationResult.OK;
     }
 
-    private void validateTransactions(BlockImpl block, BlockImpl previousLastBlock, int curTime, Map<TransactionType, Map<String, Integer>> duplicates,
+    private void validateTransactions(BlockImpl block, BlockImpl previousLastBlock, long curTime, Map<TransactionType, Map<String, Integer>> duplicates,
                                       boolean fullValidation) throws BlockNotAcceptedException {
         long payloadLength = 0;
         long calculatedTotalAmount = 0;
@@ -1603,7 +1603,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             }
             validPhasedTransactions.forEach(transaction -> transaction.getPhasing().countVotes(transaction));
             invalidPhasedTransactions.forEach(transaction -> transaction.getPhasing().reject(transaction));
-            int fromTimestamp = Nxt.getEpochTime() - Constants.MAX_PRUNABLE_LIFETIME;
+            long fromTimestamp = Nxt.getEpochTime() - Constants.MAX_PRUNABLE_LIFETIME;
             for (TransactionImpl transaction : block.getTransactions()) {
                 try {
                     transaction.apply();
@@ -1788,7 +1788,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         }
     }
 
-    SortedSet<UnconfirmedTransaction> selectUnconfirmedTransactions(Map<TransactionType, Map<String, Integer>> duplicates, Block previousBlock, int blockTimestamp) {
+    SortedSet<UnconfirmedTransaction> selectUnconfirmedTransactions(Map<TransactionType, Map<String, Integer>> duplicates, Block previousBlock, long blockTimestamp) {
         List<UnconfirmedTransaction> orderedUnconfirmedTransactions = new ArrayList<>();
         try (FilteringIterator<UnconfirmedTransaction> unconfirmedTransactions = new FilteringIterator<>(
                 TransactionProcessorImpl.getInstance().getAllUnconfirmedTransactions(),
@@ -1837,7 +1837,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             .thenComparingInt(UnconfirmedTransaction::getHeight)
             .thenComparingLong(UnconfirmedTransaction::getId);
 
-    void generateBlock(String secretPhrase, int blockTimestamp) throws BlockNotAcceptedException {
+    void generateBlock(String secretPhrase, long blockTimestamp) throws BlockNotAcceptedException {
 
         Map<TransactionType, Map<String, Integer>> duplicates = new HashMap<>();
         try (DbIterator<TransactionImpl> phasedTransactions = PhasingPoll.getFinishingTransactions(blockchain.getHeight() + 1)) {
@@ -1898,7 +1898,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         }
     }
 
-    boolean hasAllReferencedTransactions(TransactionImpl transaction, int timestamp, int count) {
+    boolean hasAllReferencedTransactions(TransactionImpl transaction, long timestamp, int count) {
         if (transaction.referencedTransactionFullHash() == null) {
             return timestamp - transaction.getTimestamp() < Constants.MAX_REFERENCED_TRANSACTION_TIMESPAN && count < 10;
         }
@@ -2027,7 +2027,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                                     List<TransactionImpl> invalidPhasedTransactions = new ArrayList<>();
                                     validatePhasedTransactions(blockchain.getHeight(), validPhasedTransactions, invalidPhasedTransactions, duplicates);
                                     if (validate && currentBlock.getHeight() > 0) {
-                                        int curTime = Nxt.getEpochTime();
+                                        long curTime = Nxt.getEpochTime();
                                         validate(currentBlock, blockchain.getLastBlock(), blockchain.getLastKeyBlock(), curTime);
                                         byte[] blockBytes = currentBlock.bytes();
                                         JSONObject blockJSON = (JSONObject) JSONValue.parse(currentBlock.getJSONObject().toJSONString());

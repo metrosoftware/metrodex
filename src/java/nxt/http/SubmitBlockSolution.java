@@ -50,7 +50,7 @@ public class SubmitBlockSolution extends APIServlet.APIRequestHandler {
             buffer.putShort(Consensus.getKeyBlockVersion(lastBlock.getHeight()));
 
             // timestamp
-            buffer.putInt(Nxt.getEpochTime());
+            buffer.putLong(Nxt.getEpochTime());
 
             // template part #1
             buffer.put(headerTemplate);

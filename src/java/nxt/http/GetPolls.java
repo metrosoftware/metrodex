@@ -43,7 +43,7 @@ public class GetPolls extends APIServlet.APIRequestHandler {
         boolean finishedOnly = "true".equalsIgnoreCase(req.getParameter("finishedOnly"));
         int firstIndex = ParameterParser.getFirstIndex(req);
         int lastIndex = ParameterParser.getLastIndex(req);
-        final int timestamp = ParameterParser.getTimestamp(req);
+        final long timestamp = ParameterParser.getTimestamp(req);
 
         JSONArray pollsJson = new JSONArray();
         DbIterator<Poll> polls = null;

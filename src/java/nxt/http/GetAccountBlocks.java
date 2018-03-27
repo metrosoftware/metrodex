@@ -38,7 +38,7 @@ public final class GetAccountBlocks extends APIServlet.APIRequestHandler {
     protected JSONStreamAware processRequest(HttpServletRequest req) throws NxtException {
 
         long accountId = ParameterParser.getAccountId(req, true);
-        int timestamp = ParameterParser.getTimestamp(req);
+        long timestamp = ParameterParser.getTimestamp(req);
         int firstIndex = ParameterParser.getFirstIndex(req);
         int lastIndex = ParameterParser.getLastIndex(req);
 

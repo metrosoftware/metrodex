@@ -35,7 +35,7 @@ public final class GetAllTrades extends APIServlet.APIRequestHandler {
     
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws NxtException {
-        final int timestamp = ParameterParser.getTimestamp(req);
+        final long timestamp = ParameterParser.getTimestamp(req);
         int firstIndex = ParameterParser.getFirstIndex(req);
         int lastIndex = ParameterParser.getLastIndex(req);
         boolean includeAssetInfo = "true".equalsIgnoreCase(req.getParameter("includeAssetInfo"));

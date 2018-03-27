@@ -59,8 +59,8 @@ final class TransactionImpl implements Transaction {
         private int height = Integer.MAX_VALUE;
         private long id;
         private long senderId;
-        private int timestamp = Integer.MAX_VALUE;
-        private int blockTimestamp = -1;
+        private long timestamp = Long.MAX_VALUE;
+        private long blockTimestamp = -1;
         private byte[] fullHash;
         private boolean ecBlockSet = false;
         private int ecBlockHeight;
@@ -80,7 +80,7 @@ final class TransactionImpl implements Transaction {
 
         @Override
         public TransactionImpl build(String secretPhrase) throws NxtException.NotValidException {
-            if (timestamp == Integer.MAX_VALUE) {
+            if (timestamp == Long.MAX_VALUE) {
                 timestamp = Nxt.getEpochTime();
             }
             if (!ecBlockSet) {
@@ -160,7 +160,7 @@ final class TransactionImpl implements Transaction {
         }
 
         @Override
-        public BuilderImpl timestamp(int timestamp) {
+        public BuilderImpl timestamp(long timestamp) {
             this.timestamp = timestamp;
             return this;
         }
@@ -209,7 +209,7 @@ final class TransactionImpl implements Transaction {
             return this;
         }
 
-        BuilderImpl blockTimestamp(int blockTimestamp) {
+        BuilderImpl blockTimestamp(long blockTimestamp) {
             this.blockTimestamp = blockTimestamp;
             return this;
         }
@@ -231,7 +231,7 @@ final class TransactionImpl implements Transaction {
     private final int ecBlockHeight;
     private final long ecBlockId;
     private final byte version;
-    private final int timestamp;
+    private final long timestamp;
     private final byte[] signature;
     private final Attachment.AbstractAttachment attachment;
     private final Appendix.Message message;
@@ -248,7 +248,7 @@ final class TransactionImpl implements Transaction {
     private volatile int height = Integer.MAX_VALUE;
     private volatile long blockId;
     private volatile BlockImpl block;
-    private volatile int blockTimestamp = -1;
+    private volatile long blockTimestamp = -1;
     private volatile short index = -1;
     private volatile long id;
     private volatile String stringId;
@@ -443,18 +443,18 @@ final class TransactionImpl implements Transaction {
     }
 
     @Override
-    public int getTimestamp() {
+    public long getTimestamp() {
         return timestamp;
     }
 
     @Override
-    public int getBlockTimestamp() {
+    public long getBlockTimestamp() {
         return blockTimestamp;
     }
 
     @Override
-    public int getExpiration() {
-        return timestamp + deadline * 60;
+    public long getExpiration() {
+        return timestamp + deadline * 60 * 1000;
     }
 
     @Override
@@ -614,7 +614,7 @@ final class TransactionImpl implements Transaction {
                 buffer.order(ByteOrder.LITTLE_ENDIAN);
                 buffer.put(type.getType());
                 buffer.put((byte) ((version << 4) | type.getSubtype()));
-                buffer.putInt(timestamp);
+                buffer.putLong(timestamp);
                 buffer.putShort(deadline);
                 buffer.put(getSenderPublicKey());
                 buffer.putLong(type.canHaveRecipient() ? recipientId : Genesis.CREATOR_ID);
@@ -651,7 +651,7 @@ final class TransactionImpl implements Transaction {
             byte subtype = buffer.get();
             byte version = (byte) ((subtype & 0xF0) >> 4);
             subtype = (byte) (subtype & 0x0F);
-            int timestamp = buffer.getInt();
+            long timestamp = buffer.getLong();
             short deadline = buffer.getShort();
             byte[] senderPublicKey = new byte[32];
             buffer.get(senderPublicKey);
@@ -803,7 +803,7 @@ final class TransactionImpl implements Transaction {
         try {
             byte type = ((Long) transactionData.get("type")).byteValue();
             byte subtype = ((Long) transactionData.get("subtype")).byteValue();
-            int timestamp = ((Long) transactionData.get("timestamp")).intValue();
+            long timestamp = (Long)transactionData.get("timestamp");
             short deadline = ((Long) transactionData.get("deadline")).shortValue();
             byte[] senderPublicKey = Convert.parseHexString((String) transactionData.get("senderPublicKey"));
             long amountNQT = Convert.parseLong(transactionData.get("amountNQT"));
@@ -900,7 +900,7 @@ final class TransactionImpl implements Transaction {
     }
 
     private int signatureOffset() {
-        return 1 + 1 + 4 + 2 + 32 + 8 + 8 + 8 + 32;
+        return 1 + 1 + 8 + 2 + 32 + 8 + 8 + 8 + 32;
     }
 
     private byte[] zeroSignature(byte[] data) {

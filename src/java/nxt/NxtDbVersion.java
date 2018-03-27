@@ -26,7 +26,7 @@ class NxtDbVersion extends DbVersion {
                 // TODO #144 block_signature BINARY(64) NOT NULL
                 // alter table block alter column block_signature drop not null (if you have old DB) - in order to test key blocks
                 apply("CREATE TABLE IF NOT EXISTS block (db_id IDENTITY, id BIGINT NOT NULL, version SMALLINT NOT NULL, "
-                        + "timestamp INT NOT NULL, previous_block_id BIGINT, previous_key_block_id BIGINT, "
+                        + "timestamp BIGINT NOT NULL, previous_block_id BIGINT, previous_key_block_id BIGINT, "
                         + "total_amount BIGINT NOT NULL, "
                         + "total_fee BIGINT NOT NULL, payload_length INT, "
                         + "previous_block_hash BINARY(32), previous_key_block_hash BINARY(32), "
@@ -42,8 +42,8 @@ class NxtDbVersion extends DbVersion {
                         + "deadline SMALLINT NOT NULL, recipient_id BIGINT, transaction_index SMALLINT NOT NULL, "
                         + "amount BIGINT NOT NULL, fee BIGINT NOT NULL, full_hash BINARY(32) NOT NULL, "
                         + "height INT NOT NULL, block_id BIGINT NOT NULL, FOREIGN KEY (block_id) REFERENCES block (id) ON DELETE CASCADE, "
-                        + "signature BINARY(64) NOT NULL, timestamp INT NOT NULL, type TINYINT NOT NULL, subtype TINYINT NOT NULL, "
-                        + "sender_id BIGINT NOT NULL, block_timestamp INT NOT NULL, referenced_transaction_full_hash BINARY(32), "
+                        + "signature BINARY(64) NOT NULL, timestamp BIGINT NOT NULL, type TINYINT NOT NULL, subtype TINYINT NOT NULL, "
+                        + "sender_id BIGINT NOT NULL, block_timestamp BIGINT NOT NULL, referenced_transaction_full_hash BINARY(32), "
                         + "phased BOOLEAN NOT NULL DEFAULT FALSE, "
                         + "attachment_bytes VARBINARY, version TINYINT NOT NULL, has_message BOOLEAN NOT NULL DEFAULT FALSE, "
                         + "has_encrypted_message BOOLEAN NOT NULL DEFAULT FALSE, has_public_key_announcement BOOLEAN NOT NULL DEFAULT FALSE, "
@@ -61,14 +61,14 @@ class NxtDbVersion extends DbVersion {
             case 8:
                 apply("CREATE INDEX IF NOT EXISTS transaction_recipient_id_idx ON transaction (recipient_id)");
             case 9:
-                apply("CREATE TABLE IF NOT EXISTS peer (address VARCHAR PRIMARY KEY, last_updated INT, services BIGINT)");
+                apply("CREATE TABLE IF NOT EXISTS peer (address VARCHAR PRIMARY KEY, last_updated BIGINT, services BIGINT)");
             case 10:
                 apply("CREATE INDEX IF NOT EXISTS transaction_block_timestamp_idx ON transaction (block_timestamp DESC)");
             case 11:
                 apply("CREATE TABLE IF NOT EXISTS alias (db_id IDENTITY, id BIGINT NOT NULL, "
                         + "account_id BIGINT NOT NULL, alias_name VARCHAR NOT NULL, "
                         + "alias_name_lower VARCHAR AS LOWER (alias_name) NOT NULL, "
-                        + "alias_uri VARCHAR NOT NULL, timestamp INT NOT NULL, "
+                        + "alias_uri VARCHAR NOT NULL, timestamp BIGINT NOT NULL, "
                         + "height INT NOT NULL, latest BOOLEAN NOT NULL DEFAULT TRUE)");
             case 12:
                 apply("CREATE UNIQUE INDEX IF NOT EXISTS alias_id_height_idx ON alias (id, height DESC)");
@@ -93,7 +93,7 @@ class NxtDbVersion extends DbVersion {
                         + "ask_order_id BIGINT NOT NULL, bid_order_id BIGINT NOT NULL, ask_order_height INT NOT NULL, "
                         + "bid_order_height INT NOT NULL, seller_id BIGINT NOT NULL, buyer_id BIGINT NOT NULL, "
                         + "is_buy BOOLEAN NOT NULL, "
-                        + "quantity BIGINT NOT NULL, price BIGINT NOT NULL, timestamp INT NOT NULL, height INT NOT NULL)");
+                        + "quantity BIGINT NOT NULL, price BIGINT NOT NULL, timestamp BIGINT NOT NULL, height INT NOT NULL)");
             case 20:
                 apply("CREATE INDEX IF NOT EXISTS trade_asset_id_idx ON trade (asset_id, height DESC)");
             case 21:
@@ -144,14 +144,14 @@ class NxtDbVersion extends DbVersion {
                 apply("CREATE UNIQUE INDEX IF NOT EXISTS account_guaranteed_balance_id_height_idx ON account_guaranteed_balance "
                         + "(account_id, height DESC)");
             case 37:
-                apply("CREATE TABLE IF NOT EXISTS unconfirmed_transaction (db_id IDENTITY, id BIGINT NOT NULL, expiration INT NOT NULL, "
+                apply("CREATE TABLE IF NOT EXISTS unconfirmed_transaction (db_id IDENTITY, id BIGINT NOT NULL, expiration BIGINT NOT NULL, "
                         + "transaction_height INT NOT NULL, fee_per_byte BIGINT NOT NULL, arrival_timestamp BIGINT NOT NULL, "
                         + "transaction_bytes VARBINARY NOT NULL, prunable_json VARCHAR, height INT NOT NULL)");
             case 38:
                 apply("CREATE UNIQUE INDEX IF NOT EXISTS unconfirmed_transaction_id_idx ON unconfirmed_transaction (id)");
             case 39:
                 apply("CREATE TABLE IF NOT EXISTS asset_transfer (db_id IDENTITY, id BIGINT NOT NULL, asset_id BIGINT NOT NULL, "
-                        + "sender_id BIGINT NOT NULL, recipient_id BIGINT NOT NULL, quantity BIGINT NOT NULL, timestamp INT NOT NULL, "
+                        + "sender_id BIGINT NOT NULL, recipient_id BIGINT NOT NULL, quantity BIGINT NOT NULL, timestamp BIGINT NOT NULL, "
                         + "height INT NOT NULL)");
             case 40:
                 apply("CREATE UNIQUE INDEX IF NOT EXISTS asset_transfer_id_idx ON asset_transfer (id)");
@@ -198,7 +198,7 @@ class NxtDbVersion extends DbVersion {
                 apply("CREATE TABLE IF NOT EXISTS poll (db_id IDENTITY, id BIGINT NOT NULL, "
                         + "account_id BIGINT NOT NULL, name VARCHAR NOT NULL, "
                         + "description VARCHAR, options ARRAY NOT NULL, min_num_options TINYINT, max_num_options TINYINT, "
-                        + "min_range_value TINYINT, max_range_value TINYINT, timestamp INT NOT NULL, "
+                        + "min_range_value TINYINT, max_range_value TINYINT, timestamp BIGINT NOT NULL, "
                         + "finish_height INT NOT NULL, voting_model TINYINT NOT NULL, min_balance BIGINT, "
                         + "min_balance_model TINYINT, holding_id BIGINT, height INT NOT NULL)");
             case 59:
@@ -268,7 +268,7 @@ class NxtDbVersion extends DbVersion {
                 apply("CREATE TABLE IF NOT EXISTS prunable_message (db_id IDENTITY, id BIGINT NOT NULL, sender_id BIGINT NOT NULL, "
                         + "recipient_id BIGINT, message VARBINARY, message_is_text BOOLEAN NOT NULL, is_compressed BOOLEAN NOT NULL, "
                         + "encrypted_message VARBINARY, encrypted_is_text BOOLEAN DEFAULT FALSE, "
-                        + "block_timestamp INT NOT NULL, transaction_timestamp INT NOT NULL, height INT NOT NULL, "
+                        + "block_timestamp BIGINT NOT NULL, transaction_timestamp BIGINT NOT NULL, height INT NOT NULL, "
                         + "FOREIGN KEY (height) REFERENCES block (height) ON DELETE CASCADE)");
             case 86:
                 apply("CREATE UNIQUE INDEX IF NOT EXISTS prunable_message_id_idx ON prunable_message (id)");
@@ -319,7 +319,7 @@ class NxtDbVersion extends DbVersion {
                 apply("CREATE TABLE IF NOT EXISTS account_ledger (db_id IDENTITY, account_id BIGINT NOT NULL, "
                         + "event_type TINYINT NOT NULL, event_id BIGINT NOT NULL, holding_type TINYINT NOT NULL, "
                         + "holding_id BIGINT, change BIGINT NOT NULL, balance BIGINT NOT NULL, "
-                        + "block_id BIGINT NOT NULL, height INT NOT NULL, timestamp INT NOT NULL)");
+                        + "block_id BIGINT NOT NULL, height INT NOT NULL, timestamp BIGINT NOT NULL)");
             case 108:
                 apply("CREATE INDEX IF NOT EXISTS account_ledger_id_idx ON account_ledger(account_id, db_id)");
             case 109:
@@ -356,7 +356,7 @@ class NxtDbVersion extends DbVersion {
                 apply("CREATE INDEX IF NOT EXISTS shuffling_participant_height_idx ON shuffling_participant (height, shuffling_id, account_id)");
             case 121:
                 apply("CREATE TABLE IF NOT EXISTS shuffling_data (db_id IDENTITY, shuffling_id BIGINT NOT NULL, account_id BIGINT NOT NULL, "
-                        + "data ARRAY, transaction_timestamp INT NOT NULL, height INT NOT NULL, "
+                        + "data ARRAY, transaction_timestamp BIGINT NOT NULL, height INT NOT NULL, "
                         + "FOREIGN KEY (height) REFERENCES block (height) ON DELETE CASCADE)");
             case 122:
                 apply("CREATE UNIQUE INDEX IF NOT EXISTS shuffling_data_id_height_idx ON shuffling_data (shuffling_id, height DESC)");
@@ -396,7 +396,7 @@ class NxtDbVersion extends DbVersion {
                 apply("CREATE INDEX IF NOT EXISTS account_property_setter_recipient_idx ON account_property (setter_id, recipient_id)");
             case 136:
                 apply("CREATE TABLE IF NOT EXISTS asset_delete (db_id IDENTITY, id BIGINT NOT NULL, asset_id BIGINT NOT NULL, "
-                        + "account_id BIGINT NOT NULL, quantity BIGINT NOT NULL, timestamp INT NOT NULL, height INT NOT NULL)");
+                        + "account_id BIGINT NOT NULL, quantity BIGINT NOT NULL, timestamp BIGINT NOT NULL, height INT NOT NULL)");
             case 137:
                 apply("CREATE UNIQUE INDEX IF NOT EXISTS asset_delete_id_idx ON asset_delete (id)");
             case 138:
@@ -416,7 +416,7 @@ class NxtDbVersion extends DbVersion {
             case 144:
                 apply("CREATE TABLE IF NOT EXISTS asset_dividend (db_id IDENTITY, id BIGINT NOT NULL, asset_id BIGINT NOT NULL, "
                         + "amount BIGINT NOT NULL, dividend_height INT NOT NULL, total_dividend BIGINT NOT NULL, "
-                        + "num_accounts BIGINT NOT NULL, timestamp INT NOT NULL, height INT NOT NULL)");
+                        + "num_accounts BIGINT NOT NULL, timestamp BIGINT NOT NULL, height INT NOT NULL)");
             case 145:
                 apply("CREATE UNIQUE INDEX IF NOT EXISTS asset_dividend_id_idx ON asset_dividend (id)");
             case 146:

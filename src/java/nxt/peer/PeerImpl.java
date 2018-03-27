@@ -75,14 +75,14 @@ final class PeerImpl implements Peer {
     private volatile String version;
     private volatile boolean isOldVersion;
     private volatile long adjustedWeight;
-    private volatile int blacklistingTime;
+    private volatile long blacklistingTime;
     private volatile String blacklistingCause;
     private volatile State state;
     private volatile long downloadedVolume;
     private volatile long uploadedVolume;
-    private volatile int lastUpdated;
-    private volatile int lastConnectAttempt;
-    private volatile int lastInboundRequest;
+    private volatile long lastUpdated;
+    private volatile long lastConnectAttempt;
+    private volatile long lastInboundRequest;
     private volatile long hallmarkBalance = -1;
     private volatile int hallmarkBalanceHeight;
     private volatile long services;
@@ -378,7 +378,7 @@ final class PeerImpl implements Peer {
         Peers.notifyListeners(this, Peers.Event.UNBLACKLIST);
     }
 
-    void updateBlacklistedStatus(int curTime) {
+    void updateBlacklistedStatus(long curTime) {
         if (blacklistingTime > 0 && blacklistingTime + Peers.blacklistingPeriod <= curTime) {
             unBlacklist();
         }
@@ -405,11 +405,11 @@ final class PeerImpl implements Peer {
     }
 
     @Override
-    public int getLastUpdated() {
+    public long getLastUpdated() {
         return lastUpdated;
     }
 
-    void setLastUpdated(int lastUpdated) {
+    void setLastUpdated(long lastUpdated) {
         this.lastUpdated = lastUpdated;
     }
 
@@ -418,11 +418,11 @@ final class PeerImpl implements Peer {
         return lastInboundRequest != 0;
     }
 
-    int getLastInboundRequest() {
+    long getLastInboundRequest() {
         return lastInboundRequest;
     }
 
-    void setLastInboundRequest(int now) {
+    void setLastInboundRequest(long now) {
         lastInboundRequest = now;
     }
 
@@ -447,7 +447,7 @@ final class PeerImpl implements Peer {
     }
 
     @Override
-    public int getLastConnectAttempt() {
+    public long getLastConnectAttempt() {
         return lastConnectAttempt;
     }
 

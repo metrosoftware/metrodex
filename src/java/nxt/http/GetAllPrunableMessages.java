@@ -37,7 +37,7 @@ public final class GetAllPrunableMessages extends APIServlet.APIRequestHandler {
     protected JSONStreamAware processRequest(HttpServletRequest req) throws NxtException {
         int firstIndex = ParameterParser.getFirstIndex(req);
         int lastIndex = ParameterParser.getLastIndex(req);
-        final int timestamp = ParameterParser.getTimestamp(req);
+        final long timestamp = ParameterParser.getTimestamp(req);
 
         JSONObject response = new JSONObject();
         JSONArray jsonArray = new JSONArray();

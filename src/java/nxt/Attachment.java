@@ -1676,7 +1676,7 @@ public interface Attachment extends Appendix {
         }
 
         @Override
-        public void restorePrunableData(Transaction transaction, int blockTimestamp, int height) {
+        public void restorePrunableData(Transaction transaction, long blockTimestamp, int height) {
             ShufflingParticipant.restoreData(getShufflingId(), transaction.getSenderId(), getData(), transaction.getTimestamp(), height);
         }
 

@@ -250,10 +250,10 @@ final class BlockDb {
         }
     }
 
-    static BlockImpl findLastBlock(int timestamp) {
+    static BlockImpl findLastBlock(long timestamp) {
         try (Connection con = Db.db.getConnection();
              PreparedStatement pstmt = con.prepareStatement("SELECT * FROM block WHERE timestamp <= ? ORDER BY timestamp DESC LIMIT 1")) {
-            pstmt.setInt(1, timestamp);
+            pstmt.setLong(1, timestamp);
             BlockImpl block = null;
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
@@ -292,7 +292,7 @@ final class BlockDb {
     static BlockImpl loadBlock(Connection con, ResultSet rs, boolean loadTransactions) {
         try {
             short version = rs.getShort("version");
-            int timestamp = rs.getInt("timestamp");
+            long timestamp = rs.getLong("timestamp");
             long previousBlockId = rs.getLong("previous_block_id");
             long previousKeyBlockId = rs.getLong("previous_key_block_id");
             long nonce = rs.getLong("nonce");
@@ -337,7 +337,7 @@ final class BlockDb {
                 int i = 0;
                 pstmt.setLong(++i, block.getId());
                 pstmt.setShort(++i, block.getVersion());
-                pstmt.setInt(++i, block.getTimestamp());
+                pstmt.setLong(++i, block.getTimestamp());
                 DbUtils.setLongZeroToNull(pstmt, ++i, block.getPreviousBlockId());
                 DbUtils.setLongZeroToNull(pstmt, ++i, block.getPreviousKeyBlockId());
                 if (block.isKeyBlock()) {

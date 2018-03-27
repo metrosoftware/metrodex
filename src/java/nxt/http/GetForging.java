@@ -42,7 +42,7 @@ public final class GetForging extends APIServlet.APIRequestHandler {
     protected JSONStreamAware processRequest(HttpServletRequest req) throws ParameterException {
 
         String secretPhrase = ParameterParser.getSecretPhrase(req, false);
-        int elapsedTime = Nxt.getEpochTime() - Nxt.getBlockchain().getLastBlock().getTimestamp();
+        long elapsedTime = Nxt.getEpochTime() - Nxt.getBlockchain().getLastBlock().getTimestamp();
         if (secretPhrase != null) {
             Account account = Account.getAccount(Crypto.getPublicKey(secretPhrase));
             if (account == null) {

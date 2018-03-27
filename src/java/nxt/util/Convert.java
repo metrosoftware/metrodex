@@ -149,12 +149,12 @@ public final class Convert {
         digest.update(previousGenerationSignature);
         return digest.digest(generatorPublicKey);
     }
-    public static long fromEpochTime(int epochTime) {
-        return epochTime * 1000L + Genesis.EPOCH_BEGINNING - 500L;
+    public static long fromEpochTime(long epochTime) {
+        return epochTime + Genesis.EPOCH_BEGINNING - 500L;
     }
 
-    public static int toEpochTime(long currentTime) {
-        return (int)((currentTime - Genesis.EPOCH_BEGINNING + 500) / 1000);
+    public static long toEpochTime(long currentTime) {
+        return currentTime - Genesis.EPOCH_BEGINNING + 500;
     }
 
     public static String emptyToNull(String s) {

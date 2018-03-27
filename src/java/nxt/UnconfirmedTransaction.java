@@ -66,7 +66,7 @@ class UnconfirmedTransaction implements Transaction {
             pstmt.setLong(++i, transaction.getId());
             pstmt.setInt(++i, transaction.getHeight());
             pstmt.setLong(++i, feePerByte);
-            pstmt.setInt(++i, transaction.getExpiration());
+            pstmt.setLong(++i, transaction.getExpiration());
             pstmt.setBytes(++i, transaction.bytes());
             JSONObject prunableJSON = transaction.getPrunableAttachmentJSON();
             if (prunableJSON != null) {
@@ -147,12 +147,12 @@ class UnconfirmedTransaction implements Transaction {
     }
 
     @Override
-    public int getTimestamp() {
+    public long getTimestamp() {
         return transaction.getTimestamp();
     }
 
     @Override
-    public int getBlockTimestamp() {
+    public long getBlockTimestamp() {
         return transaction.getBlockTimestamp();
     }
 
@@ -162,7 +162,7 @@ class UnconfirmedTransaction implements Transaction {
     }
 
     @Override
-    public int getExpiration() {
+    public long getExpiration() {
         return transaction.getExpiration();
     }
 

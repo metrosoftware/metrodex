@@ -48,7 +48,7 @@ public interface Appendix {
     interface Prunable {
         byte[] getHash();
         boolean hasPrunableData();
-        void restorePrunableData(Transaction transaction, int blockTimestamp, int height);
+        void restorePrunableData(Transaction transaction, long blockTimestamp, int height);
         default boolean shouldLoadPrunable(Transaction transaction, boolean includeExpiredPrunable) {
             return Nxt.getEpochTime() - transaction.getTimestamp() <
                     (includeExpiredPrunable && Constants.INCLUDE_EXPIRED_PRUNABLE ?
@@ -460,7 +460,7 @@ public interface Appendix {
         }
 
         @Override
-        public void restorePrunableData(Transaction transaction, int blockTimestamp, int height) {
+        public void restorePrunableData(Transaction transaction, long blockTimestamp, int height) {
             PrunableMessage.add((TransactionImpl)transaction, this, blockTimestamp, height);
         }
     }
@@ -784,7 +784,7 @@ public interface Appendix {
         }
 
         @Override
-        public void restorePrunableData(Transaction transaction, int blockTimestamp, int height) {
+        public void restorePrunableData(Transaction transaction, long blockTimestamp, int height) {
             PrunableMessage.add((TransactionImpl)transaction, this, blockTimestamp, height);
         }
     }

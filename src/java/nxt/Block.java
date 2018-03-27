@@ -40,7 +40,7 @@ public interface Block {
 
     int getLocalHeight();
 
-    int getTimestamp();
+    long getTimestamp();
 
     long getGeneratorId();
 

@@ -67,19 +67,19 @@ public final class BaseTargetTest {
 
             BigInteger testCumulativeDifficulty = BigInteger.ZERO;
             long testBaseTarget;
-            int testTimestamp;
+            long testTimestamp;
 
             BigInteger cumulativeDifficulty = BigInteger.ZERO;
             long baseTarget;
-            int timestamp;
+            long timestamp;
 
             BigInteger previousCumulativeDifficulty = null;
             long previousBaseTarget = 0;
-            int previousTimestamp = 0;
+            long previousTimestamp = 0;
 
             BigInteger previousTestCumulativeDifficulty = null;
             long previousTestBaseTarget = 0;
-            int previousTestTimestamp = 0;
+            long previousTestTimestamp = 0;
 
             int height = START_HEIGHT;
             if (args.length == 1) {
@@ -112,7 +112,7 @@ public final class BaseTargetTest {
 
                     cumulativeDifficulty = new BigInteger(rs.getBytes("cumulative_difficulty"));
                     baseTarget = rs.getLong("base_target");
-                    timestamp = rs.getInt("timestamp");
+                    timestamp = rs.getLong("timestamp");
                     height = rs.getInt("height");
 
                     if (previousCumulativeDifficulty == null) {
@@ -155,7 +155,7 @@ public final class BaseTargetTest {
                     }
                     testCumulativeDifficulty = previousTestCumulativeDifficulty.add(Convert.two64.divide(BigInteger.valueOf(testBaseTarget)));
 
-                    int blocktime = timestamp - previousTimestamp;
+                    long blocktime = timestamp - previousTimestamp;
                     if (blocktime > maxBlocktime) {
                         maxBlocktime = blocktime;
                     }

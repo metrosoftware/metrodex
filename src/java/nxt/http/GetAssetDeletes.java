@@ -42,7 +42,7 @@ public final class GetAssetDeletes extends APIServlet.APIRequestHandler {
         if (assetId == 0 && accountId == 0) {
             return JSONResponses.MISSING_ASSET_ACCOUNT;
         }
-        int timestamp = ParameterParser.getTimestamp(req);
+        long timestamp = ParameterParser.getTimestamp(req);
         int firstIndex = ParameterParser.getFirstIndex(req);
         int lastIndex = ParameterParser.getLastIndex(req);
         boolean includeAssetInfo = "true".equalsIgnoreCase(req.getParameter("includeAssetInfo"));

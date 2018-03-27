@@ -40,7 +40,7 @@ public final class GetBlockchainTransactions extends APIServlet.APIRequestHandle
     protected JSONStreamAware processRequest(HttpServletRequest req) throws NxtException {
 
         long accountId = ParameterParser.getAccountId(req, true);
-        int timestamp = ParameterParser.getTimestamp(req);
+        long timestamp = ParameterParser.getTimestamp(req);
         int numberOfConfirmations = ParameterParser.getNumberOfConfirmations(req);
         boolean withMessage = "true".equalsIgnoreCase(req.getParameter("withMessage"));
         boolean phasedOnly = "true".equalsIgnoreCase(req.getParameter("phasedOnly"));

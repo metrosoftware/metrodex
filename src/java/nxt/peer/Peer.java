@@ -105,9 +105,9 @@ public interface Peer extends Comparable<Peer> {
 
     long getUploadedVolume();
 
-    int getLastUpdated();
+    long getLastUpdated();
 
-    int getLastConnectAttempt();
+    long getLastConnectAttempt();
 
     boolean isInbound();
 

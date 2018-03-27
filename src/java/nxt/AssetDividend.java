@@ -98,7 +98,7 @@ public final class AssetDividend {
     private final int dividendHeight;
     private final long totalDividend;
     private final long numAccounts;
-    private final int timestamp;
+    private final long timestamp;
     private final int height;
 
     private AssetDividend(long transactionId, Attachment.ColoredCoinsDividendPayment attachment,
@@ -122,7 +122,7 @@ public final class AssetDividend {
         this.dividendHeight = rs.getInt("dividend_height");
         this.totalDividend = rs.getLong("total_dividend");
         this.numAccounts = rs.getLong("num_accounts");
-        this.timestamp = rs.getInt("timestamp");
+        this.timestamp = rs.getLong("timestamp");
         this.height = rs.getInt("height");
     }
 
@@ -137,7 +137,7 @@ public final class AssetDividend {
             pstmt.setInt(++i, this.dividendHeight);
             pstmt.setLong(++i, this.totalDividend);
             pstmt.setLong(++i, this.numAccounts);
-            pstmt.setInt(++i, this.timestamp);
+            pstmt.setLong(++i, this.timestamp);
             pstmt.setInt(++i, this.height);
             pstmt.executeUpdate();
         }
@@ -167,7 +167,7 @@ public final class AssetDividend {
         return numAccounts;
     }
 
-    public int getTimestamp() {
+    public long getTimestamp() {
         return timestamp;
     }
 

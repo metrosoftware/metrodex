@@ -31,9 +31,9 @@ final class PeerDb {
     static class Entry {
         private final String address;
         private final long services;
-        private final int lastUpdated;
+        private final long lastUpdated;
 
-        Entry(String address, long services, int lastUpdated) {
+        Entry(String address, long services, long lastUpdated) {
             this.address = address;
             this.services = services;
             this.lastUpdated = lastUpdated;
@@ -47,7 +47,7 @@ final class PeerDb {
             return services;
         }
 
-        public int getLastUpdated() {
+        public long getLastUpdated() {
             return lastUpdated;
         }
 
@@ -68,7 +68,7 @@ final class PeerDb {
              PreparedStatement pstmt = con.prepareStatement("SELECT * FROM peer");
              ResultSet rs = pstmt.executeQuery()) {
             while (rs.next()) {
-                peers.add(new Entry(rs.getString("address"), rs.getLong("services"), rs.getInt("last_updated")));
+                peers.add(new Entry(rs.getString("address"), rs.getLong("services"), rs.getLong("last_updated")));
             }
         } catch (SQLException e) {
             throw new RuntimeException(e.toString(), e);
@@ -95,7 +95,7 @@ final class PeerDb {
             for (Entry peer : peers) {
                 pstmt.setString(1, peer.getAddress());
                 pstmt.setLong(2, peer.getServices());
-                pstmt.setInt(3, peer.getLastUpdated());
+                pstmt.setLong(3, peer.getLastUpdated());
                 pstmt.executeUpdate();
             }
         } catch (SQLException e) {
@@ -109,7 +109,7 @@ final class PeerDb {
                         + "(address, services, last_updated) KEY(address) VALUES(?, ?, ?)")) {
             pstmt.setString(1, peer.getAnnouncedAddress());
             pstmt.setLong(2, peer.getServices());
-            pstmt.setInt(3, peer.getLastUpdated());
+            pstmt.setLong(3, peer.getLastUpdated());
             pstmt.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e.toString(), e);

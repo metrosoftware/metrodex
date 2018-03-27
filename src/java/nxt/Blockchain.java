@@ -35,7 +35,7 @@ public interface Blockchain {
 
     Block getLastBlock();
 
-    Block getLastBlock(int timestamp);
+    Block getLastBlock(long timestamp);
 
     Block getLastKeyBlock();
 
@@ -43,7 +43,7 @@ public interface Blockchain {
 
     int getHeight();
 
-    int getLastBlockTimestamp();
+    long getLastBlockTimestamp();
 
     Block getBlock(long blockId);
 
@@ -55,9 +55,9 @@ public interface Blockchain {
 
     DbIterator<? extends Block> getBlocks(int from, int to);
 
-    DbIterator<? extends Block> getBlocks(long accountId, int timestamp);
+    DbIterator<? extends Block> getBlocks(long accountId, long timestamp);
 
-    DbIterator<? extends Block> getBlocks(long accountId, int timestamp, int from, int to);
+    DbIterator<? extends Block> getBlocks(long accountId, long timestamp, int from, int to);
 
     int getBlockCount(long accountId);
 
@@ -71,7 +71,7 @@ public interface Blockchain {
 
     long getBlockIdAtHeight(int height);
 
-    Block getECBlock(int timestamp);
+    Block getECBlock(long timestamp);
 
     Block processBlockHeader(byte[] headerData);
 
@@ -87,11 +87,11 @@ public interface Blockchain {
 
     DbIterator<? extends Transaction> getAllTransactions();
 
-    DbIterator<? extends Transaction> getTransactions(long accountId, byte type, byte subtype, int blockTimestamp,
+    DbIterator<? extends Transaction> getTransactions(long accountId, byte type, byte subtype, long blockTimestamp,
                                                       boolean includeExpiredPrunable);
 
     DbIterator<? extends Transaction> getTransactions(long accountId, int numberOfConfirmations, byte type, byte subtype,
-                                                      int blockTimestamp, boolean withMessage, boolean phasedOnly, boolean nonPhasedOnly,
+                                                      long blockTimestamp, boolean withMessage, boolean phasedOnly, boolean nonPhasedOnly,
                                                       int from, int to, boolean includeExpiredPrunable, boolean executedOnly);
 
     DbIterator<? extends Transaction> getTransactions(Connection con, PreparedStatement pstmt);

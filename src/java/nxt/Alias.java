@@ -217,7 +217,7 @@ public final class Alias {
     private final DbKey dbKey;
     private final String aliasName;
     private String aliasURI;
-    private int timestamp;
+    private long timestamp;
 
     private Alias(Transaction transaction, Attachment.MessagingAliasAssignment attachment) {
         this.id = transaction.getId();
@@ -234,7 +234,7 @@ public final class Alias {
         this.accountId = rs.getLong("account_id");
         this.aliasName = rs.getString("alias_name");
         this.aliasURI = rs.getString("alias_uri");
-        this.timestamp = rs.getInt("timestamp");
+        this.timestamp = rs.getLong("timestamp");
     }
 
     private void save(Connection con) throws SQLException {
@@ -246,7 +246,7 @@ public final class Alias {
             pstmt.setLong(++i, this.accountId);
             pstmt.setString(++i, this.aliasName);
             pstmt.setString(++i, this.aliasURI);
-            pstmt.setInt(++i, this.timestamp);
+            pstmt.setLong(++i, this.timestamp);
             pstmt.setInt(++i, Nxt.getBlockchain().getHeight());
             pstmt.executeUpdate();
         }
@@ -264,7 +264,7 @@ public final class Alias {
         return aliasURI;
     }
 
-    public int getTimestamp() {
+    public long getTimestamp() {
         return timestamp;
     }
 

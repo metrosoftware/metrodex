@@ -192,7 +192,7 @@ public final class Poll extends AbstractPoll {
     private final byte maxNumberOfOptions;
     private final byte minRangeValue;
     private final byte maxRangeValue;
-    private final int timestamp;
+    private final long timestamp;
 
     private Poll(Transaction transaction, Attachment.MessagingPollCreation attachment) {
         super(transaction.getId(), transaction.getSenderId(), attachment.getFinishHeight(), attachment.getVoteWeighting());
@@ -217,7 +217,7 @@ public final class Poll extends AbstractPoll {
         this.maxNumberOfOptions = rs.getByte("max_num_options");
         this.minRangeValue = rs.getByte("min_range_value");
         this.maxRangeValue = rs.getByte("max_range_value");
-        this.timestamp = rs.getInt("timestamp");
+        this.timestamp = rs.getLong("timestamp");
     }
 
     private void save(Connection con) throws SQLException {
@@ -240,7 +240,7 @@ public final class Poll extends AbstractPoll {
             pstmt.setByte(++i, maxNumberOfOptions);
             pstmt.setByte(++i, minRangeValue);
             pstmt.setByte(++i, maxRangeValue);
-            pstmt.setInt(++i, timestamp);
+            pstmt.setLong(++i, timestamp);
             pstmt.setInt(++i, Nxt.getBlockchain().getHeight());
             pstmt.executeUpdate();
         }
@@ -296,7 +296,7 @@ public final class Poll extends AbstractPoll {
         return maxRangeValue;
     }
 
-    public int getTimestamp() {
+    public long getTimestamp() {
         return timestamp;
     }
 

@@ -37,3 +37,5 @@ deploy.sh
 /ardor
 /ardor.exe
 /ardorservice.exe
+/output
+/output_test

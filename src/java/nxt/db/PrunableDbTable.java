@@ -48,7 +48,7 @@ public abstract class PrunableDbTable<T> extends PersistentDbTable<T> {
         if (Constants.ENABLE_PRUNING) {
             try (Connection con = db.getConnection();
                  PreparedStatement pstmt = con.prepareStatement("DELETE FROM " + table + " WHERE transaction_timestamp < ? LIMIT " + Constants.BATCH_COMMIT_SIZE)) {
-                pstmt.setInt(1, Nxt.getEpochTime() - Constants.MAX_PRUNABLE_LIFETIME);
+                pstmt.setLong(1, Nxt.getEpochTime() - Constants.MAX_PRUNABLE_LIFETIME);
                 int deleted;
                 do {
                     deleted = pstmt.executeUpdate();

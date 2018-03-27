@@ -96,7 +96,7 @@ public final class AssetDelete {
     private final int height;
     private final long accountId;
     private final long quantityQNT;
-    private final int timestamp;
+    private final long timestamp;
 
     private AssetDelete(Transaction transaction, long assetId, long quantityQNT) {
         this.id = transaction.getId();
@@ -114,7 +114,7 @@ public final class AssetDelete {
         this.assetId = rs.getLong("asset_id");
         this.accountId = rs.getLong("account_id");
         this.quantityQNT = rs.getLong("quantity");
-        this.timestamp = rs.getInt("timestamp");
+        this.timestamp = rs.getLong("timestamp");
         this.height = rs.getInt("height");
     }
 
@@ -127,7 +127,7 @@ public final class AssetDelete {
             pstmt.setLong(++i, this.assetId);
             pstmt.setLong(++i, this.accountId);
             pstmt.setLong(++i, this.quantityQNT);
-            pstmt.setInt(++i, this.timestamp);
+            pstmt.setLong(++i, this.timestamp);
             pstmt.setInt(++i, this.height);
             pstmt.executeUpdate();
         }
@@ -145,7 +145,7 @@ public final class AssetDelete {
 
     public long getQuantityQNT() { return quantityQNT; }
 
-    public int getTimestamp() {
+    public long getTimestamp() {
         return timestamp;
     }
 

@@ -729,7 +729,7 @@ public final class JSONData {
         return json;
     }
 
-    static JSONObject generator(Generator generator, int elapsedTime) {
+    static JSONObject generator(Generator generator, long elapsedTime) {
         JSONObject response = new JSONObject();
         long deadline = generator.getDeadline();
         putAccount(response, "account", generator.getAccountId());

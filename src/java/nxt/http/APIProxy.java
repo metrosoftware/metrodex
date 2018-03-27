@@ -40,14 +40,14 @@ public class APIProxy {
 
     static final boolean enableAPIProxy = Constants.isLightClient ||
             (Nxt.getBooleanProperty("nxt.enableAPIProxy") && ! API.isOpenAPI);
-    private static final int blacklistingPeriod = Nxt.getIntProperty("nxt.apiProxyBlacklistingPeriod") / 1000;
+    private static final long blacklistingPeriod = Nxt.getIntProperty("nxt.apiProxyBlacklistingPeriod");
     static final String forcedServerURL = Nxt.getStringProperty("nxt.forceAPIProxyServerURL", "");
 
     private volatile String forcedPeerHost;
     private volatile List<String> peersHosts = Collections.emptyList();
     private volatile String mainPeerAnnouncedAddress;
 
-    private final Map<String, Integer> blacklistedPeers = new ConcurrentHashMap<>();
+    private final Map<String, Long> blacklistedPeers = new ConcurrentHashMap<>();
 
     static {
         Set<String> requests = new HashSet<>();
@@ -67,7 +67,7 @@ public class APIProxy {
     }
 
     private static final Runnable peersUpdateThread = () -> {
-        int curTime = Nxt.getEpochTime();
+        long curTime = Nxt.getEpochTime();
         instance.blacklistedPeers.entrySet().removeIf((entry) -> {
             if (entry.getValue() < curTime) {
                 Logger.logDebugMessage("Unblacklisting API peer " + entry.getKey());

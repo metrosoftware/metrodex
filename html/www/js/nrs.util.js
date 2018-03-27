@@ -452,7 +452,7 @@ var NRS = (function (NRS, $, undefined) {
         if (!NRS.constants || NRS.constants.EPOCH_BEGINNING == 0) {
             throw "undefined epoch beginning";
         }
-        return epochTime * 1000 + NRS.constants.EPOCH_BEGINNING - 500;
+        return epochTime + NRS.constants.EPOCH_BEGINNING - 500;
     };
 
     NRS.toEpochTime = function (currentTime) {
@@ -528,7 +528,7 @@ var NRS = (function (NRS, $, undefined) {
             return "-";
         }
         var heightDiff = height - NRS.lastBlockHeight;
-        return moment().add(heightDiff * NRS.averageBlockGenerationTime, 'seconds');
+        return moment().add(heightDiff * NRS.averageBlockGenerationTime, 'milliseconds');
     };
 
     NRS.getBlockHeightTimeEstimate = function(height) {

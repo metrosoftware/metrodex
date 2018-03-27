@@ -43,7 +43,7 @@ public interface Transaction {
 
         Builder appendix(Appendix.Phasing phasing);
 
-        Builder timestamp(int timestamp);
+        Builder timestamp(long timestamp);
 
         Builder ecBlockHeight(int height);
 
@@ -73,13 +73,13 @@ public interface Transaction {
 
     short getIndex();
 
-    int getTimestamp();
+    long getTimestamp();
 
-    int getBlockTimestamp();
+    long getBlockTimestamp();
 
     short getDeadline();
 
-    int getExpiration();
+    long getExpiration();
 
     long getAmountNQT();
 

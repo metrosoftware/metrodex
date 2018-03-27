@@ -61,7 +61,7 @@ public final class GetBlock extends APIServlet.APIRequestHandler {
             }
         } else if (timestampValue != null) {
             try {
-                int timestamp = Integer.parseInt(timestampValue);
+                long timestamp = Long.parseLong(timestampValue);
                 if (timestamp < 0) {
                     return INCORRECT_TIMESTAMP;
                 }

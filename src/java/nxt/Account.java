@@ -1051,8 +1051,12 @@ public final class Account {
 
     public long getEffectiveBalanceNXT(int height) {
         if (height <= 1440) {
-            Account genesisAccount = getAccount(id, 0);
-            return genesisAccount == null ? 0 : genesisAccount.getBalanceNQT() / Constants.ONE_NXT;
+            try {
+                Account genesisAccount = getAccount(id, 0);
+                return genesisAccount == null ? 0 : genesisAccount.getBalanceNQT() / Constants.ONE_NXT;
+            } catch (IllegalArgumentException iae) {
+                return 0;
+            }
         }
         if (this.publicKey == null) {
             this.publicKey = publicKeyTable.get(accountDbKeyFactory.newKey(this));

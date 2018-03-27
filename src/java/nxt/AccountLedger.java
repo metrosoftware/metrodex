@@ -611,7 +611,7 @@ public class AccountLedger {
         private final int height;
 
         /** Block timestamp */
-        private final int timestamp;
+        private final long timestamp;
 
         /**
          * Create a ledger entry
@@ -679,7 +679,7 @@ public class AccountLedger {
             balance = rs.getLong("balance");
             blockId = rs.getLong("block_id");
             height = rs.getInt("height");
-            timestamp = rs.getInt("timestamp");
+            timestamp = rs.getLong("timestamp");
         }
 
         /**
@@ -795,7 +795,7 @@ public class AccountLedger {
          *
          * @return                          Timestamp
          */
-        public int getTimestamp() {
+        public long getTimestamp() {
             return timestamp;
         }
 
@@ -849,7 +849,7 @@ public class AccountLedger {
                 stmt.setLong(++i, balance);
                 stmt.setLong(++i, blockId);
                 stmt.setInt(++i, height);
-                stmt.setInt(++i, timestamp);
+                stmt.setLong(++i, timestamp);
                 stmt.executeUpdate();
                 try (ResultSet rs = stmt.getGeneratedKeys()) {
                     if (rs.next()) {

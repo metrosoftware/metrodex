@@ -39,7 +39,7 @@ public final class GetBlocks extends APIServlet.APIRequestHandler {
 
         int firstIndex = ParameterParser.getFirstIndex(req);
         int lastIndex = ParameterParser.getLastIndex(req);
-        final int timestamp = ParameterParser.getTimestamp(req);
+        final long timestamp = ParameterParser.getTimestamp(req);
         boolean includeTransactions = "true".equalsIgnoreCase(req.getParameter("includeTransactions"));
         boolean includeExecutedPhased = "true".equalsIgnoreCase(req.getParameter("includeExecutedPhased"));
 

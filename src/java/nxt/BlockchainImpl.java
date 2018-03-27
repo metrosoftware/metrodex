@@ -102,13 +102,13 @@ final class BlockchainImpl implements Blockchain {
     }
 
     @Override
-    public int getLastBlockTimestamp() {
+    public long getLastBlockTimestamp() {
         BlockImpl last = lastBlock.get();
         return last == null ? 0 : last.getTimestamp();
     }
 
     @Override
-    public BlockImpl getLastBlock(int timestamp) {
+    public BlockImpl getLastBlock(long timestamp) {
         BlockImpl block = lastBlock.get();
         if (timestamp >= block.getTimestamp()) {
             return block;
@@ -177,12 +177,12 @@ final class BlockchainImpl implements Blockchain {
     }
 
     @Override
-    public DbIterator<BlockImpl> getBlocks(long accountId, int timestamp) {
+    public DbIterator<BlockImpl> getBlocks(long accountId, long timestamp) {
         return getBlocks(accountId, timestamp, 0, -1);
     }
 
     @Override
-    public DbIterator<BlockImpl> getBlocks(long accountId, int timestamp, int from, int to) {
+    public DbIterator<BlockImpl> getBlocks(long accountId, long timestamp, int from, int to) {
         Connection con = null;
         try {
             con = Db.db.getConnection();
@@ -192,7 +192,7 @@ final class BlockchainImpl implements Blockchain {
             int i = 0;
             pstmt.setLong(++i, accountId);
             if (timestamp > 0) {
-                pstmt.setInt(++i, timestamp);
+                pstmt.setLong(++i, timestamp);
             }
             DbUtils.setLimits(++i, pstmt, from, to);
             return getBlocks(con, pstmt);
@@ -363,7 +363,7 @@ final class BlockchainImpl implements Blockchain {
     }
 
     @Override
-    public BlockImpl getECBlock(int timestamp) {
+    public BlockImpl getECBlock(long timestamp) {
         Block block = getLastBlock(timestamp);
         if (block == null) {
             return getBlockAtHeight(0);
@@ -377,7 +377,7 @@ final class BlockchainImpl implements Blockchain {
         header.order(ByteOrder.LITTLE_ENDIAN);
         short version = header.getShort();
         final boolean isKeyBlock = BlockImpl.isKeyBlockVersion(version);
-        int timestamp = header.getInt();
+        long timestamp = header.getLong();
         long totalFeeNQT = header.getLong();
         final int hashSize = Convert.HASH_SIZE;
         // in stage 2, we will have txMerkleRoot rather than payload_hash in Slot #3:
@@ -455,14 +455,14 @@ final class BlockchainImpl implements Blockchain {
     }
 
     @Override
-    public DbIterator<TransactionImpl> getTransactions(long accountId, byte type, byte subtype, int blockTimestamp,
+    public DbIterator<TransactionImpl> getTransactions(long accountId, byte type, byte subtype, long blockTimestamp,
                                                        boolean includeExpiredPrunable) {
         return getTransactions(accountId, 0, type, subtype, blockTimestamp, false, false, false, 0, -1, includeExpiredPrunable, false);
     }
 
     @Override
     public DbIterator<TransactionImpl> getTransactions(long accountId, int numberOfConfirmations, byte type, byte subtype,
-                                                       int blockTimestamp, boolean withMessage, boolean phasedOnly, boolean nonPhasedOnly,
+                                                       long blockTimestamp, boolean withMessage, boolean phasedOnly, boolean nonPhasedOnly,
                                                        int from, int to, boolean includeExpiredPrunable, boolean executedOnly) {
         if (phasedOnly && nonPhasedOnly) {
             throw new IllegalArgumentException("At least one of phasedOnly or nonPhasedOnly must be false");
@@ -543,7 +543,7 @@ final class BlockchainImpl implements Blockchain {
             pstmt.setLong(++i, accountId);
             pstmt.setLong(++i, accountId);
             if (blockTimestamp > 0) {
-                pstmt.setInt(++i, blockTimestamp);
+                pstmt.setLong(++i, blockTimestamp);
             }
             if (type >= 0) {
                 pstmt.setByte(++i, type);
@@ -554,15 +554,15 @@ final class BlockchainImpl implements Blockchain {
             if (height < Integer.MAX_VALUE) {
                 pstmt.setInt(++i, height);
             }
-            int prunableExpiration = Math.max(0, Constants.INCLUDE_EXPIRED_PRUNABLE && includeExpiredPrunable ?
+            long prunableExpiration = Math.max(0, Constants.INCLUDE_EXPIRED_PRUNABLE && includeExpiredPrunable ?
                                         Nxt.getEpochTime() - Constants.MAX_PRUNABLE_LIFETIME :
                                         Nxt.getEpochTime() - Constants.MIN_PRUNABLE_LIFETIME);
             if (withMessage) {
-                pstmt.setInt(++i, prunableExpiration);
+                pstmt.setLong(++i, prunableExpiration);
             }
             pstmt.setLong(++i, accountId);
             if (blockTimestamp > 0) {
-                pstmt.setInt(++i, blockTimestamp);
+                pstmt.setLong(++i, blockTimestamp);
             }
             if (type >= 0) {
                 pstmt.setByte(++i, type);
@@ -574,7 +574,7 @@ final class BlockchainImpl implements Blockchain {
                 pstmt.setInt(++i, height);
             }
             if (withMessage) {
-                pstmt.setInt(++i, prunableExpiration);
+                pstmt.setLong(++i, prunableExpiration);
             }
             DbUtils.setLimits(++i, pstmt, from, to);
             return getTransactions(con, pstmt);

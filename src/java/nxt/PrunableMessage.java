@@ -122,11 +122,11 @@ public final class PrunableMessage {
     private boolean messageIsText;
     private boolean encryptedMessageIsText;
     private boolean isCompressed;
-    private final int transactionTimestamp;
-    private final int blockTimestamp;
+    private final long transactionTimestamp;
+    private final long blockTimestamp;
     private final int height;
 
-    private PrunableMessage(Transaction transaction, int blockTimestamp, int height) {
+    private PrunableMessage(Transaction transaction, long blockTimestamp, int height) {
         this.id = transaction.getId();
         this.dbKey = prunableMessageKeyFactory.newKey(this.id);
         this.senderId = transaction.getSenderId();
@@ -162,8 +162,8 @@ public final class PrunableMessage {
             this.encryptedMessageIsText = rs.getBoolean("encrypted_is_text");
             this.isCompressed = rs.getBoolean("is_compressed");
         }
-        this.blockTimestamp = rs.getInt("block_timestamp");
-        this.transactionTimestamp = rs.getInt("transaction_timestamp");
+        this.blockTimestamp = rs.getLong("block_timestamp");
+        this.transactionTimestamp = rs.getLong("transaction_timestamp");
         this.height = rs.getInt("height");
     }
 
@@ -184,8 +184,8 @@ public final class PrunableMessage {
             pstmt.setBoolean(++i, this.messageIsText);
             pstmt.setBoolean(++i, this.encryptedMessageIsText);
             pstmt.setBoolean(++i, this.isCompressed);
-            pstmt.setInt(++i, this.blockTimestamp);
-            pstmt.setInt(++i, this.transactionTimestamp);
+            pstmt.setLong(++i, this.blockTimestamp);
+            pstmt.setLong(++i, this.transactionTimestamp);
             pstmt.setInt(++i, this.height);
             pstmt.executeUpdate();
         }
@@ -223,11 +223,11 @@ public final class PrunableMessage {
         return recipientId;
     }
 
-    public int getTransactionTimestamp() {
+    public long getTransactionTimestamp() {
         return transactionTimestamp;
     }
 
-    public int getBlockTimestamp() {
+    public long getBlockTimestamp() {
         return blockTimestamp;
     }
 
@@ -259,7 +259,7 @@ public final class PrunableMessage {
         add(transaction, appendix, Nxt.getBlockchain().getLastBlockTimestamp(), Nxt.getBlockchain().getHeight());
     }
 
-    static void add(TransactionImpl transaction, Appendix.PrunablePlainMessage appendix, int blockTimestamp, int height) {
+    static void add(TransactionImpl transaction, Appendix.PrunablePlainMessage appendix, long blockTimestamp, int height) {
         if (appendix.getMessage() != null) {
             PrunableMessage prunableMessage = prunableMessageTable.get(transaction.getDbKey());
             if (prunableMessage == null) {
@@ -278,7 +278,7 @@ public final class PrunableMessage {
         add(transaction, appendix, Nxt.getBlockchain().getLastBlockTimestamp(), Nxt.getBlockchain().getHeight());
     }
 
-    static void add(TransactionImpl transaction, Appendix.PrunableEncryptedMessage appendix, int blockTimestamp, int height) {
+    static void add(TransactionImpl transaction, Appendix.PrunableEncryptedMessage appendix, long blockTimestamp, int height) {
         if (appendix.getEncryptedData() != null) {
                 PrunableMessage prunableMessage = prunableMessageTable.get(transaction.getDbKey());
             if (prunableMessage == null) {

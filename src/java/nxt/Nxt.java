@@ -302,7 +302,7 @@ public final class Nxt {
         return TransactionImpl.newTransactionBuilder(transactionBytes, prunableAttachments);
     }
 
-    public static int getEpochTime() {
+    public static long getEpochTime() {
         return time.getTime();
     }
 

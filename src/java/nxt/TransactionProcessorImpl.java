@@ -157,7 +157,7 @@ final class TransactionProcessorImpl implements TransactionProcessor {
                 }
                 List<UnconfirmedTransaction> expiredTransactions = new ArrayList<>();
                 try (DbIterator<UnconfirmedTransaction> iterator = unconfirmedTransactionTable.getManyBy(
-                        new DbClause.IntClause("expiration", DbClause.Op.LT, Nxt.getEpochTime()), 0, -1, "")) {
+                        new DbClause.LongClause("expiration", DbClause.Op.LT, Nxt.getEpochTime()), 0, -1, "")) {
                     while (iterator.hasNext()) {
                         expiredTransactions.add(iterator.next());
                     }
@@ -201,7 +201,7 @@ final class TransactionProcessorImpl implements TransactionProcessor {
                     return;
                 }
                 List<Transaction> transactionList = new ArrayList<>();
-                int curTime = Nxt.getEpochTime();
+                long curTime = Nxt.getEpochTime();
                 for (TransactionImpl transaction : broadcastedTransactions) {
                     if (transaction.getExpiration() < curTime || TransactionDb.hasTransaction(transaction.getId())) {
                         broadcastedTransactions.remove(transaction);
@@ -576,7 +576,7 @@ final class TransactionProcessorImpl implements TransactionProcessor {
         BlockchainImpl.getInstance().writeLock();
         try {
             if (waitingTransactions.size() > 0) {
-                int currentTime = Nxt.getEpochTime();
+                long currentTime = Nxt.getEpochTime();
                 List<Transaction> addedUnconfirmedTransactions = new ArrayList<>();
                 Iterator<UnconfirmedTransaction> iterator = waitingTransactions.iterator();
                 while (iterator.hasNext()) {
@@ -590,7 +590,7 @@ final class TransactionProcessorImpl implements TransactionProcessor {
                         iterator.remove();
                     } catch (NxtException.NotCurrentlyValidException e) {
                         if (unconfirmedTransaction.getExpiration() < currentTime
-                                || currentTime - Convert.toEpochTime(unconfirmedTransaction.getArrivalTimestamp()) > 3600) {
+                                || currentTime - Convert.toEpochTime(unconfirmedTransaction.getArrivalTimestamp()) > 3600000) { //1 hour
                             iterator.remove();
                         }
                     } catch (NxtException.ValidationException|RuntimeException e) {
@@ -656,7 +656,7 @@ final class TransactionProcessorImpl implements TransactionProcessor {
 
     private void processTransaction(UnconfirmedTransaction unconfirmedTransaction) throws NxtException.ValidationException {
         TransactionImpl transaction = unconfirmedTransaction.getTransaction();
-        int curTime = Nxt.getEpochTime();
+        long curTime = Nxt.getEpochTime();
         if (transaction.getTimestamp() > curTime + Constants.MAX_TIMEDRIFT || transaction.getExpiration() < curTime) {
             throw new NxtException.NotCurrentlyValidException("Invalid transaction timestamp");
         }

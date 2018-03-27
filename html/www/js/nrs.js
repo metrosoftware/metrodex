@@ -102,7 +102,7 @@ var NRS = (function(NRS, $, undefined) {
     NRS.spinner = null;
 
     var stateInterval;
-	var stateIntervalSeconds = 30;
+	var stateIntervalSeconds = 3;
 	var isScanning = false;
 
 	NRS.loadMobileSettings = function () {
@@ -341,7 +341,7 @@ var NRS = (function(NRS, $, undefined) {
 				if (!savedPassphrase) {
 					NRS.showLockscreen();
 				}
-				NRS.setStateInterval(30);
+				NRS.setStateInterval(3);
 
 				setInterval(NRS.checkAliasVersions, 1000 * 60 * 60);
 

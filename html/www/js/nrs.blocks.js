@@ -21,7 +21,7 @@ var NRS = (function(NRS, $) {
 	NRS.blocksPageType = null;
 	NRS.tempBlocks = [];
 	var trackBlockchain = false;
-	NRS.averageBlockGenerationTime = 60;
+	NRS.averageBlockGenerationTime = 3000;
 
 	NRS.getBlock = function(id, callback, pageRequest) {
 		NRS.sendRequest("getBlock" + (pageRequest ? "+" : ""), {
@@ -47,15 +47,15 @@ var NRS = (function(NRS, $) {
 			if (NRS.state) {
 				//if no new blocks in 6 hours, show blockchain download progress..
 				var timeDiff = NRS.state.time - NRS.blocks[0].timestamp;
-				if (timeDiff > 60 * 60 * 18) {
-					if (timeDiff > 60 * 60 * 24 * 14) {
-						NRS.setStateInterval(30);
-					} else if (timeDiff > 60 * 60 * 24 * 7) {
+				if (timeDiff > 60 * 60 * 18 * 1000) {
+					if (timeDiff > 60 * 60 * 24 * 14 * 1000) {
+						NRS.setStateInterval(3);
+					} else if (timeDiff > 60 * 60 * 24 * 7 * 1000) {
 						//second to last week
-						NRS.setStateInterval(15);
+						NRS.setStateInterval(2);
 					} else {
 						//last week
-						NRS.setStateInterval(10);
+						NRS.setStateInterval(1);
 					}
 					$("#nrs_update_explanation").find("span").hide();
 					$("#nrs_update_explanation_wait").attr("style", "display: none !important");
@@ -64,11 +64,11 @@ var NRS = (function(NRS, $) {
 					NRS.updateBlockchainDownloadProgress();
 				} else {
 					//continue with faster state intervals if we still haven't reached current block from within 1 hour
-					if (timeDiff < 60 * 60) {
-						NRS.setStateInterval(30);
+					if (timeDiff < 60 * 60  * 1000) {
+						NRS.setStateInterval(3);
 						trackBlockchain = false;
 					} else {
-						NRS.setStateInterval(10);
+						NRS.setStateInterval(1);
 						trackBlockchain = true;
 					}
 				}
@@ -140,11 +140,11 @@ var NRS = (function(NRS, $) {
 		if (NRS.downloadingBlockchain) {
 			if (NRS.state) {
 				timeDiff = NRS.state.time - NRS.blocks[0].timestamp;
-				if (timeDiff < 60 * 60 * 18) {
-					if (timeDiff < 60 * 60) {
-						NRS.setStateInterval(30);
+				if (timeDiff < 60 * 60 * 18 * 1000) {
+					if (timeDiff < 60 * 60 * 1000) {
+						NRS.setStateInterval(3);
 					} else {
-						NRS.setStateInterval(10);
+						NRS.setStateInterval(1);
 						trackBlockchain = true;
 					}
 					$("#dashboard_message").hide();
@@ -160,14 +160,14 @@ var NRS = (function(NRS, $) {
 					NRS.checkAliasVersions();
 					NRS.checkIfOnAFork();
 				} else {
-					if (timeDiff > 60 * 60 * 24 * 14) {
-						NRS.setStateInterval(30);
-					} else if (timeDiff > 60 * 60 * 24 * 7) {
+					if (timeDiff > 60 * 60 * 24 * 14 * 1000) {
+						NRS.setStateInterval(3);
+					} else if (timeDiff > 60 * 60 * 24 * 7 * 1000) {
 						//second to last week
-						NRS.setStateInterval(15);
+						NRS.setStateInterval(2);
 					} else {
 						//last week
-						NRS.setStateInterval(10);
+						NRS.setStateInterval(1);
 					}
 
 					NRS.updateBlockchainDownloadProgress();
@@ -176,11 +176,11 @@ var NRS = (function(NRS, $) {
 		} else if (trackBlockchain) {
 			//continue with faster state intervals if we still haven't reached current block from within 1 hour
             timeDiff = NRS.state.time - NRS.blocks[0].timestamp;
-			if (timeDiff < 60 * 60) {
-				NRS.setStateInterval(30);
+			if (timeDiff < 60 * 60 * 1000) {
+				NRS.setStateInterval(3);
 				trackBlockchain = false;
 			} else {
-				NRS.setStateInterval(10);
+				NRS.setStateInterval(1);
 			}
 		}
 
@@ -320,9 +320,9 @@ var NRS = (function(NRS, $) {
 			if (time == 0) {
 				$("#blocks_transactions_per_hour").html("0").removeClass("loading_dots");
 			} else {
-				$("#blocks_transactions_per_hour").html(Math.round(totalTransactions / (time / 60) * 60)).removeClass("loading_dots");
+				$("#blocks_transactions_per_hour").html(Math.round(totalTransactions / (time / 60000) * 60)).removeClass("loading_dots");
 			}
-			$("#blocks_average_generation_time").html(Math.round(time / NRS.itemsPerPage) + "s").removeClass("loading_dots");
+			$("#blocks_average_generation_time").html(Math.round(time / NRS.itemsPerPage) + "ms").removeClass("loading_dots");
 			$("#blocks_average_fee").html(NRS.formatStyledAmount(averageFee)).removeClass("loading_dots");
 			blocksAverageAmount.parent().parent().css('visibility', 'visible');
 			$("#blocks_page").find(".ion-stats-bars").parent().css('visibility', 'visible');

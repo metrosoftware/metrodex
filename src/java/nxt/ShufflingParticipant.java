@@ -77,10 +77,10 @@ public final class ShufflingParticipant {
         private final long accountId;
         private final DbKey dbKey;
         private final byte[][] data;
-        private final int transactionTimestamp;
+        private final long transactionTimestamp;
         private final int height;
 
-        private ShufflingData(long shufflingId, long accountId, byte[][] data, int transactionTimestamp, int height) {
+        private ShufflingData(long shufflingId, long accountId, byte[][] data, long transactionTimestamp, int height) {
             this.shufflingId = shufflingId;
             this.accountId = accountId;
             this.dbKey = shufflingDataDbKeyFactory.newKey(shufflingId, accountId);
@@ -94,7 +94,7 @@ public final class ShufflingParticipant {
             this.accountId = rs.getLong("account_id");
             this.dbKey = dbKey;
             this.data = DbUtils.getArray(rs, "data", byte[][].class, Convert.EMPTY_BYTES);
-            this.transactionTimestamp = rs.getInt("transaction_timestamp");
+            this.transactionTimestamp = rs.getLong("transaction_timestamp");
             this.height = rs.getInt("height");
         }
 
@@ -106,7 +106,7 @@ public final class ShufflingParticipant {
                 pstmt.setLong(++i, this.shufflingId);
                 pstmt.setLong(++i, this.accountId);
                 DbUtils.setArrayEmptyToNull(pstmt, ++i, this.data);
-                pstmt.setInt(++i, this.transactionTimestamp);
+                pstmt.setLong(++i, this.transactionTimestamp);
                 pstmt.setInt(++i, this.height);
                 pstmt.executeUpdate();
             }
@@ -293,13 +293,13 @@ public final class ShufflingParticipant {
         return shufflingData != null ? shufflingData.data : null;
     }
 
-    void setData(byte[][] data, int timestamp) {
+    void setData(byte[][] data, long timestamp) {
         if (data != null && Nxt.getEpochTime() - timestamp < Constants.MAX_PRUNABLE_LIFETIME && getData() == null) {
             shufflingDataTable.insert(new ShufflingData(shufflingId, accountId, data, timestamp, Nxt.getBlockchain().getHeight()));
         }
     }
 
-    static void restoreData(long shufflingId, long accountId, byte[][] data, int timestamp, int height) {
+    static void restoreData(long shufflingId, long accountId, byte[][] data, long timestamp, int height) {
         if (data != null && getData(shufflingId, accountId) == null) {
             shufflingDataTable.insert(new ShufflingData(shufflingId, accountId, data, timestamp, height));
         }

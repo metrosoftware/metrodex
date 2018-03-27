@@ -365,11 +365,11 @@ public final class API {
 
     private static class PasswordCount {
         private int count;
-        private int time;
+        private long time;
     }
 
     private static void checkOrLockPassword(HttpServletRequest req) throws ParameterException {
-        int now = Nxt.getEpochTime();
+        long now = Nxt.getEpochTime();
         String remoteHost = null;
         if (forwardedForHeader != null) {
             remoteHost = req.getHeader(forwardedForHeader);

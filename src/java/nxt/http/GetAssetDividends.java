@@ -37,7 +37,7 @@ public final class GetAssetDividends extends APIServlet.APIRequestHandler {
     protected JSONStreamAware processRequest(HttpServletRequest req) throws NxtException {
 
         long assetId = ParameterParser.getUnsignedLong(req, "asset", false);
-        int timestamp = ParameterParser.getTimestamp(req);
+        long timestamp = ParameterParser.getTimestamp(req);
         int firstIndex = ParameterParser.getFirstIndex(req);
         int lastIndex = ParameterParser.getLastIndex(req);
 

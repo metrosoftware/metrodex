@@ -372,7 +372,7 @@ final class BlockchainImpl implements Blockchain {
     }
 
     @Override
-    public Block processBlockHeader(byte[] headerData) {
+    public Block processBlockHeader(byte[] headerData, byte[] generatorPublicKey) {
         ByteBuffer header = ByteBuffer.wrap(headerData);
         header.order(ByteOrder.LITTLE_ENDIAN);
         short version = header.getShort();
@@ -383,10 +383,13 @@ final class BlockchainImpl implements Blockchain {
         // in stage 2, we will have txMerkleRoot rather than payload_hash in Slot #3:
         byte[] txMerkleRoot = new byte[hashSize];
         header.get(txMerkleRoot);
-        byte[] generatorPublicKey = new byte[hashSize];
-        header.get(generatorPublicKey);
+        // generatorPublicKey is only needed in the Peg to verify block signature, and can be discarded afterwards,
+        // so is not part of the header
+        byte[] generationSignature = new byte[hashSize];
+        header.get(generationSignature);
         byte[] previousBlockHash = new byte[hashSize];
         header.get(previousBlockHash);
+        long previousBlockId = Convert.fullHashToId(previousBlockHash);
         if (isKeyBlock) {
             byte[] previousKeyBlockHash = new byte[hashSize];
             header.get(previousKeyBlockHash);
@@ -398,16 +401,13 @@ final class BlockchainImpl implements Blockchain {
             long baseTarget = header.getInt();
             long nonce = header.getLong();
 
-            long previousBlockId = Convert.fullHashToId(previousBlockHash);
-            byte[] generationSignature = Convert.generationSignature(getBlock(previousBlockId).getGenerationSignature(), generatorPublicKey);
-
             return new BlockImpl(version, timestamp, baseTarget, previousBlockId, Convert.fullHashToId(previousKeyBlockHash), nonce,
                     0, totalFeeNQT, 0, txMerkleRoot, generatorPublicKey,
                     generationSignature, null, previousBlockHash, previousKeyBlockHash, posBlocksSummary, stakeMerkleRoot, null);
         }
         return new BlockImpl(version, timestamp, 0, Convert.fullHashToId(previousBlockHash), 0, 0,
                 0, totalFeeNQT, 0, txMerkleRoot, generatorPublicKey,
-                null, null, previousBlockHash, Convert.EMPTY_HASH, Convert.EMPTY_HASH, Convert.EMPTY_HASH, null);
+                generationSignature, null, previousBlockHash, null, null, null, null);
     }
 
     @Override

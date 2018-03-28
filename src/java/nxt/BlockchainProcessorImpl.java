@@ -1434,14 +1434,14 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         if (block.getPayloadLength() > Constants.MAX_PAYLOAD_LENGTH || block.getPayloadLength() < 0) {
             throw new BlockNotAcceptedException("Invalid block payload length " + block.getPayloadLength(), block);
         }
-        // FIXME #144 the following checks skipped for testing submitBlockSolution
-        if (block.isKeyBlock())
-            return;
         if (!block.verifyGenerationSignature() && !Generator.allowsFakeForging(block.getGeneratorPublicKey())) {
             Account generatorAccount = Account.getAccount(block.getGeneratorId());
             long generatorBalance = generatorAccount == null ? 0 : generatorAccount.getEffectiveBalanceNXT();
             throw new BlockNotAcceptedException("Generation signature verification failed, effective balance " + generatorBalance, block);
         }
+        // FIXME #144 the following check skipped for testing submitBlockSolution
+        if (block.isKeyBlock())
+            return;
         if (!block.verifyBlockSignature()) {
             throw new BlockNotAcceptedException("Block signature verification failed", block);
         }
@@ -1525,7 +1525,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         long calculatedTotalAmount = 0;
         long calculatedTotalFee = 0;
         MessageDigest digest = Crypto.sha256();
-        boolean hasPrunedTransactions = false;
+        boolean hasPrunedTransactions = false, isKeyBlock = block.isKeyBlock();
         for (TransactionImpl transaction : block.getTransactions()) {
             if (transaction.getTimestamp() > curTime + Constants.MAX_TIMEDRIFT) {
                 throw new BlockOutOfOrderException("Invalid transaction timestamp: " + transaction.getTimestamp()
@@ -1571,20 +1571,26 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                     }
                 }
             }
-            calculatedTotalAmount += transaction.getAmountNQT();
-            calculatedTotalFee += transaction.getFeeNQT();
-            payloadLength += transaction.getFullSize();
-            digest.update(transaction.bytes());
+            if (!isKeyBlock) {
+                calculatedTotalAmount += transaction.getAmountNQT();
+                calculatedTotalFee += transaction.getFeeNQT();
+                payloadLength += transaction.getFullSize();
+                digest.update(transaction.bytes());
+            }
         }
-        if (calculatedTotalAmount != block.getTotalAmountNQT() || calculatedTotalFee != block.getTotalFeeNQT()) {
-            throw new BlockNotAcceptedException("Total amount or fee don't match transaction totals", block);
-        }
-        if (!Arrays.equals(digest.digest(), block.getPayloadHash())) {
-            throw new BlockNotAcceptedException("Payload hash doesn't match", block);
-        }
-        if (hasPrunedTransactions ? payloadLength > block.getPayloadLength() : payloadLength != block.getPayloadLength()) {
-            throw new BlockNotAcceptedException("Transaction payload length " + payloadLength + " does not match block payload length "
-                    + block.getPayloadLength(), block);
+        if (!isKeyBlock) {
+            // TODO #165 when Coinbase is introduced for POS blocks, totalFee shouldn't be in the block anymore
+            if (calculatedTotalAmount != block.getTotalAmountNQT() || calculatedTotalFee != block.getTotalFeeNQT()) {
+                throw new BlockNotAcceptedException("Total amount or fee don't match transaction totals", block);
+            }
+            // TODO #164 validate txMerkleRoot for key block, payloadHash is not populated
+            if (!Arrays.equals(digest.digest(), block.getPayloadHash())) {
+                throw new BlockNotAcceptedException("Payload hash doesn't match", block);
+            }
+            if (hasPrunedTransactions ? payloadLength > block.getPayloadLength() : payloadLength != block.getPayloadLength()) {
+                throw new BlockNotAcceptedException("Transaction payload length " + payloadLength + " does not match block payload length "
+                        + block.getPayloadLength(), block);
+            }
         }
     }
 

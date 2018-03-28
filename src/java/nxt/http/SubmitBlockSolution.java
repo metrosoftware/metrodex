@@ -24,9 +24,9 @@ public class SubmitBlockSolution extends APIServlet.APIRequestHandler {
         super(new APITag[] {APITag.MINING}, "blockHeader", "blockSignature");
     }
 
-    private static final byte[] headerTemplate = Convert.parseHexString("0000000000000000e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8551259ec21d31a30898d7cd1609f80d9668b4778e3d97e941044b39f0c44d2e51b");
-
-    private static final String headerTemplatePart2 = "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000F39F29090a00000000000000";
+    private static final byte[] headerTemplate = Convert.parseHexString("0000000000000000e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+    private static final byte[] generatorPublicKey = Convert.parseHexString("1259ec21d31a30898d7cd1609f80d9668b4778e3d97e941044b39f0c44d2e51b");
+    private static final String headerTemplatePart2 = "0000000000000000000000000000000000000000000000000000000000000000f39f29090a00000000000000";
 
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest request)
@@ -40,31 +40,7 @@ public class SubmitBlockSolution extends APIServlet.APIRequestHandler {
         String blockHeader = Convert.emptyToNull(request.getParameter("blockHeader"));
         int keyBlockHeaderSize = BlockImpl.getHeaderSize(true, false);
         if (blockHeader == null) {
-            // auto-fill with data from last blocks
-            Block lastBlock = Nxt.getBlockchain().getLastBlock();
-            Block lastKeyBlock = Nxt.getBlockchain().getLastKeyBlock();
-            // 218 is full header length; headerTemplatePart2 will be appended by String concatenation
-            ByteBuffer buffer = ByteBuffer.allocate(keyBlockHeaderSize - headerTemplatePart2.length() / 2);
-            buffer.order(ByteOrder.LITTLE_ENDIAN);
-            // version
-            buffer.putShort(Consensus.getKeyBlockVersion(lastBlock.getHeight()));
-
-            // timestamp
-            buffer.putLong(Nxt.getEpochTime());
-
-            // template part #1
-            buffer.put(headerTemplate);
-            // prev block hashes
-            byte[] previousBlockHash = Consensus.HASH_FUNCTION.hash(lastBlock.getBytes());
-            buffer.put(previousBlockHash);
-            if (lastKeyBlock != null) {
-                buffer.put(Consensus.HASH_FUNCTION.hash(lastKeyBlock.getBytes()));
-            } else {
-                buffer.put(Convert.EMPTY_HASH);
-            }
-
-            // template part #2 (Merkle roots, baseTarget, nonce)
-            blockHeader = Convert.toHexString(buffer.array()) + headerTemplatePart2;
+            blockHeader = generateHeaderFromTemplate(keyBlockHeaderSize);
         }
         if (blockHeader.length() != keyBlockHeaderSize * 2) {
             JSONObject response = new JSONObject();
@@ -79,12 +55,41 @@ public class SubmitBlockSolution extends APIServlet.APIRequestHandler {
         String blockSignature = Convert.emptyToNull(request.getParameter("blockSignature"));
         // TODO #144 validate length of the signature
         byte[] signatureBytes = Convert.parseHexString(blockSignature != null ? blockSignature.toLowerCase() : null);
-        Block extra = Nxt.getBlockchain().processBlockHeader(headerBytes);
+        Block extra = Nxt.getBlockchain().processBlockHeader(headerBytes, generatorPublicKey);
         boolean blockAccepted = Nxt.getBlockchainProcessor().processMinerBlock(extra, signatureBytes);
         // Return JSON block representation or "Replacement block failed to be accepted" error
         return blockAccepted ? extra.getJSONObject() : REPLACEMENT_BLOCK_IGNORED;
     }
 
+    public static String generateHeaderFromTemplate(int keyBlockHeaderSize) {
+        // auto-fill with data from last blocks
+        Block lastBlock = Nxt.getBlockchain().getLastBlock();
+        Block lastKeyBlock = Nxt.getBlockchain().getLastKeyBlock();
+        // 218 is full header length; headerTemplatePart2 will be appended by String concatenation
+        ByteBuffer buffer = ByteBuffer.allocate(keyBlockHeaderSize - headerTemplatePart2.length() / 2);
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+        // version
+        buffer.putShort(Consensus.getKeyBlockVersion(lastBlock.getHeight()));
+
+        // timestamp
+        buffer.putLong(Nxt.getEpochTime());
+
+        // template part #1
+        buffer.put(headerTemplate);
+        // put generation sequence
+        buffer.put(Convert.generationSignature(lastBlock.getGenerationSignature(), generatorPublicKey));
+        // prev block hashes
+        byte[] previousBlockHash = Consensus.HASH_FUNCTION.hash(lastBlock.getBytes());
+        buffer.put(previousBlockHash);
+        if (lastKeyBlock != null) {
+            buffer.put(Consensus.HASH_FUNCTION.hash(lastKeyBlock.getBytes()));
+        } else {
+            buffer.put(Convert.EMPTY_HASH);
+        }
+
+        // template part #2 (Merkle roots, baseTarget, nonce)
+        return Convert.toHexString(buffer.array()) + headerTemplatePart2;
+    }
     /* example hex for a keyBlock:
     0180710879010000000000000000
     e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
@@ -96,6 +101,7 @@ public class SubmitBlockSolution extends APIServlet.APIRequestHandler {
     F39F29090a00000000000000
     in one line:
     018026858F010000000000000000e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8551259ec21d31a30898d7cd1609f80d9668b4778e3d97e941044b39f0c44d2e51b5f7f66720a4d19c9478306f8fdb2f0860afe373fb91e9661344cfc0d133fed905f7f66720a4d19c9478306f8fdb2f0860afe373fb91e9661344cfc0d133fed9000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000F39F29090a00000000000000
+    0180d6cd94010000000000000000e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b85572a38beca125651562f8e5e30ec277def090bb7bafbc0b36c1d9b2e8930c65de69626bd6740c9a57dc63b138a4e6f6d7be0233d1b8e0e9968b2ca20bc156ac57000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000f39f29090a00000000000000
 
      */
 

@@ -27,7 +27,6 @@ import org.json.simple.JSONObject;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -77,7 +76,7 @@ public final class BlockImpl implements Block {
     BlockImpl(byte[] generatorPublicKey, byte[] generationSignature) {
         // the Genesis block is POS with version 0x0000
         this(Consensus.GENESIS_BLOCK_VERSION, 0, Constants.INITIAL_BASE_TARGET, 0, 0, 0, 0, 0, 0, new byte[HASH_SIZE], generatorPublicKey, generationSignature, new byte[HASH_SIZE * 2],
-                new byte[HASH_SIZE], new byte[HASH_SIZE], new byte[HASH_SIZE], new byte[HASH_SIZE], Collections.emptyList());
+                Convert.EMPTY_HASH, null, null, null, Collections.emptyList());
         this.height = 0;
         this.localHeight = 0;
         this.stakeBatchDifficulty = Convert.two64.divide(BigInteger.valueOf(Constants.INITIAL_BASE_TARGET));
@@ -111,7 +110,7 @@ public final class BlockImpl implements Block {
         this.totalFeeNQT = totalFeeNQT;
         this.payloadLength = payloadLength;
         this.payloadHash = payloadHash;
-        // TODO stage 2, txMerkleRoot replaces payloadHash for all blocks
+        // TODO #164
         this.txMerkleRoot = Convert.EMPTY_HASH;
         this.generatorPublicKey = generatorPublicKey;
         this.generationSignature = generationSignature;
@@ -348,6 +347,7 @@ public final class BlockImpl implements Block {
         json.put("version", version);
         json.put("timestamp", timestamp);
         json.put("previousBlock", Long.toUnsignedString(previousBlockId));
+        // TODO #164 txMerkleRoot for all blocks
         if (isKeyBlock()) {
             json.put("previousKeyBlock", Long.toUnsignedString(previousKeyBlockId));
             json.put("nonce", nonce);
@@ -387,7 +387,7 @@ public final class BlockImpl implements Block {
                 previousKeyBlockHash = Convert.parseHexString((String) blockData.get("previousKeyBlockHash"));
                 posBlocksSummary = Convert.parseHexString((String) blockData.get("posBlocksSummary"));
                 stakeMerkleRoot = Convert.parseHexString((String) blockData.get("stakeMerkleRoot"));
-                // TODO txMerkleRoot
+                // TODO #164 txMerkleRoot
                 payloadHash = Convert.EMPTY_PAYLOAD_HASH;
             } else {
                 payloadLength = ((Long) blockData.get("payloadLength")).intValue();
@@ -445,11 +445,14 @@ public final class BlockImpl implements Block {
 
             // Block.version: the most significant bit to differentiate between block (0x0001...) and keyblock (0x8001...)
             buffer.putShort(version);
-            // Block.timestamp: 8 bytes, seconds since NxtEpoch
+            // Block.timestamp: 8 bytes, milliseconds since NxtEpoch
             buffer.putLong(timestamp);
             buffer.putLong(totalFeeNQT);
+
             buffer.put(payloadHash);
-            buffer.put(getGeneratorPublicKey());
+
+            buffer.put(generationSignature);
+
             buffer.put(previousBlockHash);
 
             if (isKeyBlock) {
@@ -469,9 +472,7 @@ public final class BlockImpl implements Block {
                 buffer.putInt(getTransactions().size());
                 buffer.putLong(totalAmountNQT);
                 buffer.putInt(payloadLength);
-                // seems superfluous as it depends only on generator public key of this block and previous block's generationSignature value,
-                // which is fixated by previousBlockHash link
-                buffer.put(generationSignature);
+                buffer.put(getGeneratorPublicKey());
             }
             if (isSignedPosBlock) {
                 buffer.put(blockSignature);
@@ -496,38 +497,29 @@ public final class BlockImpl implements Block {
     }
 
     boolean verifyGenerationSignature() throws BlockchainProcessor.BlockOutOfOrderException {
-
         try {
-
             BlockImpl previousBlock = BlockchainImpl.getInstance().getBlock(getPreviousBlockId());
             if (previousBlock == null) {
                 throw new BlockchainProcessor.BlockOutOfOrderException("Can't verify signature because previous block is missing", this);
             }
-
-            Account account = Account.getAccount(getGeneratorId());
-            long effectiveBalance = account == null ? 0 : account.getEffectiveBalanceNXT();
-            if (effectiveBalance <= 0) {
-                return false;
-            }
-
-            MessageDigest digest = Crypto.sha256();
-            digest.update(previousBlock.generationSignature);
-            byte[] generationSignatureHash = digest.digest(getGeneratorPublicKey());
+            byte[] generationSignatureHash = Convert.generationSignature(previousBlock.generationSignature, getGeneratorPublicKey());
             if (!Arrays.equals(generationSignature, generationSignatureHash)) {
                 return false;
             }
-
-            BigInteger hit = new BigInteger(1, new byte[]{generationSignatureHash[7], generationSignatureHash[6], generationSignatureHash[5], generationSignatureHash[4], generationSignatureHash[3], generationSignatureHash[2], generationSignatureHash[1], generationSignatureHash[0]});
-
-            return Generator.verifyHit(hit, BigInteger.valueOf(effectiveBalance), previousBlock, timestamp);
-
+            if (!isKeyBlock()) {
+                Account account = Account.getAccount(getGeneratorId());
+                long effectiveBalance = account == null ? 0 : account.getEffectiveBalanceNXT();
+                if (effectiveBalance <= 0) {
+                    return false;
+                }
+                BigInteger hit = Convert.fullHashToBigInteger(generationSignatureHash);
+                return Generator.verifyHit(hit, BigInteger.valueOf(effectiveBalance), previousBlock, timestamp);
+            }
+            return true;
         } catch (RuntimeException e) {
-
             Logger.logMessage("Error verifying block generation signature", e);
             return false;
-
         }
-
     }
 
     void apply() {

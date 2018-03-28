@@ -11,7 +11,7 @@ public class Consensus {
     public static final short GENESIS_BLOCK_VERSION = 0;
 
     public static final int DIFFICULTY_TRANSITION_INTERVAL = 2016;
-    public final static int TARGET_TIMESPAN = 1209600;
+    public static final int TARGET_TIMESPAN = 1209600;
     public static final BigInteger MAX_WORK_TARGET = Constants.isTestnet ? BitcoinJUtils.decodeCompactBits(Long.parseUnsignedLong(Nxt.getStringProperty("nxt.testnetMaxWorkTarget", "1d00ffff"), 16)) : BitcoinJUtils.decodeCompactBits(0x1d00ffffL);
     public static final int SUBSIDY_HALVING_INTERVAL = 210000;
 

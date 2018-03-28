@@ -44,8 +44,9 @@ public final class Generator implements Comparable<Generator> {
     }
 
     private static final int MAX_FORGERS = Nxt.getIntProperty("nxt.maxNumberOfForgers");
-    private static final byte[] fakeForgingPublicKey = Nxt.getBooleanProperty("nxt.enableFakeForging") ?
-            Account.getPublicKey(Convert.parseAccountId(Nxt.getStringProperty("nxt.fakeForgingAccount"))) : null;
+    //Not work if genesis is not created yet
+    private static byte[] fakeForgingPublicKey;
+    private static boolean fakeForgingPublicKeyInitiated = false;
 
     private static final Listeners<Generator,Event> listeners = new Listeners<>();
 
@@ -54,6 +55,15 @@ public final class Generator implements Comparable<Generator> {
     private static volatile List<Generator> sortedForgers = null;
     private static long lastBlockId;
     private static int delayTime = Constants.FORGING_DELAY;
+
+    public static byte[] getFakeForgingPublicKey() {
+        if (Nxt.getBlockchain().getHeight() > 0) {
+            fakeForgingPublicKey = Nxt.getBooleanProperty("nxt.enableFakeForging") ?
+                    Account.getPublicKey(Convert.parseAccountId(Nxt.getStringProperty("nxt.fakeForgingAccount"))) : null;
+            fakeForgingPublicKeyInitiated = true;
+        }
+        return fakeForgingPublicKey;
+    }
 
     private static final Runnable generateBlocksThread = new Runnable() {
 
@@ -247,7 +257,7 @@ public final class Generator implements Comparable<Generator> {
     }
 
     static boolean allowsFakeForging(byte[] publicKey) {
-        return Constants.isTestnet && publicKey != null && Arrays.equals(publicKey, fakeForgingPublicKey);
+        return Constants.isTestnet && publicKey != null && Arrays.equals(publicKey, getFakeForgingPublicKey());
     }
 
     static BigInteger getHit(byte[] publicKey, Block block) {

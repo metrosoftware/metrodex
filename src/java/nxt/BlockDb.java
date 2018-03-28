@@ -309,13 +309,15 @@ final class BlockDb {
             BigInteger stakeBatchDifficulty = new BigInteger(rs.getBytes("stake_batch_difficulty"));
             long baseTarget = rs.getLong("base_target");
             long nextBlockId = rs.getLong("next_block_id");
-            if (nextBlockId == 0 && !rs.wasNull()) {
+            // TODO #155
+            if (nextBlockId == 0 && !rs.wasNull() && version != Consensus.GENESIS_BLOCK_VERSION) {
                 throw new IllegalStateException("Attempting to load invalid block");
             }
             int height = rs.getInt("height");
             int localHeight = rs.getInt("local_height");
             byte[] generationSignature = rs.getBytes("generation_signature");
             byte[] blockSignature = rs.getBytes("block_signature");
+            // TODO #164
             byte[] payloadHash = rs.getBytes("payload_hash");
             long id = rs.getLong("id");
             return new BlockImpl(version, timestamp, previousBlockId, previousKeyBlockId, nonce, totalAmountNQT, totalFeeNQT, payloadLength, payloadHash,
@@ -328,7 +330,7 @@ final class BlockDb {
 
     static void saveBlock(Connection con, BlockImpl block) {
         try {
-            // TODO stage 2: store also txMerkleRoot, that will be replacing payload_hash
+            // TODO #164 store also txMerkleRoot, that will be replacing payload_hash
             try (PreparedStatement pstmt = con.prepareStatement("INSERT INTO block (id, version, timestamp, previous_block_id, previous_key_block_id, nonce, "
                     + "previous_key_block_hash, pos_blocks_summary, stake_merkle_root, "
                     + "total_amount, total_fee, payload_length, previous_block_hash, next_block_id, cumulative_difficulty, stake_batch_difficulty, base_target, "
@@ -361,7 +363,9 @@ final class BlockDb {
                 pstmt.setBytes(++i, block.getGenerationSignature());
                 // TODO #144 block signature NOT NULL, made nullable temporarily for testing
                 pstmt.setBytes(++i, block.getBlockSignature());
+                // TODO #164
                 pstmt.setBytes(++i, block.getPayloadHash());
+
                 pstmt.setLong(++i, block.getGeneratorId());
                 pstmt.executeUpdate();
                 TransactionDb.saveTransactions(con, block.getTransactions());

@@ -38,6 +38,8 @@ import java.util.Set;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import static nxt.Consensus.HASH_FUNCTION;
+
 public final class Convert {
 
     private static final char[] hexChars = { '0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f' };
@@ -145,7 +147,7 @@ public final class Convert {
     }
 
     public static byte[] generationSignature(byte[] previousGenerationSignature, byte[] generatorPublicKey) {
-        MessageDigest digest = Crypto.sha256();
+        MessageDigest digest = HASH_FUNCTION.messageDigest();
         digest.update(previousGenerationSignature);
         return digest.digest(generatorPublicKey);
     }

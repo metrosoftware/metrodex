@@ -25,7 +25,7 @@ import static org.junit.Assert.assertTrue;
 public class TokenTest extends BlockchainTest {
     @Test
     public void testParseValidToken() throws Exception {
-        String token = "6s7hchl9q0e5jgrrtgscoip2lcb2o3oi7ndso1bnjr475suv001ug93uu8aq2f00o7q6pvs2ivrpra1svouvb4k5nreco0tt94qest9mq5jg2qihcvj5n5ljqht5fl6n39nslr7kidqh8kh8u8v6e4rn92f47l3i";
+        String token =  "6s7hchl9q0e5jgrrtgscoip2lcb2o3oi7ndso1bnjr475suv001ug93u00000000f2dmu0jbr8b5knrftpd7l22r97tahjj8lq9vs24m8rep7pjlnmgm60ehtts9ck3fo1ne7e4al1shidk65rhh6q9dbhfv6uo9017rn3v8";
         Token actual = Token.parseToken(token, "http://nxt.org");
 
         assertEquals(1000, actual.getTimestamp());
@@ -34,7 +34,7 @@ public class TokenTest extends BlockchainTest {
 
     @Test
     public void testParseInValidToken() throws Exception {
-        String token = "6s7hchl9q0e5jgrrtgscoip2lcb2o3oi7ndso1bnjr475suv001ug93uu8aq2f00o7q6pvs2ivrpra1svouvb4k5nreco0tt94qest9mq5jg2qihcvj5n5ljqht5fl6n39nslr7kidqh8kh8u8v6e4rn92f47l3i";
+        String token =  "6s7hchl9q0e5jgrrtgscoip2lcb2o3oi7ndso1bnjr475suv001ug93u00000000f2dmu0jbr8b5knrftpd7l22r97tahjj8lq9vs24m8rep7pjlnmgm60ehtts9ck3fo1ne7e4al1shidk65rhh6q9dbhfv6uo9017rn3v8";
         Token actual = Token.parseToken(token, "http://next.org");
 
         assertEquals(1000, actual.getTimestamp());

@@ -16,6 +16,8 @@
 
 package nxt.http.accountControl;
 
+import nxt.Constants;
+import nxt.Tester;
 import nxt.http.APICall;
 import nxt.util.Logger;
 import org.json.simple.JSONObject;
@@ -41,11 +43,26 @@ public class ACTestUtils {
             param("quantityQNT", 10000);
             param("decimals", 4);
             secretPhrase(secretPhrase);
-            feeNQT(0);
+            feeNQT(Constants.ONE_NXT);
         }
 
     }
-    
+
+    public static long issueTestAsset(Tester tester) {
+        APICall.Builder builder = new ACTestUtils.AssetBuilder(tester.getSecretPhrase(), "TestAsset");
+        return Long.parseUnsignedLong((String) ACTestUtils.assertTransactionSuccess(builder).get("transaction"));
+    }
+
+    public static JSONObject transferAsset(Tester sender, Tester receiver, long assetId, long quantity) {
+         return new APICall.Builder("transferAsset").
+                param("secretPhrase", sender.getSecretPhrase()).
+                param("recipient", receiver.getStrId()).
+                param("asset", Long.toUnsignedString(assetId)).
+                param("quantityQNT", quantity).
+                param("feeNQT", Constants.ONE_NXT).
+                build().invoke();
+    }
+
     public static JSONObject assertTransactionSuccess(APICall.Builder builder) {
         JSONObject response = builder.build().invoke();
         

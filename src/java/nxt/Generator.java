@@ -44,7 +44,6 @@ public final class Generator implements Comparable<Generator> {
     }
 
     private static final int MAX_FORGERS = Nxt.getIntProperty("nxt.maxNumberOfForgers");
-    //Not work if genesis is not created yet
     private static byte[] fakeForgingPublicKey;
     private static boolean fakeForgingPublicKeyInitiated = false;
 
@@ -57,7 +56,7 @@ public final class Generator implements Comparable<Generator> {
     private static int delayTime = Constants.FORGING_DELAY;
 
     public static byte[] getFakeForgingPublicKey() {
-        if (Nxt.getBlockchain().getHeight() > 0) {
+        if (Nxt.getBlockchain().getHeight() > 0 && !fakeForgingPublicKeyInitiated) {
             fakeForgingPublicKey = Nxt.getBooleanProperty("nxt.enableFakeForging") ?
                     Account.getPublicKey(Convert.parseAccountId(Nxt.getStringProperty("nxt.fakeForgingAccount"))) : null;
             fakeForgingPublicKeyInitiated = true;

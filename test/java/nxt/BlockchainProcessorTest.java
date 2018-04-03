@@ -26,6 +26,8 @@ import org.junit.Test;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -47,6 +49,7 @@ public class BlockchainProcessorTest extends AbstractBlockchainTest {
     @BeforeClass
     public static void init() {
         AbstractBlockchainTest.init(newTestProperties());
+        Runtime.getRuntime().addShutdownHook(new Thread(Nxt::shutdown));
         debugTrace = DebugTrace.addDebugTrace(Collections.<Long>emptySet(), BlockchainProcessorTest.testTraceFile);
     }
 

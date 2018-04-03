@@ -30,6 +30,7 @@ public class ManualForgingTest extends AbstractForgingTest {
         Properties properties = ManualForgingTest.newTestProperties();
         properties.setProperty("nxt.enableFakeForging", "true");
         properties.setProperty("nxt.timeMultiplier", "1");
+        properties.setProperty("nxt.fakeForgingAccount", "NXT-9KZM-KNYY-QBXZ-5TD8V");
         AbstractForgingTest.init(properties);
         Assert.assertTrue("nxt.fakeForgingAccount must be defined in nxt.properties", Nxt.getStringProperty("nxt.fakeForgingAccount") != null);
         final byte[] testPublicKey = Crypto.getPublicKey(testForgingSecretPhrase);

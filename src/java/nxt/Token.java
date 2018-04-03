@@ -41,12 +41,12 @@ public final class Token {
         data[message.length + 32 + 6] = (byte)(timestamp >> 48);
         data[message.length + 32 + 7] = (byte)(timestamp >> 56);
 
-        byte[] token = new byte[100];
-        System.arraycopy(data, message.length, token, 0, 32 + 4);
-        System.arraycopy(Crypto.sign(data, secretPhrase), 0, token, 32 + 4, 64);
+        byte[] token = new byte[105];
+        System.arraycopy(data, message.length, token, 0, 32 + 8);
+        System.arraycopy(Crypto.sign(data, secretPhrase), 0, token, 32 + 8, 64);
 
         StringBuilder buf = new StringBuilder();
-        for (int ptr = 0; ptr < 100; ptr += 5) {
+        for (int ptr = 0; ptr < 105; ptr += 5) {
 
             long number = ((long)(token[ptr] & 0xFF)) | (((long)(token[ptr + 1] & 0xFF)) << 8) | (((long)(token[ptr + 2] & 0xFF)) << 16)
                     | (((long)(token[ptr + 3] & 0xFF)) << 24) | (((long)(token[ptr + 4] & 0xFF)) << 32);
@@ -79,7 +79,7 @@ public final class Token {
     }
 
     public static Token parseToken(String tokenString, byte[] messageBytes) {
-        byte[] tokenBytes = new byte[104];
+        byte[] tokenBytes = new byte[105];
         int i = 0, j = 0;
 
         for (; i < tokenString.length(); i += 8, j += 5) {
@@ -93,13 +93,13 @@ public final class Token {
 
         }
 
-        if (i != 160) {
+        if (i != 168) {
             throw new IllegalArgumentException("Invalid token string: " + tokenString);
         }
         byte[] publicKey = new byte[32];
         System.arraycopy(tokenBytes, 0, publicKey, 0, 32);
         long timestamp = (tokenBytes[32] & 0xFF) | ((tokenBytes[33] & 0xFF) << 8) | ((tokenBytes[34] & 0xFF) << 16) | ((tokenBytes[35] & 0xFF) << 24) |
-                ((tokenBytes[36] & 0xFF) << 32) | ((tokenBytes[37] & 0xFF) << 40) | ((tokenBytes[38] & 0xFF) << 48) | ((tokenBytes[39] & 0xFF) << 56);
+                ((long)(tokenBytes[36] & 0xFF) << 32) | ((long)(tokenBytes[37] & 0xFF) << 40) | ((long)(tokenBytes[38] & 0xFF) << 48) | ((long)(tokenBytes[39] & 0xFF) << 56);
         byte[] signature = new byte[64];
         System.arraycopy(tokenBytes, 40, signature, 0, 64);
 

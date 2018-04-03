@@ -2,6 +2,9 @@ package nxt.tools;
 
 import nxt.Account;
 import nxt.BlockchainTest;
+import nxt.Helper;
+import nxt.ManualForgingTest;
+import nxt.Nxt;
 import nxt.util.Convert;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -9,13 +12,20 @@ import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
-public class PassphraseRecoveryTest {
+public class PassphraseRecoveryTest extends BlockchainTest {
 
     private static Map<Long, byte[]> publicKeys;
 
     @BeforeClass
     public static void loadPublicKeys() {
+        /*
+        Properties testProperties = new Properties();
+        testProperties.setProperty("nxt.isTestnet", "true");
+        Nxt.init(testProperties);
+        Runtime.getRuntime().addShutdownHook(new Thread(Nxt::shutdown));
+        */
         publicKeys = PassphraseRecovery.getPublicKeys();
     }
 

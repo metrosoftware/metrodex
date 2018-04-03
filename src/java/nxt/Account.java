@@ -46,6 +46,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import static nxt.Constants.GUARANTEED_BALANCE_CONFIRMATIONS;
+
 @SuppressWarnings({"UnusedDeclaration", "SuspiciousNameCombination"})
 public final class Account {
 
@@ -412,14 +414,14 @@ public final class Account {
 
         @Override
         public void trim(int height) {
-            if (height <= Constants.GUARANTEED_BALANCE_CONFIRMATIONS) {
+            if (height <= GUARANTEED_BALANCE_CONFIRMATIONS) {
                 return;
             }
             super.trim(height);
         }
         @Override
         public void checkAvailable(int height) {
-            if (height > Constants.GUARANTEED_BALANCE_CONFIRMATIONS) {
+            if (height > GUARANTEED_BALANCE_CONFIRMATIONS) {
                 super.checkAvailable(height);
                 return;
             }
@@ -556,7 +558,7 @@ public final class Account {
             try (Connection con = Db.db.getConnection();
                  PreparedStatement pstmtDelete = con.prepareStatement("DELETE FROM account_guaranteed_balance "
                          + "WHERE height < ? AND height >= 0 LIMIT " + Constants.BATCH_COMMIT_SIZE)) {
-                pstmtDelete.setInt(1, height - Constants.GUARANTEED_BALANCE_CONFIRMATIONS);
+                pstmtDelete.setInt(1, height - GUARANTEED_BALANCE_CONFIRMATIONS);
                 int count;
                 do {
                     count = pstmtDelete.executeUpdate();
@@ -1050,7 +1052,7 @@ public final class Account {
     }
 
     public long getEffectiveBalanceNXT(int height) {
-        if (height <= 1440) {
+        if (height <= GUARANTEED_BALANCE_CONFIRMATIONS) {
             try {
                 Account genesisAccount = getAccount(id, 0);
                 return genesisAccount == null ? 0 : genesisAccount.getBalanceNQT() / Constants.ONE_NXT;
@@ -1061,14 +1063,14 @@ public final class Account {
         if (this.publicKey == null) {
             this.publicKey = publicKeyTable.get(accountDbKeyFactory.newKey(this));
         }
-        if (this.publicKey == null || this.publicKey.publicKey == null || height - this.publicKey.height <= 1440) {
+        if (this.publicKey == null || this.publicKey.publicKey == null || height - this.publicKey.height <= GUARANTEED_BALANCE_CONFIRMATIONS) {
             return 0; // cfb: Accounts with the public key revealed less than 1440 blocks ago are not allowed to generate blocks
         }
         Nxt.getBlockchain().readLock();
         try {
             long effectiveBalanceNQT = getLessorsGuaranteedBalanceNQT(height);
             if (activeLesseeId == 0) {
-                effectiveBalanceNQT += getGuaranteedBalanceNQT(Constants.GUARANTEED_BALANCE_CONFIRMATIONS, height);
+                effectiveBalanceNQT += getGuaranteedBalanceNQT(GUARANTEED_BALANCE_CONFIRMATIONS, height);
             }
 	        return effectiveBalanceNQT < Constants.MIN_FORGING_BALANCE_NQT ? 0 : effectiveBalanceNQT / Constants.ONE_NXT;
         } finally {
@@ -1096,7 +1098,7 @@ public final class Account {
                      + (height < blockchainHeight ? " AND height <= ? " : "")
                      + " GROUP BY account_id ORDER BY account_id")) {
             pstmt.setObject(1, lessorIds);
-            pstmt.setInt(2, height - Constants.GUARANTEED_BALANCE_CONFIRMATIONS);
+            pstmt.setInt(2, height - GUARANTEED_BALANCE_CONFIRMATIONS);
             if (height < blockchainHeight) {
                 pstmt.setInt(3, height);
             }
@@ -1131,14 +1133,14 @@ public final class Account {
     }
 
     public long getGuaranteedBalanceNQT() {
-        return getGuaranteedBalanceNQT(Constants.GUARANTEED_BALANCE_CONFIRMATIONS, Nxt.getBlockchain().getHeight());
+        return getGuaranteedBalanceNQT(GUARANTEED_BALANCE_CONFIRMATIONS, Nxt.getBlockchain().getHeight());
     }
 
     public long getGuaranteedBalanceNQT(final int numberOfConfirmations, final int currentHeight) {
         Nxt.getBlockchain().readLock();
         try {
             int height = currentHeight - numberOfConfirmations;
-            if (height + Constants.GUARANTEED_BALANCE_CONFIRMATIONS < Nxt.getBlockchainProcessor().getMinRollbackHeight()
+            if (height + GUARANTEED_BALANCE_CONFIRMATIONS < Nxt.getBlockchainProcessor().getMinRollbackHeight()
                     || height > Nxt.getBlockchain().getHeight()) {
                 throw new IllegalArgumentException("Height " + height + " not available for guaranteed balance calculation");
             }

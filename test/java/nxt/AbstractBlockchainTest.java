@@ -20,7 +20,10 @@ import nxt.crypto.Crypto;
 import nxt.util.Listener;
 import nxt.util.Logger;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Properties;
 
 public abstract class AbstractBlockchainTest {
@@ -52,6 +55,7 @@ public abstract class AbstractBlockchainTest {
 
     protected static void init(Properties testProperties) {
         Nxt.init(testProperties);
+        Runtime.getRuntime().addShutdownHook(new Thread(Nxt::shutdown));
         blockchain = BlockchainImpl.getInstance();
         blockchainProcessor = BlockchainProcessorImpl.getInstance();
         blockchainProcessor.setGetMoreBlocks(false);

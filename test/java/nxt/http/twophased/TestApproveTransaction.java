@@ -291,13 +291,6 @@ public class TestApproveTransaction extends BlockchainTest {
                 build().invoke();
         Logger.logDebugMessage("getAlias: " + response);
         Assert.assertEquals((long)5, response.get("errorCode"));
-
-        response = new APICall.Builder("broadcastTransaction").
-                param("transactionBytes", approvalTransactionBytes).
-                build().invoke();
-        Logger.logDebugMessage("broadcastTransaction: " + response);
-        generateBlock();
-
         // allocate the same alias immediately
         response = new APICall.Builder("setAlias").
                 param("secretPhrase", BOB.getSecretPhrase()).
@@ -306,6 +299,13 @@ public class TestApproveTransaction extends BlockchainTest {
                 build().invoke();
         Logger.logDebugMessage("setSameAlias: " + response);
         generateBlock();
+
+        response = new APICall.Builder("broadcastTransaction").
+                param("transactionBytes", approvalTransactionBytes).
+                build().invoke();
+        Logger.logDebugMessage("broadcastTransaction: " + response);
+        generateBlock();
+
         // phased setAlias transaction is applied but invalid
         response = new APICall.Builder("getAlias").
                 param("aliasName", alias).

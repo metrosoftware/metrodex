@@ -31,7 +31,7 @@ public class EpochTimeTest {
         long time = Convert.fromEpochTime(47860355);
         DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy hh:mm:ss");
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-        Assert.assertEquals("01/06/2015 10:32:34", dateFormat.format(new Date(time)));
+        Assert.assertEquals("29/11/2018 10:32:34", dateFormat.format(new Date(time)));
         Assert.assertEquals(47860355, Convert.toEpochTime(time));
     }
 

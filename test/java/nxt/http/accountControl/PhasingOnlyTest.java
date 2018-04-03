@@ -53,7 +53,8 @@ public class PhasingOnlyTest extends BlockchainTest {
         
         Builder builder = new ACTestUtils.Builder("sendMoney", ALICE.getSecretPhrase())
             .recipient(BOB.getId())
-            .param("amountNQT", 1 * Constants.ONE_NXT);
+            .param("amountNQT", 1 * Constants.ONE_NXT)
+            .param("feeNQT", 2 * Constants.ONE_NXT);
         
         //no phasing - block
         ACTestUtils.assertTransactionBlocked(builder);
@@ -147,39 +148,44 @@ public class PhasingOnlyTest extends BlockchainTest {
     @Test
     public void testRejectingPendingTransaction() throws Exception {
 
+        long AMOUNT = 1000 * Constants.ONE_NXT;
+
         Builder builder = new ACTestUtils.Builder("sendMoney", ALICE.getSecretPhrase())
             .recipient(BOB.getId())
-            .param("amountNQT", 1 * Constants.ONE_NXT);
+            .param("amountNQT", AMOUNT)
+            .param("feeNQT", 10 * Constants.ONE_NXT);
     
         setTransactionPhasingParams(builder, 4, VotingModel.ACCOUNT, null, 1L, null, null, new long[] {BOB.getId(), CHUCK.getId()});
         JSONObject sendMoneyJSON = ACTestUtils.assertTransactionSuccess(builder);
         generateBlock();
         
         builder = new ACTestUtils.Builder("setPhasingOnlyControl", ALICE.getSecretPhrase());
-        
+
         setControlPhasingParams(builder, VotingModel.ACCOUNT, null, 1L, null, null, new long[] {DAVE.getId()}, 0, 0, 0);
-        
         ACTestUtils.assertTransactionSuccess(builder);
         
         generateBlock();
         
-        long balanceBeforeTransactionRejection = ACTestUtils.getAccountBalance(ALICE.getId(), "unconfirmedBalanceNQT");
+        long balanceBeforeTransactionRejection = ACTestUtils.getAccountBalance(ALICE.getId(), "balanceNQT");
         
         String fullHash = (String) sendMoneyJSON.get("fullHash");
         
-        //approve the pending transaction
+        //approve the pending transaction - it should not confirm sendMoney
         builder = new ACTestUtils.Builder("approveTransaction", BOB.getSecretPhrase())
                 .param("transactionFullHash", fullHash);
         ACTestUtils.assertTransactionSuccess(builder);
         
         generateBlock();
 
+        Assert.assertEquals((balanceBeforeTransactionRejection  - AMOUNT) / Constants.ONE_NXT,
+                ACTestUtils.getAccountBalance(ALICE.getId(), "unconfirmedBalanceNQT") / Constants.ONE_NXT);
+
         //the sendMoney finish height
         generateBlock();
 
         //Assert the unconfirmed balance is recovered
-        Assert.assertEquals(balanceBeforeTransactionRejection + 1 * Constants.ONE_NXT, 
-                ACTestUtils.getAccountBalance(ALICE.getId(), "unconfirmedBalanceNQT"));
+        Assert.assertEquals(balanceBeforeTransactionRejection / Constants.ONE_NXT,
+                ACTestUtils.getAccountBalance(ALICE.getId(), "unconfirmedBalanceNQT") / Constants.ONE_NXT);
     }
     
     @Test
@@ -194,6 +200,7 @@ public class PhasingOnlyTest extends BlockchainTest {
         ACTestUtils.assertTransactionBlocked(builder);
         
         setTransactionPhasingParams(builder, 20, VotingModel.NQT, null, 100 * Constants.ONE_NXT, null, null, new long[] {DAVE.getId()});
+        builder.param("feeNQT", 21 * Constants.ONE_NXT); //21 is minimum
         ACTestUtils.assertTransactionBlocked(builder);
         
         setTransactionPhasingParams(builder, 20, VotingModel.ACCOUNT, null, 1L, null, null, new long[] {BOB.getId(), CHUCK.getId()});
@@ -207,6 +214,7 @@ public class PhasingOnlyTest extends BlockchainTest {
             .param("amountNQT", 1 * Constants.ONE_NXT);
         
         setTransactionPhasingParams(builder, 20, VotingModel.NQT, null, 100 * Constants.ONE_NXT, null, null, null);
+        builder.param("feeNQT", 21 * Constants.ONE_NXT); //21 is minimum
         ACTestUtils.assertTransactionSuccess(builder);
     }
     
@@ -224,10 +232,12 @@ public class PhasingOnlyTest extends BlockchainTest {
         
         builder = new ACTestUtils.Builder("sendMoney", ALICE.getSecretPhrase())
             .recipient(BOB.getId())
-            .param("amountNQT", 1 * Constants.ONE_NXT);
+            .param("amountNQT", 1 * Constants.ONE_NXT)
+            .param("feeNQT", 1 * Constants.ONE_NXT);
         ACTestUtils.assertTransactionBlocked(builder);
         
         setTransactionPhasingParams(builder, 20, VotingModel.ASSET, asset2Id, 100L, null, null, null);
+        builder.param("feeNQT", 21 * Constants.ONE_NXT); //21 is minimum
         ACTestUtils.assertTransactionBlocked(builder);
         
         setTransactionPhasingParams(builder, 20, VotingModel.ASSET, assetId, 100L, null, null, null);
@@ -237,6 +247,7 @@ public class PhasingOnlyTest extends BlockchainTest {
     @Test
     public void testCurrencyVoting() {
         Builder builder = new ACTestUtils.CurrencyBuilder().naming("testa", "TESTA", "Test AC");
+        builder.feeNQT(1);
         String currencyId = (String) ACTestUtils.assertTransactionSuccess(builder).get("transaction");
         generateBlock();
         
@@ -248,10 +259,12 @@ public class PhasingOnlyTest extends BlockchainTest {
         
         builder = new ACTestUtils.Builder("sendMoney", ALICE.getSecretPhrase())
             .recipient(BOB.getId())
-            .param("amountNQT", 1 * Constants.ONE_NXT);
+            .param("amountNQT", 1 * Constants.ONE_NXT)
+            .param("feeNQT", 1 * Constants.ONE_NXT);
         ACTestUtils.assertTransactionBlocked(builder);
         
         setTransactionPhasingParams(builder, 20, VotingModel.CURRENCY, currency2Id, 100L, null, null, null);
+        builder.param("feeNQT", 21 * Constants.ONE_NXT); //21 is minimum
         ACTestUtils.assertTransactionBlocked(builder);
         
         setTransactionPhasingParams(builder, 20, VotingModel.CURRENCY, currencyId, 100L, null, null, null);
@@ -289,10 +302,11 @@ public class PhasingOnlyTest extends BlockchainTest {
                                        long maxFees, int minDuration, int maxDuration) {
         
         Builder builder = new ACTestUtils.Builder("setPhasingOnlyControl", ALICE.getSecretPhrase());
-        
+
         setControlPhasingParams(builder, votingModel, holdingId, quorum,
                 minBalance, minBalanceModel, whitelist, maxFees, minDuration, maxDuration);
-        
+
+        builder.feeNQT(1 * Constants.ONE_NXT);
         APICall apiCall = builder.build();
         JSONObject response = apiCall.invoke();
         Logger.logMessage("setPhasingOnlyControl response: " + response.toJSONString());

@@ -55,6 +55,7 @@ public class LeaseTest extends BlockchainTest {
         // lease is registered
         JSONObject leasedResponse1 = new APICall.Builder("getAccount").
                 param("account", BOB.getRsAccount()).
+                param("includeEffectiveBalance", "true").
                 build().invoke();
         Logger.logDebugMessage("getLeasedAccount: " + leasedResponse1);
         Assert.assertEquals(ALICE.getRsAccount(), leasedResponse1.get("currentLesseeRS"));
@@ -62,6 +63,7 @@ public class LeaseTest extends BlockchainTest {
         Assert.assertEquals((long) (baseHeight + 1 + 1 + 2), leasedResponse1.get("currentLeasingHeightTo"));
         JSONObject leasedResponse2 = new APICall.Builder("getAccount").
                 param("account", CHUCK.getRsAccount()).
+                param("includeEffectiveBalance", "true").
                 build().invoke();
         Logger.logDebugMessage("getLeasedAccount: " + leasedResponse1);
         Assert.assertEquals(ALICE.getRsAccount(), leasedResponse2.get("currentLesseeRS"));

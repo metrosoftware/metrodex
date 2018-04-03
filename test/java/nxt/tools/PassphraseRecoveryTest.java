@@ -2,6 +2,8 @@ package nxt.tools;
 
 import nxt.Account;
 import nxt.BlockchainTest;
+import nxt.ManualForgingTest;
+import nxt.Nxt;
 import nxt.util.Convert;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -9,6 +11,7 @@ import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 public class PassphraseRecoveryTest {
 
@@ -16,6 +19,9 @@ public class PassphraseRecoveryTest {
 
     @BeforeClass
     public static void loadPublicKeys() {
+        Properties testProperties = new Properties();
+        testProperties.setProperty("nxt.isTestnet", "true");
+        Nxt.init(testProperties);
         publicKeys = PassphraseRecovery.getPublicKeys();
     }
 

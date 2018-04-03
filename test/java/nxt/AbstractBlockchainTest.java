@@ -20,7 +20,10 @@ import nxt.crypto.Crypto;
 import nxt.util.Listener;
 import nxt.util.Logger;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Properties;
 
 public abstract class AbstractBlockchainTest {
@@ -29,6 +32,20 @@ public abstract class AbstractBlockchainTest {
     protected static BlockchainImpl blockchain;
     private static final Object doneLock = new Object();
     private static boolean done = false;
+
+    @BeforeClass
+    public static void properH2Shutdown() {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                try (Connection con = Db.db.getConnection()) {
+                    con.createStatement().execute("SHUTDOWN");
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }));
+
+    }
 
     protected static Properties newTestProperties() {
         Properties testProperties = new Properties();

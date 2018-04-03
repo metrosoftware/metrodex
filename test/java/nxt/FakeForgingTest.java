@@ -16,6 +16,7 @@
 
 package nxt;
 
+import nxt.crypto.Crypto;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -31,6 +32,8 @@ public class FakeForgingTest extends AbstractForgingTest {
         properties.setProperty("nxt.disableGenerateBlocksThread", "false");
         properties.setProperty("nxt.enableFakeForging", "true");
         properties.setProperty("nxt.timeMultiplier", "1");
+        properties.setProperty("nxt.fakeForgingAccount", "NXT-9KZM-KNYY-QBXZ-5TD8V");
+
         AbstractForgingTest.init(properties);
         Assert.assertTrue("nxt.fakeForgingAccount must be defined in nxt.properties", Nxt.getStringProperty("nxt.fakeForgingAccount") != null);
     }

@@ -60,7 +60,7 @@ public final class JSONResponses {
     public static final JSONStreamAware UNKNOWN_ENTRY = unknown("entry");
     public static final JSONStreamAware MISSING_PEER = missing("peer");
     public static final JSONStreamAware UNKNOWN_PEER = unknown("peer");
-    public static final JSONStreamAware MISSING_BLOCK_HEADER = missing("blockHeader");
+    public static final JSONStreamAware MISSING_BLOCK_GENERATOR = missing("generatorPublicKey");
     public static final JSONStreamAware MISSING_TRANSACTION = missing("transaction");
     public static final JSONStreamAware UNKNOWN_TRANSACTION = unknown("transaction");
     public static final JSONStreamAware INCORRECT_TRANSACTION = incorrect("transaction");

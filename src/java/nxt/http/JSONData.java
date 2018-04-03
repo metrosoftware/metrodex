@@ -309,7 +309,7 @@ public final class JSONData {
         }
         // TODO #145 if (block.isKeyblock()) { ... } report key block fields for UI
         json.put("payloadHash", Convert.toHexString(block.getPayloadHash()));
-        json.put("generationSignature", Convert.toHexString(block.getGenerationSignature()));
+        json.put("generationSequence", Convert.toHexString(block.getGenerationSequence()));
         json.put("previousBlockHash", Convert.toHexString(block.getPreviousBlockHash()));
         json.put("blockSignature", Convert.toHexString(block.getBlockSignature()));
         JSONArray transactions = new JSONArray();

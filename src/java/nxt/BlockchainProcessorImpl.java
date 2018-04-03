@@ -1875,11 +1875,11 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         byte[] payloadHash = digest.digest();
 
         final byte[] publicKey = Crypto.getPublicKey(secretPhrase);
-        final byte[] generationSignature = Convert.generationSignature(previousBlock.getGenerationSignature(), publicKey);
+        final byte[] generationSequence = Convert.generationSequence(previousBlock.getGenerationSequence(), publicKey);
         final byte[] previousBlockHash = HASH_FUNCTION.hash(previousBlock.bytes());
 
-        BlockImpl block = new BlockImpl(getPosBlockVersion(previousBlock.getHeight()), blockTimestamp, previousBlock.getId(), 0, 0, totalAmountNQT, totalFeeNQT, payloadLength,
-                payloadHash, publicKey, generationSignature, previousBlockHash, null, null, null, blockTransactions, secretPhrase);
+        BlockImpl block = new BlockImpl(getPosBlockVersion(previousBlock.getHeight()), blockTimestamp, previousBlock.getId(), 0l, 0l, totalAmountNQT, totalFeeNQT, payloadLength,
+                payloadHash, publicKey, generationSequence, previousBlockHash, null, null, blockTransactions, secretPhrase);
 
         try {
             pushBlock(block);

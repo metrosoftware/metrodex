@@ -146,9 +146,9 @@ public final class Convert {
         return new BigInteger(1, new byte[] {hash[7], hash[6], hash[5], hash[4], hash[3], hash[2], hash[1], hash[0]});
     }
 
-    public static byte[] generationSignature(byte[] previousGenerationSignature, byte[] generatorPublicKey) {
+    public static byte[] generationSequence(byte[] previousGenerationSequence, byte[] generatorPublicKey) {
         MessageDigest digest = HASH_FUNCTION.messageDigest();
-        digest.update(previousGenerationSignature);
+        digest.update(previousGenerationSequence);
         return digest.digest(generatorPublicKey);
     }
     public static long fromEpochTime(long epochTime) {

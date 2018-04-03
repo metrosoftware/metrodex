@@ -73,7 +73,7 @@ public interface Blockchain {
 
     Block getECBlock(long timestamp);
 
-    Block processBlockHeader(byte[] headerData, byte[] generatorPublicKey);
+    Block composeKeyBlock(byte[] headerData, byte[] generatorPublicKey);
 
     Transaction getTransaction(long transactionId);
 

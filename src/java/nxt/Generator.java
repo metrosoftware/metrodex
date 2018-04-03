@@ -24,7 +24,6 @@ import nxt.util.Logger;
 import nxt.util.ThreadPool;
 
 import java.math.BigInteger;
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -263,8 +262,7 @@ public final class Generator implements Comparable<Generator> {
         if (allowsFakeForging(publicKey)) {
             return BigInteger.ZERO;
         }
-        byte[] generationSignatureHash = Convert.generationSignature(block.getGenerationSignature(), publicKey);
-        return new BigInteger(1, new byte[] {generationSignatureHash[7], generationSignatureHash[6], generationSignatureHash[5], generationSignatureHash[4], generationSignatureHash[3], generationSignatureHash[2], generationSignatureHash[1], generationSignatureHash[0]});
+        return Convert.fullHashToBigInteger(Convert.generationSequence(block.getGenerationSequence(), publicKey));
     }
 
     static long getHitTime(BigInteger effectiveBalance, BigInteger hit, Block block) {

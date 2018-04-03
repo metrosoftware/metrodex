@@ -56,11 +56,9 @@ public interface Block {
 
     byte[] getPreviousKeyBlockHash();
 
-    byte[] getPosBlocksSummary();
-
     public byte[] getTxMerkleRoot();
 
-    byte[] getStakeMerkleRoot();
+    byte[] getForgersMerkleRoot();
 
     long getNextBlockId();
 
@@ -74,7 +72,7 @@ public interface Block {
 
     List<? extends Transaction> getTransactions();
 
-    byte[] getGenerationSignature();
+    byte[] getGenerationSequence();
 
     byte[] getBlockSignature();
 

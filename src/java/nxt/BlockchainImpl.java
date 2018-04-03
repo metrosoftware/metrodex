@@ -30,6 +30,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -372,42 +373,46 @@ final class BlockchainImpl implements Blockchain {
     }
 
     @Override
-    public Block processBlockHeader(byte[] headerData, byte[] generatorPublicKey) {
+    public Block composeKeyBlock(byte[] headerData, byte[] generatorPublicKey) {
         ByteBuffer header = ByteBuffer.wrap(headerData);
         header.order(ByteOrder.LITTLE_ENDIAN);
         short version = header.getShort();
-        final boolean isKeyBlock = BlockImpl.isKeyBlockVersion(version);
+        if (!BlockImpl.isKeyBlockVersion(version)) {
+            throw new IllegalArgumentException("Wrong block version: 0x" + Integer.toUnsignedString(Short.toUnsignedInt(version), 16));
+        }
         long timestamp = header.getLong();
         long totalFeeNQT = header.getLong();
         final int hashSize = Convert.HASH_SIZE;
-        // in stage 2, we will have txMerkleRoot rather than payload_hash in Slot #3:
+        // we will have txMerkleRoot rather than payload_hash in all blocks, eventually:
         byte[] txMerkleRoot = new byte[hashSize];
         header.get(txMerkleRoot);
-        // generatorPublicKey is only needed in the Peg to verify block signature, and can be discarded afterwards,
-        // so is not part of the header
-        byte[] generationSignature = new byte[hashSize];
-        header.get(generationSignature);
+
         byte[] previousBlockHash = new byte[hashSize];
         header.get(previousBlockHash);
         long previousBlockId = Convert.fullHashToId(previousBlockHash);
-        if (isKeyBlock) {
-            byte[] previousKeyBlockHash = new byte[hashSize];
-            header.get(previousKeyBlockHash);
-            byte[] posBlocksSummary = new byte[hashSize];
-            header.get(posBlocksSummary);
-            byte[] stakeMerkleRoot = new byte[hashSize];
-            header.get(stakeMerkleRoot);
 
-            long baseTarget = header.getInt();
-            long nonce = header.getLong();
-
-            return new BlockImpl(version, timestamp, baseTarget, previousBlockId, Convert.fullHashToId(previousKeyBlockHash), nonce,
-                    0, totalFeeNQT, 0, txMerkleRoot, generatorPublicKey,
-                    generationSignature, null, previousBlockHash, previousKeyBlockHash, posBlocksSummary, stakeMerkleRoot, null);
+        // generatorPublicKey is only needed in the Peg to verify block signature, and can be discarded afterwards,
+        // so is not part of the header
+        // generationSequence in key header is not needed anymore, due to different POS verification approach - thus we calculate it here
+        // from the previous block
+        BlockImpl previousBlock = BlockDb.findBlock(previousBlockId);
+        if (previousBlock == null) {
+            throw new IllegalArgumentException("Wrong prev block hash: " + Convert.toHexString(previousBlockHash));
+        } else if (previousBlock.getGenerationSequence() == null) {
+            throw new IllegalStateException("Generation sequence is not yet set in block " + Convert.toHexString(previousBlockHash) + " given as previous");
         }
-        return new BlockImpl(version, timestamp, 0, Convert.fullHashToId(previousBlockHash), 0, 0,
+        byte[] generationSignature = Convert.generationSequence(previousBlock.getGenerationSequence(), generatorPublicKey);
+        byte[] previousKeyBlockHash = new byte[hashSize];
+        header.get(previousKeyBlockHash);
+        byte[] forgersMerkleRoot = new byte[hashSize];
+        header.get(forgersMerkleRoot);
+
+        long baseTarget = header.getInt();
+        long nonce = header.getLong();
+
+        return new BlockImpl(version, timestamp, baseTarget, previousBlockId, Convert.fullHashToId(previousKeyBlockHash), nonce,
                 0, totalFeeNQT, 0, txMerkleRoot, generatorPublicKey,
-                generationSignature, null, previousBlockHash, null, null, null, null);
+                generationSignature, null, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, null);
     }
 
     @Override

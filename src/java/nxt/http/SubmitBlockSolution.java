@@ -39,7 +39,7 @@ public class SubmitBlockSolution extends APIServlet.APIRequestHandler {
             return JSON.prepare(response);
         }
         String blockHeader = Convert.emptyToNull(request.getParameter("blockHeader"));
-        String generatorPublicKeyHex = Convert.emptyToNull(request.getParameter("blockHeader"));
+        String generatorPublicKeyHex = Convert.emptyToNull(request.getParameter("generatorPublicKey"));
         int keyBlockHeaderSize = BlockImpl.getHeaderSize(true, false);
         byte[] generatorPublicKey;
         if (blockHeader == null) {
@@ -48,7 +48,7 @@ public class SubmitBlockSolution extends APIServlet.APIRequestHandler {
         } else {
             if (generatorPublicKeyHex == null) {
                 return JSONResponses.MISSING_BLOCK_GENERATOR;
-            } else if (generatorPublicKeyHex.length() / 2 != HASH_SIZE) {
+            } else if (generatorPublicKeyHex.length() != HASH_SIZE * 2) {
                 JSONObject response = new JSONObject();
                 response.put("error", "Incorrect generatorPublicKey string, was " + generatorPublicKeyHex.length() + " but must be " + HASH_SIZE * 2 + " characters");
                 return JSON.prepare(response);

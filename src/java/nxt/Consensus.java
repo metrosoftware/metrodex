@@ -15,6 +15,8 @@ public class Consensus {
     public static final BigInteger MAX_WORK_TARGET = Constants.isTestnet ? BitcoinJUtils.decodeCompactBits(Long.parseUnsignedLong(Nxt.getStringProperty("nxt.testnetMaxWorkTarget", "1d00ffff"), 16)) : BitcoinJUtils.decodeCompactBits(0x1d00ffffL);
     public static final int SUBSIDY_HALVING_INTERVAL = 210000;
 
+    public static final int GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS = 30;
+
     public static short getPosBlockVersion(int atHeight) {
         return 3;
     }

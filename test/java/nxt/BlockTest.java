@@ -56,9 +56,7 @@ public class BlockTest extends BlockchainTest {
 
     @Test
     public void testPseudoMining() throws Exception {
-        generateBlock();
-        generateBlock();
-        generateBlock();
+        generateBlocks(5);
         Block posBlock = Nxt.getBlockchain().getLastBlock();
         String keyBlockHeader = SubmitBlockSolution.generateHeaderFromTemplate(BlockImpl.getHeaderSize(true, false));
         Block block1 = Nxt.getBlockchain().composeKeyBlock(Convert.parseHexString(keyBlockHeader), generatorPublicKey);

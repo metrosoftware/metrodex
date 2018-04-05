@@ -174,7 +174,7 @@ public class BlockchainProcessorTest extends AbstractBlockchainTest {
             try (DbIterator<Account> iter = account.getLessors(endHeight - numBlocks)) {
                 for (Account lessor : iter) {
                     lessors.add(lessor.getId());
-                    balances.add(lessor.getGuaranteedBalanceNQT(Constants.GUARANTEED_BALANCE_CONFIRMATIONS, endHeight - numBlocks));
+                    balances.add(lessor.getGuaranteedBalanceNQT(endHeight - blockchain.getGuaranteedBalanceHeight(endHeight), endHeight - numBlocks));
                 }
             }
         }

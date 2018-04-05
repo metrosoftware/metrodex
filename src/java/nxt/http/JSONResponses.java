@@ -359,7 +359,7 @@ public final class JSONResponses {
     static {
         JSONObject response = new JSONObject();
         response.put("errorCode", 22);
-        response.put("errorDescription", "Replacement block failed to be accepted");
+        response.put("errorDescription", "Replacement block failed acceptance criteria");
         REPLACEMENT_BLOCK_IGNORED = JSON.prepare(response);
     }
 

@@ -54,7 +54,7 @@ public class GeneratorTest extends BlockchainTest {
         lastBlock = blockchain.getLastBlock();
         Assert.assertEquals(hitTime + 1, lastBlock.getTimestamp());
         try {
-            Assert.assertTrue(lastBlock.verifyGenerationSignature());
+            Assert.assertTrue(lastBlock.verifyGenerationSequence());
         } catch (BlockchainProcessor.BlockOutOfOrderException e) {
             e.printStackTrace();
         }

@@ -39,9 +39,13 @@ public interface Blockchain {
 
     Block getLastKeyBlock();
 
+    void forgetLastKeyBlock();
+
     Block getLastPosBlock();
 
     int getHeight();
+
+    int getGuaranteedBalanceHeight(int height);
 
     long getLastBlockTimestamp();
 

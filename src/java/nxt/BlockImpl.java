@@ -484,14 +484,14 @@ public final class BlockImpl implements Block {
         return hasValidSignature;
     }
 
-    boolean verifyGenerationSignature() throws BlockchainProcessor.BlockOutOfOrderException {
+    boolean verifyGenerationSequence() throws BlockchainProcessor.BlockOutOfOrderException {
         try {
             BlockImpl previousBlock = BlockchainImpl.getInstance().getBlock(getPreviousBlockId());
             if (previousBlock == null) {
                 throw new BlockchainProcessor.BlockOutOfOrderException("Can't verify signature because previous block is missing", this);
             }
-            byte[] generationSignatureHash = Convert.generationSequence(previousBlock.generationSequence, getGeneratorPublicKey());
-            if (!Arrays.equals(generationSequence, generationSignatureHash)) {
+            byte[] generationSequenceHash = Convert.generationSequence(previousBlock.generationSequence, getGeneratorPublicKey());
+            if (!Arrays.equals(generationSequence, generationSequenceHash)) {
                 return false;
             }
             if (!isKeyBlock()) {
@@ -500,7 +500,7 @@ public final class BlockImpl implements Block {
                 if (effectiveBalance <= 0) {
                     return false;
                 }
-                BigInteger hit = Convert.fullHashToBigInteger(generationSignatureHash);
+                BigInteger hit = Convert.fullHashToBigInteger(generationSequenceHash);
                 return Generator.verifyHit(hit, BigInteger.valueOf(effectiveBalance), previousBlock, timestamp);
             }
             return true;

@@ -1434,7 +1434,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         if (block.getPayloadLength() > Constants.MAX_PAYLOAD_LENGTH || block.getPayloadLength() < 0) {
             throw new BlockNotAcceptedException("Invalid block payload length " + block.getPayloadLength(), block);
         }
-        if (!block.verifyGenerationSignature() && !Generator.allowsFakeForging(block.getGeneratorPublicKey())) {
+        if (!block.verifyGenerationSequence() && !Generator.allowsFakeForging(block.getGeneratorPublicKey())) {
             Account generatorAccount = Account.getAccount(block.getGeneratorId());
             long generatorBalance = generatorAccount == null ? 0 : generatorAccount.getEffectiveBalanceNXT();
             throw new BlockNotAcceptedException("Generation signature verification failed, effective balance " + generatorBalance, block);
@@ -1459,7 +1459,6 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         if (Convert.byteArrayComparator.compare(keyblock.getTxMerkleRoot(), Convert.EMPTY_HASH) != 0) {
             return Block.ValidationResult.TX_MERKLE_ROOT_DISCREPANCY;
         }
-        // TODO feat #131: verify how posBlocksSummary was calculated
         // TODO feat #124: verify how stakeMerkleRoot was calculated
 
         BigInteger target = BitcoinJUtils.decodeCompactBits(keyblock.getBaseTarget());

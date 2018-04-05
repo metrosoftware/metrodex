@@ -80,6 +80,7 @@ public abstract class BlockchainTest extends AbstractBlockchainTest {
     public void destroy() {
         TransactionProcessorImpl.getInstance().clearUnconfirmedTransactions();
         blockchainProcessor.popOffTo(baseHeight);
+        Nxt.getBlockchain().forgetLastKeyBlock();
     }
 
     public static void generateBlock() {

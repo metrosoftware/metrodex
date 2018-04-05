@@ -38,6 +38,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static nxt.Consensus.GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS;
+
 final class BlockchainImpl implements Blockchain {
 
     private static final BlockchainImpl instance = new BlockchainImpl();
@@ -92,7 +94,8 @@ final class BlockchainImpl implements Blockchain {
         }
     }
 
-    void forgetLastKeyBlock() {
+    @Override
+    public void forgetLastKeyBlock() {
         lastKeyBlock.set(null);
     }
 
@@ -100,6 +103,22 @@ final class BlockchainImpl implements Blockchain {
     public int getHeight() {
         BlockImpl last = lastBlock.get();
         return last == null ? 0 : last.getHeight();
+    }
+
+    @Override
+    public int getGuaranteedBalanceHeight(int height) {
+        BlockImpl keyHead = height == getHeight() ? getLastKeyBlock() : BlockDb.findLastKeyBlock(height);
+        if (keyHead != null) {
+            int pastLocalHeight = Math.max(keyHead.getLocalHeight() - GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS + 1, 1);
+            BlockImpl guaranteedMileStone = BlockDb.findBlockAtLocalHeight(pastLocalHeight, true);
+            if (guaranteedMileStone.getLocalHeight() == 1 && keyHead.getLocalHeight() < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS) {
+                // ignore additions in the 1st cluster
+                return 0;
+            }
+            return BlockDb.findBlockAtLocalHeight(pastLocalHeight, true).getHeight();
+        } else {
+            return 0;
+        }
     }
 
     @Override

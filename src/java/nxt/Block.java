@@ -86,4 +86,6 @@ public interface Block {
 
     JSONObject getJSONObject();
 
+    void sign(String secretPhrase);
+
 }

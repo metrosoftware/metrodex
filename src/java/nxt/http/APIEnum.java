@@ -168,7 +168,6 @@ public enum APIEnum {
     START_FORGING("startForging", StartForging.instance),
     STOP_FORGING("stopForging", StopForging.instance),
     GET_FORGING("getForging", GetForging.instance),
-    SUBMIT_BLOCK_SOLUTION("submitBlockSolution", SubmitBlockSolution.instance),
     TRANSFER_ASSET("transferAsset", TransferAsset.instance),
     DIVIDEND_PAYMENT("dividendPayment", DividendPayment.instance),
     SEARCH_ASSETS("searchAssets", SearchAssets.instance),
@@ -209,7 +208,8 @@ public enum APIEnum {
     BLACKLIST_API_PROXY_PEER("blacklistAPIProxyPeer", BlacklistAPIProxyPeer.instance),
     GET_NEXT_BLOCK_GENERATORS("getNextBlockGenerators", GetNextBlockGeneratorsTemp.instance),
     GET_SCHEDULED_TRANSACTIONS("getScheduledTransactions", GetScheduledTransactions.instance),
-    DELETE_SCHEDULED_TRANSACTION("deleteScheduledTransaction", DeleteScheduledTransaction.instance);
+    DELETE_SCHEDULED_TRANSACTION("deleteScheduledTransaction", DeleteScheduledTransaction.instance),
+    MINING_GET_WORK("getWork", GetWork.instance);
 
     private static final Map<String, APIEnum> apiByName = new HashMap<>();
 

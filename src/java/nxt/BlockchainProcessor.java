@@ -48,7 +48,7 @@ public interface BlockchainProcessor extends Observable<Block,BlockchainProcesso
 
     void processPeerBlock(JSONObject request) throws NxtException;
 
-    boolean processMinerBlock(Block block, byte[] signature) throws NxtException;
+    boolean processMinerBlock(Block block) throws NxtException;
 
     void fullReset();
 
@@ -69,6 +69,8 @@ public interface BlockchainProcessor extends Observable<Block,BlockchainProcesso
     Transaction restorePrunedTransaction(long transactionId);
 
     long getGenesisBlockId();
+
+    BlockImpl prepareMinerBlock();
 
     class BlockNotAcceptedException extends NxtException {
 

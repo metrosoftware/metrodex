@@ -119,8 +119,9 @@ public class APICall {
             return this;
         }
 
-        public void body(String body) {
+        public Builder body(String body) {
             this.body = body;
+            return this;
         }
 
         public APICall build() {

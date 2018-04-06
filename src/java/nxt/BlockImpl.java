@@ -651,4 +651,17 @@ public final class BlockImpl implements Block {
         BigInteger target = getDifficultyTargetAsInteger();
         return Convert.LARGEST_HASH.divide(target.add(BigInteger.ONE));
     }
+
+    @Override
+    public void sign(String secretPhrase) {
+        if (!isKeyBlock()) {
+            throw new IllegalStateException("Only key block could be signed.");
+        }
+        if (blockSignature != null) {
+            throw new IllegalStateException("Key block already signed.");
+        } else {
+            blockSignature = Crypto.sign(bytes(), secretPhrase);
+            bytes = null;
+        }
+    }
 }

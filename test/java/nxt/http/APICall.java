@@ -25,6 +25,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -32,6 +33,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.Reader;
+import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -46,16 +49,27 @@ public class APICall {
 
     private Map<String, List<String>> params;
     private Map<String, Part> parts;
+    private String body;
+    private BufferedReader reader;
+
 
     private APICall(Builder builder) {
         this.params = builder.params;
         this.parts = builder.parts;
+        body(builder.body);
+    }
+
+    public void body(String body) {
+        this.body = body;
+        Reader bodyReader = new StringReader(body);
+        this.reader = new BufferedReader(bodyReader);
     }
 
     public static class Builder {
 
         protected Map<String, List<String>> params = new HashMap<>();
         private Map<String, Part> parts = new HashMap<>();
+        private String body;
 
         public Builder(String requestType) {
             params.put("requestType", Collections.singletonList(requestType));
@@ -105,6 +119,10 @@ public class APICall {
             return this;
         }
 
+        public void body(String body) {
+            this.body = body;
+        }
+
         public APICall build() {
             return new APICall(this);
         }
@@ -140,6 +158,11 @@ public class APICall {
             } catch (IOException | ServletException e) {
                 throw new IllegalStateException(e);
             }
+        }
+        try {
+            when(req.getReader()).thenReturn(this.reader);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         PrintWriter writer = new PrintWriter(new OutputStreamWriter(out));

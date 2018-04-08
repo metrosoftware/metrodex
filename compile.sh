@@ -1,7 +1,7 @@
 #!/bin/sh
 CP="lib/*:classes"
 SP=src/java/
-APPLICATION="nxt-clone"
+APPLICATION="metro-clone"
 
 /bin/rm -f ${APPLICATION}.jar
 /bin/rm -f ${APPLICATION}service.jar
@@ -10,18 +10,18 @@ APPLICATION="nxt-clone"
 /bin/rm -rf addons/classes
 /bin/mkdir -p addons/classes/
 
-echo "compiling nxt core..."
-find src/java/nxt/ -name "*.java" > sources.tmp
+echo "compiling metro core..."
+find src/java/metro/ -name "*.java" > sources.tmp
 javac -encoding utf8 -sourcepath "${SP}" -classpath "${CP}" -d classes/ @sources.tmp || exit 1
-echo "nxt core class files compiled successfully"
+echo "metro core class files compiled successfully"
 
-echo "compiling nxt desktop..."
-find src/java/nxtdesktop/ -name "*.java" > sources.tmp
+echo "compiling metro desktop..."
+find src/java/metrodesktop/ -name "*.java" > sources.tmp
 javac -encoding utf8 -sourcepath "${SP}" -classpath "${CP}" -d classes/ @sources.tmp
 if [ $? -eq 0 ]; then
-    echo "nxt desktop class files compiled successfully"
+    echo "metro desktop class files compiled successfully"
 else
-    echo "if javafx is not supported, nxt desktop compile errors are safe to ignore, but desktop wallet will not be available"
+    echo "if javafx is not supported, metro desktop compile errors are safe to ignore, but desktop wallet will not be available"
 fi
 
 rm -f sources.tmp

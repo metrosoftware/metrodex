@@ -34,7 +34,7 @@ RemoteNode.prototype.isBlacklisted = function () {
 
 RemoteNode.prototype.blacklist = function () {
     var blacklistedUntil = new Date().getTime() + 10 * 60 * 1000;
-    NRS.logConsole("Blacklist " + this.address + " until " + new Date(blacklistedUntil).format("isoDateTime"));
+    MRS.logConsole("Blacklist " + this.address + " until " + new Date(blacklistedUntil).format("isoDateTime"));
     this.blacklistedUntil = blacklistedUntil;
 };
 
@@ -67,7 +67,7 @@ function isOldVersion(version) {
 
 function isRemoteNodeConnectable(nodeData, isSslAllowed) {
     if (nodeData.services instanceof Array && (nodeData.services.indexOf("API") >= 0 || (isSslAllowed && nodeData.services.indexOf("API_SSL") >= 0))) {
-        if (!NRS.isRequireCors() || nodeData.services.indexOf("CORS") >= 0) {
+        if (!MRS.isRequireCors() || nodeData.services.indexOf("CORS") >= 0) {
             return !isOldVersion(nodeData.version);
         }
     }
@@ -84,45 +84,45 @@ RemoteNodesManager.prototype.addRemoteNodes = function (peersData) {
                 newNode.blacklistedUntil = oldNode.blacklistedUntil;
             }
             mgr.nodes[peerData.address] = newNode;
-            NRS.logConsole("Found remote node " + peerData.address + " blacklisted " + newNode.isBlacklisted());
+            MRS.logConsole("Found remote node " + peerData.address + " blacklisted " + newNode.isBlacklisted());
         }
     });
 };
 
 RemoteNodesManager.prototype.addBootstrapNode = function (resolve, reject) {
     var node = new RemoteNode({
-        address: NRS.mobileSettings.remote_node_address,
-        announcedAddress: NRS.mobileSettings.remote_node_address,
-        apiPort: NRS.mobileSettings.remote_node_port,
-        isSsl: NRS.mobileSettings.is_remote_node_ssl
+        address: MRS.mobileSettings.remote_node_address,
+        announcedAddress: MRS.mobileSettings.remote_node_address,
+        apiPort: MRS.mobileSettings.remote_node_port,
+        isSsl: MRS.mobileSettings.is_remote_node_ssl
     });
     var mgr = this;
-    NRS.logConsole("Connecting to configured address " + node.address + " on port " + node.port + " using ssl " + node.isSsl);
-    NRS.sendRequest("getBlockchainStatus", { "_extra": node }, function(response, data) {
+    MRS.logConsole("Connecting to configured address " + node.address + " on port " + node.port + " using ssl " + node.isSsl);
+    MRS.sendRequest("getBlockchainStatus", { "_extra": node }, function(response, data) {
         if (response.blockchainState && response.blockchainState != "UP_TO_DATE" || response.isDownloading) {
-            NRS.logConsole("Warning: Bootstrap node blockchain state is " + response.blockchainState);
+            MRS.logConsole("Warning: Bootstrap node blockchain state is " + response.blockchainState);
         }
         if (response.errorCode || !isRemoteNodeConnectable(response, true)) {
             if (response.errorCode) {
-                NRS.logConsole("Bootstrap node cannot be used " + response.errorDescription);
+                MRS.logConsole("Bootstrap node cannot be used " + response.errorDescription);
             } else {
-                NRS.logConsole("Bootstrap node does not provide the required services");
+                MRS.logConsole("Bootstrap node does not provide the required services");
             }
             $.growl("Cannot connect to configured node, connecting to a random node");
             mgr.addBootstrapNodes(resolve, reject);
             return;
         }
         var node = data["_extra"];
-        NRS.logConsole("Adding bootstrap node " + node.address);
+        MRS.logConsole("Adding bootstrap node " + node.address);
         mgr.nodes[node.address] = node;
         resolve();
     }, { noProxy: true, remoteNode: node });
 };
 
 RemoteNodesManager.prototype.addBootstrapNodes = function (resolve, reject) {
-    NRS.logConsole("addBootstrapNodes: client protocol is '" + window.location.protocol + "'");
-    if (!NRS.isRemoteNodeConnectionAllowed()) {
-        NRS.logConsole($.t("https_client_cannot_connect_remote_nodes"));
+    MRS.logConsole("addBootstrapNodes: client protocol is '" + window.location.protocol + "'");
+    if (!MRS.isRemoteNodeConnectionAllowed()) {
+        MRS.logConsole($.t("https_client_cannot_connect_remote_nodes"));
         $.growl($.t("https_client_cannot_connect_remote_nodes"));
         var mobileSettingsModal = $("#mobile_settings_modal");
         mobileSettingsModal.find("input[name=is_offline]").val("true");
@@ -130,26 +130,26 @@ RemoteNodesManager.prototype.addBootstrapNodes = function (resolve, reject) {
         return false;
     }
     var peersData = this.REMOTE_NODES_BOOTSTRAP.peers;
-    peersData = NRS.getRandomPermutation(peersData);
+    peersData = MRS.getRandomPermutation(peersData);
     var mgr = this;
-    mgr.bc.target = NRS.mobileSettings.is_testnet ? 2 : NRS.mobileSettings.bootstrap_nodes_count;
+    mgr.bc.target = MRS.mobileSettings.is_testnet ? 2 : MRS.mobileSettings.bootstrap_nodes_count;
     var batchSize = Math.min(peersData.length, 3*mgr.bc.target);
     var data = {state: "CONNECTED", includePeerInfo: true};
 
     //executes resolve() or reject() according to the counters. Returns true if next batch should be started
     function checkCounters() {
         if (mgr.bc.bootstrapComplete) {
-            NRS.logConsole("Ignore: bootstrap is complete");
+            MRS.logConsole("Ignore: bootstrap is complete");
             return false;
         }
         if (mgr.bc.success >= mgr.bc.target) {
-            NRS.logConsole("Resolve: found " + mgr.bc.target + " nodes, start client");
+            MRS.logConsole("Resolve: found " + mgr.bc.target + " nodes, start client");
             resolve();
             mgr.bc.bootstrapComplete = true;
             return false;
         }
         if (mgr.bc.counter >= peersData.length) {
-            NRS.logConsole("Connection failed, connected only to " + mgr.bc.success + " nodes in " + mgr.bc.counter + " attempts. Target is " + mgr.bc.target);
+            MRS.logConsole("Connection failed, connected only to " + mgr.bc.success + " nodes in " + mgr.bc.counter + " attempts. Target is " + mgr.bc.target);
             reject();
             mgr.bc.bootstrapComplete = true;
             return false;
@@ -162,7 +162,7 @@ RemoteNodesManager.prototype.addBootstrapNodes = function (resolve, reject) {
         for (; mgr.bc.index < peersData.length && batch.length < batchSize; mgr.bc.index ++) {
             var peerData = peersData[mgr.bc.index];
             if (!isRemoteNodeConnectable(peerData, false)) {
-                NRS.logConsole("Reject: bootstrap node " + peerData.address + " required services not available" +
+                MRS.logConsole("Reject: bootstrap node " + peerData.address + " required services not available" +
                     (peerData.services ? ", node services " + peerData.services : ""));
                 mgr.bc.counter ++;
                 mgr.bc.fail ++;
@@ -170,7 +170,7 @@ RemoteNodesManager.prototype.addBootstrapNodes = function (resolve, reject) {
             }
             var node = new RemoteNode(peerData, true);
             if (!node.port) {
-                NRS.logConsole("Reject: bootstrap node " + node.address + ", api port undefined");
+                MRS.logConsole("Reject: bootstrap node " + node.address + ", api port undefined");
                 mgr.bc.counter ++;
                 mgr.bc.fail ++;
                 continue;
@@ -180,12 +180,12 @@ RemoteNodesManager.prototype.addBootstrapNodes = function (resolve, reject) {
         for (var i = 0; i < batch.length; i++) {
             var node = batch[i];
             data["_extra"] = node;
-            NRS.logConsole("Connecting to bootstrap node " + node.address + " port " + node.port);
-            NRS.sendRequest("getBlockchainStatus", data, function(response, data) {
+            MRS.logConsole("Connecting to bootstrap node " + node.address + " port " + node.port);
+            MRS.sendRequest("getBlockchainStatus", data, function(response, data) {
                 mgr.bc.counter ++;
                 if (response.errorCode) {
                     // Here we don't know which node it was
-                    NRS.logConsole("Reject: bootstrap node returned error " + response.errorDescription);
+                    MRS.logConsole("Reject: bootstrap node returned error " + response.errorDescription);
                     mgr.bc.fail ++;
                     if (checkCounters()) {
                         startNextBatch();
@@ -194,7 +194,7 @@ RemoteNodesManager.prototype.addBootstrapNodes = function (resolve, reject) {
                 }
                 var responseNode = data["_extra"];
                 if (response.blockchainState && response.blockchainState != "UP_TO_DATE" || response.isDownloading) {
-                    NRS.logConsole("Reject: bootstrap node " + responseNode.address + " blockchain state is " + response.blockchainState);
+                    MRS.logConsole("Reject: bootstrap node " + responseNode.address + " blockchain state is " + response.blockchainState);
                     mgr.bc.fail ++;
                     if (checkCounters()) {
                         startNextBatch();
@@ -202,14 +202,14 @@ RemoteNodesManager.prototype.addBootstrapNodes = function (resolve, reject) {
                     return;
                 }
                 if (!isRemoteNodeConnectable(response, false)) {
-                    NRS.logConsole("Reject: bootstrap node " + responseNode.address + " required service not available, node services " + responseNode.services);
+                    MRS.logConsole("Reject: bootstrap node " + responseNode.address + " required service not available, node services " + responseNode.services);
                     mgr.bc.fail ++;
                     if (checkCounters()) {
                         startNextBatch();
                     }
                     return;
                 }
-                NRS.logConsole("Accept: adding bootstrap node " + responseNode.address + " response time " + (new Date() - responseNode.connectionTime) + " ms");
+                MRS.logConsole("Accept: adding bootstrap node " + responseNode.address + " response time " + (new Date() - responseNode.connectionTime) + " ms");
                 mgr.nodes[responseNode.address] = responseNode;
                 mgr.bc.success ++;
                 if (checkCounters()) {
@@ -224,7 +224,7 @@ RemoteNodesManager.prototype.addBootstrapNodes = function (resolve, reject) {
 RemoteNodesManager.prototype.getRandomNode = function (ignoredAddresses) {
     var addresses = Object.keys(this.nodes);
     if (addresses.length == 0) {
-        NRS.logConsole("Cannot get random node. No nodes available");
+        MRS.logConsole("Cannot get random node. No nodes available");
         return null;
     }
     var index = Math.floor((Math.random() * addresses.length));
@@ -270,7 +270,7 @@ RemoteNodesManager.prototype.findMoreNodes = function (isReschedule) {
         return;
     }
     var data = {state: "CONNECTED", includePeerInfo: true};
-    NRS.sendRequest("getPeers", data, function (response) {
+    MRS.sendRequest("getPeers", data, function (response) {
         if (response.peers) {
             nodesMgr.addRemoteNodes(response.peers);
         }
@@ -283,7 +283,7 @@ RemoteNodesManager.prototype.findMoreNodes = function (isReschedule) {
 };
 
 RemoteNodesManager.prototype.init = function () {
-    if (NRS.isMobileApp()) {
+    if (MRS.isMobileApp()) {
         //load the remote nodes bootstrap file only for mobile wallet
         jQuery.ajaxSetup({ async: false });
         $.getScript(this.isTestnet ? "js/data/remotenodesbootstrap.testnet.js" : "js/data/remotenodesbootstrap.mainnet.js");

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="iso-8859-1"  ?>
 <installation version="5.0">
     <properties>
-        <property file="conf/nxt-default.properties" prefix="runtime"/>
+        <property file="conf/metro-default.properties" prefix="runtime"/>
     </properties>
     <info>
-        <appname>NXT</appname>
-        <appversion>@{runtime.nxt.version}</appversion>
+        <appname>Metro</appname>
+        <appversion>@{runtime.metro.version}</appversion>
         <url>https://www.jelurida.com/</url>
         <run-privileged condition="izpack.windowsinstall"/>
     </info>
@@ -18,7 +18,7 @@
         <listener classname="RegistryUninstallerListener" stage="uninstall" >
             <os family="windows"/>
         </listener>
-        <listener classname="nxt.installer.InstallListener" stage="install"/>
+        <listener classname="metro.installer.InstallListener" stage="install"/>
     </listeners>
 
     <natives>
@@ -84,7 +84,7 @@
     </locale>
 
     <resources>
-        <res id="InfoPanel.info" src="changelogs/nxt-client-@{runtime.nxt.version}.changelog.txt" parse="yes"/>
+        <res id="InfoPanel.info" src="changelogs/metro-client-@{runtime.metro.version}.changelog.txt" parse="yes"/>
         <res id="LicencePanel.licence" src="LICENSE.txt"/>
         <res id="Installer.image" src="html/www/img/installer_left_pane.png"/>
         <res id="shortcutSpec.xml" src="../installer/shortcutSpec.xml"/>
@@ -95,7 +95,7 @@
     <variables>
         <variable name="$InstallerFrame.logfilePath" value="default"/>
         <variable name="DesktopShortcutCheckboxEnabled" value="true"/>
-        <variable name="TargetPanel.dir.mac" value="/Applications/nxt.app"/>
+        <variable name="TargetPanel.dir.mac" value="/Applications/metro.app"/>
     </variables>
 
     <panels>
@@ -103,7 +103,7 @@
         <panel classname="LicencePanel"/>
         <panel classname="InfoPanel"/>
         <panel classname="TargetPanel"/>
-        <panel classname="nxt.installer.ConfigPanel"/>
+        <panel classname="metro.installer.ConfigPanel"/>
         <panel classname="ShortcutPanel" condition="!izpack.macinstall"/>
         <panel classname="InstallPanel"/>
         <panel classname="SimpleFinishPanel"/>
@@ -112,7 +112,7 @@
     <packs>
         <pack name="server" required="yes">
             <description>Common Server Files</description>
-            <file src="nxt.jar" targetdir="${INSTALL_PATH}" override="true"/>
+            <file src="metro.jar" targetdir="${INSTALL_PATH}" override="true"/>
             <file src="README.txt" targetdir="${INSTALL_PATH}" override="true"/>
             <file src="Wallet.url" targetdir="${INSTALL_PATH}" override="true"/>
             <file src="3RD-PARTY-LICENSES.txt" targetdir="${INSTALL_PATH}" override="true"/>
@@ -123,16 +123,16 @@
             <file src="OPERATORS-GUIDE.md" targetdir="${INSTALL_PATH}" override="true"/>
             <file src="README.md" targetdir="${INSTALL_PATH}" override="true"/>
             <file src="USERS-GUIDE.md" targetdir="${INSTALL_PATH}" override="true"/>
-            <file src="nxt.policy" targetdir="${INSTALL_PATH}" override="true"/>
-            <file src="nxtdesktop.policy" targetdir="${INSTALL_PATH}" override="true"/>
-            <file src="conf/nxt-default.properties" targetdir="${INSTALL_PATH}/conf" override="true"/>
+            <file src="metro.policy" targetdir="${INSTALL_PATH}" override="true"/>
+            <file src="metrodesktop.policy" targetdir="${INSTALL_PATH}" override="true"/>
+            <file src="conf/metro-default.properties" targetdir="${INSTALL_PATH}/conf" override="true"/>
             <file src="conf/logging-default.properties" targetdir="${INSTALL_PATH}/conf" override="true"/>
             <fileset dir="conf/data" targetdir="${INSTALL_PATH}/conf/data" override="true"/>
             <fileset dir="lib" targetdir="${INSTALL_PATH}/lib" override="true" excludes=".gitignore"/>
             <fileset dir="changelogs" targetdir="${INSTALL_PATH}/changelogs" override="true" excludes=".gitignore"/>
             <fileset dir="classes" targetdir="${INSTALL_PATH}/classes" override="true" excludes=".gitignore"/>
             <fileset dir="html" targetdir="${INSTALL_PATH}/html" override="true" excludes=".gitignore"/>
-            <fileset dir="src" targetdir="${INSTALL_PATH}/src" override="true" excludes=".gitignore nxt-private.iml"/>
+            <fileset dir="src" targetdir="${INSTALL_PATH}/src" override="true" excludes=".gitignore metro-private.iml"/>
             <fileset dir="contrib" targetdir="${INSTALL_PATH}/contrib" override="true" excludes=".gitignore"/>
             <fileset dir="logs" targetdir="${INSTALL_PATH}/logs" override="true" excludes=".gitignore"/>
             <fileset dir="addons" targetdir="${INSTALL_PATH}/addons" override="true" excludes=".gitignore"/>
@@ -148,16 +148,16 @@
         <pack name="server.windows" os="windows" required="yes">
             <description>Windows Specific Resources</description>
             <os family="windows"/>
-            <file src="nxt.exe" targetdir="${INSTALL_PATH}" override="true"/>
-            <file src="nxtservice.exe" targetdir="${INSTALL_PATH}" override="true"/>
-            <file src="nxtservice.jar" targetdir="${INSTALL_PATH}" override="true"/>
+            <file src="metro.exe" targetdir="${INSTALL_PATH}" override="true"/>
+            <file src="metroservice.exe" targetdir="${INSTALL_PATH}" override="true"/>
+            <file src="metroservice.jar" targetdir="${INSTALL_PATH}" override="true"/>
             <file src="run.bat" targetdir="${INSTALL_PATH}" override="true"/>
             <file src="compact.bat" targetdir="${INSTALL_PATH}" override="true"/>
             <file src="sign.bat" targetdir="${INSTALL_PATH}" override="true"/>
             <file src="passphraseRecovery.bat" targetdir="${INSTALL_PATH}" override="true"/>
             <parsable targetfile="${INSTALL_PATH}/run.bat"/>
-            <singlefile src="resource/nxt.properties" target="${INSTALL_PATH}/resource/nxt.properties" override="true"/>
-            <singlefile src="resource/nxtservice.properties" target="${INSTALL_PATH}/resource/nxtservice.properties" override="true"/>
+            <singlefile src="resource/metro.properties" target="${INSTALL_PATH}/resource/metro.properties" override="true"/>
+            <singlefile src="resource/metroservice.properties" target="${INSTALL_PATH}/resource/metroservice.properties" override="true"/>
         </pack>
 
         <pack name="server.unix" os="unix" required="yes">
@@ -196,8 +196,8 @@
         <pack name="server.mac" os="mac_osx" required="yes" uninstall="false">
             <description>Mac Specific Resources</description>
             <fileset dir="resource/mac/Contents" targetdir="${INSTALL_PATH}/Contents" override="true"/>		
-			<parsable targetfile="${INSTALL_PATH}/Contents/MacOS/nxt"/>
-			<executable targetfile="${INSTALL_PATH}/Contents/MacOS/nxt"/>		
+			<parsable targetfile="${INSTALL_PATH}/Contents/MacOS/metro"/>
+			<executable targetfile="${INSTALL_PATH}/Contents/MacOS/metro"/>		
 		</pack>
 
         <pack name="jre.mac" os="mac_osx" required="yes" uninstall="false">

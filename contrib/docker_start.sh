@@ -1,2 +1,2 @@
 #!/bin/bash
-cd /nxt; ./run.sh
+cd /metro; ./run.sh

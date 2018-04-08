@@ -5,10 +5,10 @@ then
 	echo VERSION not defined
 	exit 1
 fi
-APPLICATION="nxt-clone"
+APPLICATION="metro-clone"
 PACKAGE=${APPLICATION}-client-${VERSION}
 echo PACKAGE="${PACKAGE}"
-CHANGELOG=nxt-clone-client-${VERSION}.changelog.txt
+CHANGELOG=metro-clone-client-${VERSION}.changelog.txt
 OBFUSCATE=$2
 
 FILES="changelogs conf html lib resource contrib"
@@ -16,7 +16,7 @@ FILES="${FILES} ${APPLICATION}.exe ${APPLICATION}service.exe"
 FILES="${FILES} 3RD-PARTY-LICENSES.txt AUTHORS.txt LICENSE.txt"
 FILES="${FILES} DEVELOPERS-GUIDE.md OPERATORS-GUIDE.md README.md README.txt USERS-GUIDE.md"
 FILES="${FILES} run.bat run.sh run-tor.sh run-desktop.sh start.sh stop.sh compact.sh compact.bat sign.sh sign.bat passphraseRecovery.sh passphraseRecovery.bat"
-FILES="${FILES} nxt.policy nxtdesktop.policy Wallet.url Dockerfile"
+FILES="${FILES} metro.policy metrodesktop.policy Wallet.url Dockerfile"
 
 unix2dos *.bat
 echo compile
@@ -36,8 +36,8 @@ mkdir -p ${APPLICATION}/addons/src
 if [ "${OBFUSCATE}" = "obfuscate" ]; 
 then
 echo obfuscate
-/opt/proguard/bin/proguard.sh @nxt.pro
-mv ../nxt.map ../nxt.map.${VERSION}
+/opt/proguard/bin/proguard.sh @metro.pro
+mv ../metro.map ../metro.map.${VERSION}
 else
 FILES="${FILES} classes src JPL-NRS.pdf"
 FILES="${FILES} compile.sh javadoc.sh jar.sh package.sh"
@@ -68,7 +68,7 @@ echo generate jar files
 #../installer/build-exe.bat ${PACKAGE}
 echo create installer zip
 cd -
-zip -q -X -r ${PACKAGE}.zip ${APPLICATION} -x \*/.idea/\* \*/.gitignore \*/.git/\* \*/\*.log \*.iml ${APPLICATION}/conf/nxt.properties ${APPLICATION}/conf/logging.properties ${APPLICATION}/conf/localstorage/\*
+zip -q -X -r ${PACKAGE}.zip ${APPLICATION} -x \*/.idea/\* \*/.gitignore \*/.git/\* \*/\*.log \*.iml ${APPLICATION}/conf/metro.properties ${APPLICATION}/conf/logging.properties ${APPLICATION}/conf/localstorage/\*
 rm -rf ${APPLICATION}
 
 echo creating full changelog
@@ -106,7 +106,7 @@ sha256sum ${PACKAGE}.zip >> ${CHANGELOG}
 
 echo >> ${CHANGELOG}
 
-#echo "The exe and dmg packages must have a digital signature by \"Stichting NXT\"." >> ${CHANGELOG}
+#echo "The exe and dmg packages must have a digital signature by \"Stichting Metro\"." >> ${CHANGELOG}
 
 if [ "${OBFUSCATE}" = "obfuscate" ];
 then

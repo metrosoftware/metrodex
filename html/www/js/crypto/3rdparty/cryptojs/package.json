@@ -10,7 +10,7 @@
         "spec": "latest",
         "type": "tag"
       },
-      "C:\\nxt\\api-changelly"
+      "C:\\metro\\api-changelly"
     ]
   ],
   "_from": "crypto-js@latest",
@@ -44,7 +44,7 @@
   "_shasum": "fda19e761fc077e01ffbfdc6e9fdfc59e8806cd8",
   "_shrinkwrap": null,
   "_spec": "crypto-js",
-  "_where": "C:\\nxt\\api-changelly",
+  "_where": "C:\\metro\\api-changelly",
   "author": {
     "name": "Evan Vosberg",
     "url": "http://github.com/evanvosberg"

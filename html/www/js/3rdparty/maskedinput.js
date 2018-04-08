@@ -100,10 +100,10 @@
                         input.caret(pos.end, pos.end);
                     } else {
                         var curValUpper = curVal.toUpperCase();
-                        var addressStart = curValUpper.indexOf(NRS.getAccountMask(), 4);
+                        var addressStart = curValUpper.indexOf(MRS.getAccountMask(), 4);
                         if (addressStart > 0) {
                             var insertedAddress = curValUpper.substr(addressStart, 24);
-                            if (NRS.isRsAccount(insertedAddress)) {
+                            if (MRS.isRsAccount(insertedAddress)) {
                                 //since pasting into a msked field will first trigger androidInputEvent, search for inserted address and use it
                                 input.val(insertedAddress);
                             }
@@ -146,7 +146,7 @@
 
                         if (settings.unmask !== false) {
                             //backspace, remove
-                            if ((pos.begin == 0 && pos.end == 24) || (currentInput == NRS.getAccountMask("_") && pos.begin == 4)) {
+                            if ((pos.begin == 0 && pos.end == 24) || (currentInput == MRS.getAccountMask("_") && pos.begin == 4)) {
                                 input.val("");
                                 $(this).trigger("unmask");
                                 return;
@@ -222,19 +222,19 @@
                     return "?" != c ? defs[c] ? getPlaceholder(i) : c : void 0;
                 }), defaultBuffer = buffer.join(""), focusText = input.val();
                 input.bind("keyup.remask", function(e) {
-                    if (input.val().toUpperCase() == NRS.constants.ACCOUNT_MASK_PREFIX) {
-                        input.val("").mask(NRS.getAccountMask("*"))./*unbind(".remask").*/trigger("focus");
+                    if (input.val().toUpperCase() == MRS.constants.ACCOUNT_MASK_PREFIX) {
+                        input.val("").mask(MRS.getAccountMask("*"))./*unbind(".remask").*/trigger("focus");
                     }
                 }).bind("paste.remask", function(e) {
                     setTimeout(function() {
                         var newInput = input.val();
                         var pastedData = newInput.substring(4).toUpperCase();
-                        if (NRS.isRsAccount(pastedData)) {
-                            var newAddress = String(pastedData.match(new RegExp(NRS.constants.ACCOUNT_REGEX_STR, "i")));
+                        if (MRS.isRsAccount(pastedData)) {
+                            var newAddress = String(pastedData.match(new RegExp(MRS.constants.ACCOUNT_REGEX_STR, "i")));
                             input.val(newAddress);
                             checkVal(true);
-                        } else if (NRS.isRsAccount(newInput) || NRS.getRsAccountRegex(NRS.constants.ACCOUNT_PREFIX, true).test(newInput)) {
-                            input.mask(NRS.getAccountMask("*")).trigger("checkRecipient")/*.unbind(".remask")*/;
+                        } else if (MRS.isRsAccount(newInput) || MRS.getRsAccountRegex(MRS.constants.ACCOUNT_PREFIX, true).test(newInput)) {
+                            input.mask(MRS.getAccountMask("*")).trigger("checkRecipient")/*.unbind(".remask")*/;
                         }
                     }, 0);
                 });

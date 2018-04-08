@@ -1,12 +1,12 @@
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ~ Copyright © 2013-2016 The Nxt Core Developers.                            ~
+  ~ Copyright © 2013-2016 The Metro Core Developers.                            ~
   ~ Copyright © 2016-2017 Jelurida IP B.V.                                    ~
   ~                                                                           ~
   ~ See the LICENSE.txt file at the top-level directory of this distribution  ~
   ~ for licensing information.                                                ~
   ~                                                                           ~
   ~ Unless otherwise agreed in a custom licensing agreement with Jelurida B.V.,
-  ~ no part of the Nxt software, including this file, may be copied, modified,~
+  ~ no part of the Metro software, including this file, may be copied, modified,~
   ~ propagated, or distributed except according to the terms contained in the ~
   ~ LICENSE.txt file.                                                         ~
   ~                                                                           ~
@@ -92,7 +92,7 @@
                 <label for="{{name}}_fee" data-i18n="fee">FEE</label>
                 <button type="button" class="btn btn-default btn-xs btn-calculate-fee" data-loading-text="Calculating..." data-i18n="[data-loading-text]calculating"><span data-i18n="calculate">CALCULATE</span><span class="warning-label" id="{{name}}_recalc"> *</span></button>
                 <div class="input-group">
-                    <input type="number" name="feeNXT" id="{{name}}_fee" class="form-control" step="any" placeholder="Minimum Fee" data-i18n="[placeholder]minimum_fee" tabindex="100">
+                    <input type="number" name="feeMTR" id="{{name}}_fee" class="form-control" step="any" placeholder="Minimum Fee" data-i18n="[placeholder]minimum_fee" tabindex="100">
                     <span class="input-group-addon coin-symbol"></span>
                 </div>
             </div>
@@ -198,7 +198,7 @@
                             <div class="form-group approve_min_balance_model_group approve_mb_accounts" data-modal-ui-element="min_balance_model_modal_ui_element"></div>
                         </div>
                         <div class="col-xs-6">
-                            <div class="form-group approve_mb_model_1 approve_min_balance_nxt" data-modal-ui-element="simple_input_with_addon_modal_ui_element"></div>
+                            <div class="form-group approve_mb_model_1 approve_min_balance_mtr" data-modal-ui-element="simple_input_with_addon_modal_ui_element"></div>
                             <div class="form-group approve_mb_model_2 approve_min_balance_asset_quantity" data-modal-ui-element="simple_input_with_addon_modal_ui_element"></div>
                         </div>
                     </div>
@@ -214,7 +214,7 @@
                 <div role="tabpanel" class="tab-pane tab_pane_approve" id="{{name}}_approve_tab_balance">
                     <div class="row">
                         <div class="col-xs-6">
-                            <div class="form-group approve_transaction_amount_nxt" data-modal-ui-element="simple_input_with_addon_modal_ui_element"></div>
+                            <div class="form-group approve_transaction_amount_mtr" data-modal-ui-element="simple_input_with_addon_modal_ui_element"></div>
                         </div>
                         <div class="col-xs-6">
                             <div class="form-group phasing_finish_height_group" data-modal-ui-element="block_height_modal_ui_element"></div>
@@ -226,7 +226,7 @@
                             <div class="form-group approve_min_balance_model_group approve_mb_balance" data-modal-ui-element="min_balance_model_modal_ui_element"></div>
                         </div>
                         <div class="col-xs-6">
-                            <div class="form-group approve_mb_model_1 approve_min_balance_nxt" data-modal-ui-element="simple_input_with_addon_modal_ui_element"></div>
+                            <div class="form-group approve_mb_model_1 approve_min_balance_mtr" data-modal-ui-element="simple_input_with_addon_modal_ui_element"></div>
                         </div>
                     </div>
                     <input type="hidden" name="phased" value="true" disabled />

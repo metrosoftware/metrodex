@@ -297,10 +297,10 @@ var converters = function() {
             return CryptoJS.lib.WordArray.create(words, len);
         },
         convertNumericToRSAccountFormat: function (account) {
-            if (NRS.isRsAccount(account)) {
+            if (MRS.isRsAccount(account)) {
                 return String(account).escapeHTML();
             } else {
-                var address = new NxtAddress();
+                var address = new MetroAddress();
 
                 if (address.set(account)) {
                     return address.toString().escapeHTML();

@@ -20,11 +20,11 @@
 ### Database ###
   
   - H2 embedded database
-  - main database: `nxt_db/`
-  - test database: `nxt_test_db/`
+  - main database: `metro_db/`
+  - test database: `metro_test_db/`
   - the database directories do not contain user specific data and can be safely deleted
   - but no need to delete them on upgrade, the DbVersion code takes care of schema updates
-  - use the nxt.db framework when accessing the database from your code
+  - use the metro.db framework when accessing the database from your code
 
 ----
 ## Coding Process ##
@@ -72,8 +72,8 @@
 ### Where to Look ###
 
   - index.html: all of the html markup for pages and modals 
-  - js/nrs.*.js: corresponding js files for each task the file name displays, one roughly for each page
-  - js/nrs.modals.*.js: The modal js (popups) for each set of popups, one for each set of modals
+  - js/mrs.*.js: corresponding js files for each task the file name displays, one roughly for each page
+  - js/mrs.modals.*.js: The modal js (popups) for each set of popups, one for each set of modals
   - any CSS: Bootstrap is used for the design, so changes to CSS rules should be generally avoided
   
 ### Programming Style ###
@@ -145,11 +145,11 @@ For providing new translation strings on the platform for the community to trans
 1. Build/download the latest translation files from Crowdin (permissions needed) and replace the language folders like ``fa``, ``pt-BR``,... with the folders downloaded. Please make sure to NOT touch the english folder ``en``.
 2. Rename all folder names to lowercase, e.g. ``es-ES`` to ``es-es``.
 3. Make some consistency checks (lengths of old/new files, "git diff" on language files)
-4. New languages can be added to ``NRS.languages`` in ``ui/js/nrs.settings.js`` file. Review the status of the languages (40-50%+ Experimental, 70-80%+ Beta, 90-95%+ Stable), eventually add new languages
+4. New languages can be added to ``MRS.languages`` in ``ui/js/mrs.settings.js`` file. Review the status of the languages (40-50%+ Experimental, 70-80%+ Beta, 90-95%+ Stable), eventually add new languages
 
 ### Mobile App ###
 
-The NXT wallet UI run as a mobile app.
+The Metro wallet UI run as a mobile app.
 
 To build the Android APK application follow these steps (Tested on Windows 7 64 bit):
 1. Install node.js (tested with Node 4.4.7 and npm 2.15.8), Apache Cordova (tested with Cordova 6.3.1) - see https://cordova.apache.org/
@@ -157,7 +157,7 @@ To build the Android APK application follow these steps (Tested on Windows 7 64 
 3. Make sure the commands: node, npm and cordova are available from the command prompt
 4. On Windows make sure the adb.exe is in your search path (c:\Users\<Username>\AppData\Local\Android\sdk\platform-tools), probably also required on Linux
 5. Special care should be taken in order to work without root privileges on Linux and Mac (the current procedure assumes Windows administrator permissions), we recommend that you work with root privileges initially.
-6. Under the <NXTRoot>\mobile\app folder execute the command:
+6. Under the <MetroRoot>\mobile\app folder execute the command:
 createapp.bat
 See that the process completes without errors and that a default Cordova application is deployed to your connected mobile device or the Android emulator
 

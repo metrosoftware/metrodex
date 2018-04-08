@@ -14,7 +14,7 @@
  *
  */
 
-package nxt.installer;
+package metro.installer;
 
 import com.izforge.izpack.api.data.InstallData;
 import com.izforge.izpack.api.handler.Prompt;
@@ -22,7 +22,7 @@ import com.izforge.izpack.installer.console.AbstractConsolePanel;
 import com.izforge.izpack.installer.console.ConsolePanel;
 import com.izforge.izpack.installer.panel.PanelView;
 import com.izforge.izpack.util.Console;
-import static nxt.installer.ConfigHandler.*;
+import static metro.installer.ConfigHandler.*;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -53,7 +53,7 @@ public class ConfigConsolePanel extends AbstractConsolePanel
         }
 
         String installPath = installData.getInstallPath();
-        if (handler.isNxtInstallDir(installPath) &&
+        if (handler.isMetroInstallDir(installPath) &&
             askUser("An existing installation was found.", "Do you want to remove it?"))
         {
             installData.setVariable(VAR_CLEAN_INSTALL_DIR, "true");
@@ -64,7 +64,7 @@ public class ConfigConsolePanel extends AbstractConsolePanel
 
         if (! allSettings.isEmpty() &&
             askUser("There are a few settings that can be customized now. " +
-                    "They will be put into conf/nxt.properties file which you can edit later.",
+                    "They will be put into conf/metro.properties file which you can edit later.",
                     "Do you want to customize settings now?"))
         {
             Map<String, String> properties = new HashMap<>();

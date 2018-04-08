@@ -1,12 +1,12 @@
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ~ Copyright © 2013-2016 The Nxt Core Developers.                            ~
+  ~ Copyright © 2013-2016 The Metro Core Developers.                            ~
   ~ Copyright © 2016-2017 Jelurida IP B.V.                                    ~
   ~                                                                           ~
   ~ See the LICENSE.txt file at the top-level directory of this distribution  ~
   ~ for licensing information.                                                ~
   ~                                                                           ~
   ~ Unless otherwise agreed in a custom licensing agreement with Jelurida B.V.,
-  ~ no part of the Nxt software, including this file, may be copied, modified,~
+  ~ no part of the Metro software, including this file, may be copied, modified,~
   ~ propagated, or distributed except according to the terms contained in the ~
   ~ LICENSE.txt file.                                                         ~
   ~                                                                           ~
@@ -19,7 +19,7 @@
 
     <table id="center" style="display:none;width:100%;height:100%;">
         <tr><td style="text-align:center;vertical-align:middle">
-            <img src="img/brand/logo.png" id="logo-nxt-img" />
+            <img src="img/brand/logo.png" id="logo-metro-img" />
 
             <div id="login_panel">
                 <div class="callout callout-danger custom_login_warning"></div>
@@ -63,13 +63,13 @@
                         <div class="input-group" id="login_account_container_other">
                             <input type="text" class="form-control" id="login_account_other" name="login_account_other" placeholder="Your Account" data-i18n="[placeholder]your_account" autofocus />
                             <div class="input-group-btn" style="border:1px solid #fff;">
-                                <button class="btn btn-flat" onclick="NRS.login(0,$('#login_account_other').val())"><i class="fa fa-arrow-right text-muted"></i></button>
+                                <button class="btn btn-flat" onclick="MRS.login(0,$('#login_account_other').val())"><i class="fa fa-arrow-right text-muted"></i></button>
                             </div>
                         </div>
                         <div class="input-group" style="display:none">
                             <input type="password" class="form-control" id="login_password" name="login_password" placeholder="Your Passphrase" data-i18n="[placeholder]your_passphrase" autofocus />
                             <div class="input-group-btn" style="border:1px solid #fff;">
-                                <button class="btn btn-flat" onclick="NRS.login(1,$('#login_password').val())"><i class="fa fa-arrow-right text-muted"></i></button>
+                                <button class="btn btn-flat" onclick="MRS.login(1,$('#login_password').val())"><i class="fa fa-arrow-right text-muted"></i></button>
                             </div>
                         </div>
                     </div>
@@ -110,7 +110,7 @@
                 </div>
 
                 <div id="registration_link">
-                    <a href="#" onclick="NRS.registerAccount();" data-i18n="no_account_q_create_account">Don't have an account? Click here to create one!</a>
+                    <a href="#" onclick="MRS.registerAccount();" data-i18n="no_account_q_create_account">Don't have an account? Click here to create one!</a>
                 </div>
             </div>
 
@@ -122,12 +122,12 @@
                         </select>
                     </div>
                     <div style="display:inline-block;padding-top:6px;padding-bottom:4px;">
-                        <span class="glyphicon glyphicon-lock"></span> <span data-i18n="welcome_to_nxt">Welcome to Nxt</span>
+                        <span class="glyphicon glyphicon-lock"></span> <span data-i18n="welcome_to_metro">Welcome to Metro</span>
                     </div>
                 </div>
                 <div class="panel-body">
-                    <button class="btn btn-primary" onclick="NRS.showLoginScreen();return false;" data-i18n="returning_user_q">Returning User?</button>
-                    <button class="btn btn-success" onclick="NRS.registerAccount();return false;" data-i18n="new_q_create_account">Create New Account</button>
+                    <button class="btn btn-primary" onclick="MRS.showLoginScreen();return false;" data-i18n="returning_user_q">Returning User?</button>
+                    <button class="btn btn-success" onclick="MRS.registerAccount();return false;" data-i18n="new_q_create_account">Create New Account</button>
                     <a href="#" class="lockscreen-widget mobile-only btn btn-primary" data-toggle="modal" data-target="#mobile_settings_modal" style="display:none;">
                         <i class="fa fa-navicon"></i>
                     </a>
@@ -162,7 +162,7 @@
                         <div style="text-align:right">
                             <input type="submit" class="btn btn-primary btn-sm" value="Register" data-i18n="[value]register" />
                             &nbsp;&nbsp;
-                            <button class="btn btn-sm btn-default" onclick="NRS.showLoginOrWelcomeScreen();return false;" data-i18n="cancel">Cancel</button>
+                            <button class="btn btn-sm btn-default" onclick="MRS.showLoginOrWelcomeScreen();return false;" data-i18n="cancel">Cancel</button>
                         </div>
                     </form>
                 </div>
@@ -189,7 +189,7 @@
                             </div>
 
                             <div style="text-align:right">
-                                <button class="btn btn-sm btn-default" onclick="NRS.showLoginOrWelcomeScreen();return false;" data-i18n="cancel">Cancel</button>
+                                <button class="btn btn-sm btn-default" onclick="MRS.showLoginOrWelcomeScreen();return false;" data-i18n="cancel">Cancel</button>
                             </div>
                         </div>
 
@@ -203,7 +203,7 @@
                             <div id="account_phrase_generator_stop" style="display:none">
                                 <p data-i18n="automatically_generated_passphrase_is">Your automatically generated passphrase is:</p>
                                 <textarea style="width:100%;height:50px;margin-bottom:10px;padding:3px;" rows="2" readonly></textarea>
-                                <p data-i18n="memorize_passphrase_help">Please write down or memorize these 12 words (their order and capitalization matters - always lowercase). This passphrase is needed in order to access your Nxt account.</p>
+                                <p data-i18n="memorize_passphrase_help">Please write down or memorize these 12 words (their order and capitalization matters - always lowercase). This passphrase is needed in order to access your Metro account.</p>
                                 <p data-i18n="your_account_is">Your public account address is:</p>
                                 <input id="step_2_account" style="width:100%;height:50px;margin-bottom:10px;padding:3px;" readonly></input>
                                 <div class="paper-wallet-link-container" style="display: none;">
@@ -221,8 +221,8 @@
                                     <label for="confirm_passphrase_warning" data-i18n="confirm_passphrase_warning">I will not forget my passphrase and I will never disclose it</label>
                                 </div>
                                 <div style="text-align:right">
-                                    <input type="submit" class="btn btn-primary btn-sm" value="Next" data-i18n="[value]next" onclick="NRS.createPassphraseToConfirmPassphrase()" />&nbsp;&nbsp;
-                                    <button class="btn btn-sm btn-default" onclick="NRS.showLoginOrWelcomeScreen();return false;" data-i18n="cancel">Cancel</button>
+                                    <input type="submit" class="btn btn-primary btn-sm" value="Next" data-i18n="[value]next" onclick="MRS.createPassphraseToConfirmPassphrase()" />&nbsp;&nbsp;
+                                    <button class="btn btn-sm btn-default" onclick="MRS.showLoginOrWelcomeScreen();return false;" data-i18n="cancel">Cancel</button>
                                 </div>
                             </div>
                         </div>
@@ -235,9 +235,9 @@
                             <textarea style="width:100%;height:50px;margin-bottom:10px;" rows="2"></textarea>
 
                             <div style="text-align:right">
-                                <input type="submit" class="btn btn-primary btn-sm" value="Next" data-i18n="[value]next" onclick="NRS.verifyGeneratedPassphrase();return false;" />
+                                <input type="submit" class="btn btn-primary btn-sm" value="Next" data-i18n="[value]next" onclick="MRS.verifyGeneratedPassphrase();return false;" />
                                 &nbsp;&nbsp;
-                                <button class="btn btn-sm btn-default" onclick="NRS.showLoginOrWelcomeScreen();return false;" data-i18n="cancel">Cancel</button>
+                                <button class="btn btn-sm btn-default" onclick="MRS.showLoginOrWelcomeScreen();return false;" data-i18n="cancel">Cancel</button>
                             </div>
                         </div>
                     </div>
@@ -245,7 +245,7 @@
             </div>
 
             <div id="custom_passphrase_link">
-                <a href="#" onclick="NRS.registerUserDefinedAccount();" data-i18n="choose_own_passphrase">Want to choose your own passphrase? Click here.</a>
+                <a href="#" onclick="MRS.registerUserDefinedAccount();" data-i18n="choose_own_passphrase">Want to choose your own passphrase? Click here.</a>
             </div>
         </td>
         </tr>

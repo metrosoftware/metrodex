@@ -14,25 +14,25 @@
  *                                                                            *
  ******************************************************************************/
 
-var NRS = (function (NRS) {
+var MRS = (function (MRS) {
 
-    NRS.scanQRCode = function(readerId, callback) {
-        if (!NRS.isScanningAllowed()) {
+    MRS.scanQRCode = function(readerId, callback) {
+        if (!MRS.isScanningAllowed()) {
             $.growl($.t("scanning_not_allowed"));
             return;
         }
-        if (NRS.isCordovaScanningEnabled()) {
-            if (NRS.isCameraPermissionRequired()) {
-                NRS.logConsole("request camera permission");
+        if (MRS.isCordovaScanningEnabled()) {
+            if (MRS.isCameraPermissionRequired()) {
+                MRS.logConsole("request camera permission");
                 cordova.plugins.permissions.hasPermission(cordova.plugins.permissions.CAMERA, function(status) {
                     cordovaCheckCameraPermission(status, callback)
                 }, null);
             } else {
-                NRS.logConsole("scan without requesting camera permission");
+                MRS.logConsole("scan without requesting camera permission");
                 cordovaScan(callback);
             }
         } else {
-            NRS.logConsole("scan using desktop browser");
+            MRS.logConsole("scan using desktop browser");
             html5Scan(readerId, callback);
         }
     };
@@ -40,13 +40,13 @@ var NRS = (function (NRS) {
     function cordovaCheckCameraPermission(status, callback) {
         if(!status.hasPermission) {
             var errorCallback = function() {
-                NRS.logConsole('Camera permission not granted');
+                MRS.logConsole('Camera permission not granted');
             };
 
-            NRS.logConsole('Request camera permission');
+            MRS.logConsole('Request camera permission');
             cordova.plugins.permissions.requestPermission(cordova.plugins.permissions.CAMERA, function(status) {
                 if(!status.hasPermission) {
-                    NRS.logConsole('Camera status has no permission');
+                    MRS.logConsole('Camera status has no permission');
                     errorCallback();
                     return;
                 }
@@ -54,30 +54,30 @@ var NRS = (function (NRS) {
             }, errorCallback);
             return;
         }
-        NRS.logConsole('Camera already has permission');
+        MRS.logConsole('Camera already has permission');
         cordovaScan(callback);
     }
 
     function cordovaScan(callback) {
         try {
-            NRS.logConsole("before scan");
+            MRS.logConsole("before scan");
             cordova.plugins.barcodeScanner.scan(function(result) {
                 cordovaScanQRDone(result, callback)
             }, function (error) {
-                NRS.logConsole(error);
+                MRS.logConsole(error);
             });
         } catch (e) {
-            NRS.logConsole(e.message);
+            MRS.logConsole(e.message);
         }
     }
 
     function cordovaScanQRDone(result, callback) {
-        NRS.logConsole("Scan result format: " + result.format);
+        MRS.logConsole("Scan result format: " + result.format);
         if (!result.cancelled && result.format == "QR_CODE") {
-            NRS.logConsole("Scan complete, send result to callback");
+            MRS.logConsole("Scan complete, send result to callback");
             callback(result.text);
         } else {
-            NRS.logConsole("Scan cancelled");
+            MRS.logConsole("Scan cancelled");
         }
     }
 
@@ -94,14 +94,14 @@ var NRS = (function (NRS) {
         reader.fadeIn();
         reader.html5_qrcode(
             function (data) {
-                NRS.logConsole(data);
+                MRS.logConsole(data);
                 callback(data);
                 reader.hide();
                 reader.html5_qrcode_stop();
             },
             function (error) {},
             function (videoError, localMediaStream) {
-                NRS.logConsole(videoError);
+                MRS.logConsole(videoError);
                 reader.hide();
                 if (!localMediaStream) {
                     $.growl($.t("video_not_supported"));
@@ -113,5 +113,5 @@ var NRS = (function (NRS) {
         );
     }
 
-    return NRS;
-}(NRS || {}));
+    return MRS;
+}(MRS || {}));

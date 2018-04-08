@@ -14,15 +14,15 @@
  *
  */
 
-package nxt.installer;
+package metro.installer;
 
 import com.izforge.izpack.api.data.InstallData;
 import com.izforge.izpack.api.data.Pack;
 import com.izforge.izpack.api.event.ProgressListener;
 import com.izforge.izpack.api.event.ProgressNotifiers;
 import com.izforge.izpack.event.AbstractProgressInstallerListener;
-import static nxt.installer.ConfigHandler.VAR_CLEAN_INSTALL_DIR;
-import static nxt.installer.ConfigHandler.VAR_SHUTDOWN_SERVER;
+import static metro.installer.ConfigHandler.VAR_CLEAN_INSTALL_DIR;
+import static metro.installer.ConfigHandler.VAR_SHUTDOWN_SERVER;
 
 import java.util.List;
 
@@ -44,7 +44,7 @@ public class InstallListener extends AbstractProgressInstallerListener {
         if (getVariable(VAR_CLEAN_INSTALL_DIR)) {
             // We might have to retry removal a few times until server shutdown is complete
             boolean retry = shutdownServer;
-            if (!handler.cleanNxtInstallDir(getInstallData().getInstallPath(), retry)) {
+            if (!handler.cleanMetroInstallDir(getInstallData().getInstallPath(), retry)) {
                 error("Failed to remove existing installation");
             }
         }

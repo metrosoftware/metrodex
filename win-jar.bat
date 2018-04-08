@@ -1,7 +1,7 @@
-java -cp classes nxt.tools.ManifestGenerator
-del nxt.jar
-jar cfm nxt.jar resource\nxt.manifest.mf -C classes .
-del nxtservice.jar
-jar cfm nxtservice.jar resource\nxtservice.manifest.mf -C classes .
+java -cp classes metro.tools.ManifestGenerator
+del metro.jar
+jar cfm metro.jar resource\metro.manifest.mf -C classes .
+del metroservice.jar
+jar cfm metroservice.jar resource\metroservice.manifest.mf -C classes .
 
 echo "jar files generated successfully"

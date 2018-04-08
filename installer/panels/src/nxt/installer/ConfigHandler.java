@@ -14,7 +14,7 @@
  *
  */
 
-package nxt.installer;
+package metro.installer;
 
 import java.io.BufferedReader;
 import java.io.FileWriter;
@@ -38,13 +38,13 @@ final class ConfigHandler {
     private static final String FILE_HEADER =
             "# This file contains customized settings.\n" +
             "# You can modify this file and add more settings.\n" +
-            "# See conf/nxt-default.properties for a full list\n#\n\n";
-    private static final String JAR = "nxt.jar";
+            "# See conf/metro-default.properties for a full list\n#\n\n";
+    private static final String JAR = "metro.jar";
     private static final String SERVER = "http://localhost";
     private static final int[] PORTS = { 6886, 7886 };   // try to detect both testnet and real servers
-    private static final String VAR_PREFIX = "nxt.installer.";
+    private static final String VAR_PREFIX = "metro.installer.";
 
-    public static final String FILE_PATH = "conf/nxt-installer.properties";
+    public static final String FILE_PATH = "conf/metro-installer.properties";
     public static final String VAR_CLEAN_INSTALL_DIR = VAR_PREFIX + "cleanInstallDir";
     public static final String VAR_SHUTDOWN_SERVER = VAR_PREFIX + "shutdownServer";
     public static final String VAR_FILE_CONTENTS = "settings";
@@ -69,7 +69,7 @@ final class ConfigHandler {
         boolean done = false;
         for (int port: PORTS) {
             try {
-                URL url = new URL(SERVER + ':' + port + "/nxt?requestType=shutdown");
+                URL url = new URL(SERVER + ':' + port + "/metro?requestType=shutdown");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("POST");
                 done |= (conn.getResponseCode() == HttpURLConnection.HTTP_OK);
@@ -80,12 +80,12 @@ final class ConfigHandler {
         return done;
     }
 
-    public boolean isNxtInstallDir(String path) {
+    public boolean isMetroInstallDir(String path) {
         return path != null && Files.exists(Paths.get(path, JAR));
     }
 
-    public boolean cleanNxtInstallDir(String installPath, boolean retry) {
-        if (isNxtInstallDir(installPath)) {
+    public boolean cleanMetroInstallDir(String installPath, boolean retry) {
+        if (isMetroInstallDir(installPath)) {
             if (rmdir(installPath)) {
                 return true;
             }

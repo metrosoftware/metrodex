@@ -5,16 +5,16 @@
                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                   xsi:schemaLocation="http://izpack.org/schema/shortcuts http://izpack.org/schema/5.0/izpack-shortcuts-5.0.xsd">
 
-    <programGroup defaultName="NXT" location="applications"/>
+    <programGroup defaultName="Metro" location="applications"/>
 
     <shortcut
-            name="Nxt Start"
+            name="Metro Start"
             programGroup="yes"
             desktop="yes"
             target="$INSTALL_PATH/start.sh"
             workingDirectory="$INSTALL_PATH"
-            description="Start Nxt"
-            iconFile="$INSTALL_PATH/html/www/img/nxt-icon-32x32.png"
+            description="Start Metro"
+            iconFile="$INSTALL_PATH/html/www/img/metro-icon-32x32.png"
             type="Application"
             encoding="UTF-8"
             categories="Application;Network;"
@@ -22,13 +22,13 @@
     </shortcut>
 
     <shortcut
-            name="Nxt Stop"
+            name="Metro Stop"
             programGroup="yes"
             desktop="yes"
             target="$INSTALL_PATH/stop.sh"
             workingDirectory="$INSTALL_PATH"
-            description="Shutdown Nxt"
-            iconFile="$INSTALL_PATH/html/www/img/nxt-icon-32x32.png"
+            description="Shutdown Metro"
+            iconFile="$INSTALL_PATH/html/www/img/metro-icon-32x32.png"
             type="Application"
             encoding="UTF-8"
             categories="Application;Network;"
@@ -36,7 +36,7 @@
     </shortcut>
 
     <shortcut
-            name="Nxt Uninstaller"
+            name="Metro Uninstaller"
             programGroup="yes"
             desktop="no"
             target="java"
@@ -47,7 +47,7 @@
             encoding="UTF-8"
             categories="Application;Network;"
             createForAll="true"
-            description="Uninstall Nxt">
+            description="Uninstall Metro">
     </shortcut>
 
 

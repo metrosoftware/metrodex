@@ -48,8 +48,8 @@ body {
 body::after{
   position:absolute; width:0; height:0; overflow:hidden; z-index:-1;
   content:url(../img/client_background.png)
-  url(../img/nxt-load-progress-logo-circle.png)
-  url(../img/nxt-load-progress-logo-circle.png);
+  url(../img/metro-load-progress-logo-circle.png)
+  url(../img/metro-load-progress-logo-circle.png);
 }
 html.lockscreen, html.lockscreen body {
   height:100%;
@@ -2855,7 +2855,7 @@ a.list-group-item-header:hover {
     overflow-x: hidden;
 }
 
-#nrs_update_drop_zone, #nrs_update_result {
+#mrs_update_drop_zone, #mrs_update_result {
     padding: 25px;
     text-align: center;
     font-weight:bold;
@@ -2866,21 +2866,21 @@ a.list-group-item-header:hover {
     border:1px solid #D6E8C7;
     display:none;
 }
-#nrs_update_hash_progress {
+#mrs_update_hash_progress {
     height:15px;
     background:#48874A;
     display:none;
     margin-top:20px;
 }
 
-.nrs_message {
+.mrs_message {
     background:#DFF0D9;
     color:#48874A;
     padding:5px;
     border:1px solid #D6E8C7;
     display:none;
 }
-#nrs_update_explanation > span {
+#mrs_update_explanation > span {
 	display:none;
 }
 .incorrect {
@@ -2888,20 +2888,20 @@ a.list-group-item-header:hover {
     color:white !important;
     border:1px solid #E4404B !important;
 }
-#nrs_update_explanation_wait {
+#mrs_update_explanation_wait {
   display:inline !important;
 }
-#nrs_update_hashes {
+#mrs_update_hashes {
     display:none;
     margin-top:20px;
 }
 
-#nrs_update_hashes table {
+#mrs_update_hashes table {
     border-collapse:collapse;
     border:1px solid #bbb;
 }
 
-#nrs_update_hashes table td {
+#mrs_update_hashes table td {
     padding:2px;
     margin-bottom:1px;
 }
@@ -3798,7 +3798,7 @@ body > .header .navbar {
 /*
  * @duckx 20150812 - login screen  */
 
-#logo-nxt-img {
+#logo-metro-img {
     margin: 0 auto 40px auto;
     display: block;
 }
@@ -3862,7 +3862,7 @@ body > .header .navbar {
         bottom: initial;
     }
 
-    #logo-nxt-img {
+    #logo-metro-img {
         width: 221px;
         margin-bottom: 9px;
     }
@@ -3880,7 +3880,7 @@ body > .header .navbar {
         margin-top: 25px
     }
 
-    #logo-nxt-img {
+    #logo-metro-img {
         display: none;
     }
 

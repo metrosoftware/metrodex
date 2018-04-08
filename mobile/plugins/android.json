@@ -8,40 +8,40 @@
     },
     "installed_plugins": {
         "cordova-plugin-device": {
-            "PACKAGE_NAME": "org.nxt.mobile.wallet"
+            "PACKAGE_NAME": "org.metrodex.mobile.wallet"
         },
         "cordova-plugin-console": {
-            "PACKAGE_NAME": "org.nxt.mobile.wallet"
+            "PACKAGE_NAME": "org.metrodex.mobile.wallet"
         },
         "cordova-plugin-whitelist": {
-            "PACKAGE_NAME": "org.nxt.mobile.wallet"
+            "PACKAGE_NAME": "org.metrodex.mobile.wallet"
         },
         "cordova-plugin-splashscreen": {
-            "PACKAGE_NAME": "org.nxt.mobile.wallet"
+            "PACKAGE_NAME": "org.metrodex.mobile.wallet"
         },
         "cordova-plugin-statusbar": {
-            "PACKAGE_NAME": "org.nxt.mobile.wallet"
+            "PACKAGE_NAME": "org.metrodex.mobile.wallet"
         },
         "ionic-plugin-keyboard": {
-            "PACKAGE_NAME": "org.nxt.mobile.wallet"
+            "PACKAGE_NAME": "org.metrodex.mobile.wallet"
         },
         "cordova.plugins.diagnostic": {
-            "PACKAGE_NAME": "org.nxt.mobile.wallet"
+            "PACKAGE_NAME": "org.metrodex.mobile.wallet"
         },
         "cordova-plugin-android-permissions": {
-            "PACKAGE_NAME": "org.nxt.mobile.wallet"
+            "PACKAGE_NAME": "org.metrodex.mobile.wallet"
         },
         "cordova-plugin-compat": {
-            "PACKAGE_NAME": "org.nxt.mobile.wallet"
+            "PACKAGE_NAME": "org.metrodex.mobile.wallet"
         },
         "cordova-plugin-file": {
-            "PACKAGE_NAME": "org.nxt.mobile.wallet"
+            "PACKAGE_NAME": "org.metrodex.mobile.wallet"
         },
         "cordova-plugin-inappbrowser": {
-            "PACKAGE_NAME": "org.nxt.mobile.wallet"
+            "PACKAGE_NAME": "org.metrodex.mobile.wallet"
         },
         "phonegap-plugin-barcodescanner": {
-            "PACKAGE_NAME": "org.nxt.mobile.wallet"
+            "PACKAGE_NAME": "org.metrodex.mobile.wallet"
         }
     },
     "dependent_plugins": {}

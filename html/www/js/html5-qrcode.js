@@ -68,7 +68,7 @@
                         video.play();
                         $.data(currentElem[0], "timeout", setTimeout(scan, 1000));
                     } catch(e) {
-                        NRS.logConsole(e.message);
+                        MRS.logConsole(e.message);
                     }
                 };
 

@@ -14,7 +14,7 @@
  *
  */
 
-package nxt.installer;
+package metro.installer;
 
 import com.izforge.izpack.api.data.Panel;
 import com.izforge.izpack.api.resource.Resources;
@@ -26,7 +26,7 @@ import com.izforge.izpack.gui.log.Log;
 import com.izforge.izpack.installer.data.GUIInstallData;
 import com.izforge.izpack.installer.gui.InstallerFrame;
 import com.izforge.izpack.installer.gui.IzPanel;
-import static nxt.installer.ConfigHandler.*;
+import static metro.installer.ConfigHandler.*;
 
 import javax.swing.JCheckBox;
 import javax.swing.JPanel;
@@ -62,7 +62,7 @@ public class ConfigPanel extends IzPanel implements ItemListener {
                 add(LabelFactory.create("A running server was detected. Do you want to stop it?"), NEXT_LINE);
                 add(stopServerCheck, NEXT_LINE);
             }
-            if (handler.isNxtInstallDir(installData.getInstallPath())) {
+            if (handler.isMetroInstallDir(installData.getInstallPath())) {
                 add(IzPanelLayout.createParagraphGap());
                 add(LabelFactory.create("An existing installation was found. Do you want to remove it?"), NEXT_LINE);
                 add(uninstallCheck, NEXT_LINE);

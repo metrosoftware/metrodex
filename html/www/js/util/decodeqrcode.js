@@ -27,7 +27,7 @@ qrcodeDecoder.decode = function() {
         return;
     }
     var base64 = base64Array[1];
-    NRS.sendRequest("decodeQRCode", { "qrCodeBase64": base64 },
+    MRS.sendRequest("decodeQRCode", { "qrCodeBase64": base64 },
         function(response) {
             if(qrcode.callback != null && 'qrCodeData' in response) {
                 if (response.qrCodeData == "") {

@@ -14,21 +14,21 @@
  *                                                                            *
  ******************************************************************************/
 
-var NRS = (function (NRS) {
+var MRS = (function (MRS) {
     var currentLocale = {};
 
-    NRS.getLocaleList = function() {
+    MRS.getLocaleList = function() {
         return SORTED_LOCALE_DATE;
     };
     
-    NRS.getLocaleName = function(locale) {
+    MRS.getLocaleName = function(locale) {
         return LOCALE_DATA[locale].displayName;
     };
 
-    NRS.getLocale = function () {
+    MRS.getLocale = function () {
         var lang;
-        if (NRS.settings && NRS.settings['regional_format'] != "default") {
-            lang = NRS.settings['regional_format'];
+        if (MRS.settings && MRS.settings['regional_format'] != "default") {
+            lang = MRS.settings['regional_format'];
         } else {
             lang = window.javaFxLanguage || window.navigator.userLanguage || window.navigator.language;
             if (!LOCALE_DATA[lang]) {
@@ -42,7 +42,7 @@ var NRS = (function (NRS) {
                                 continue;
                             }
                             if (tokens[i].substring(0, separator) == lang) {
-                                NRS.logConsole("Language " + lang + " resolved to locale " + tokens[i]);
+                                MRS.logConsole("Language " + lang + " resolved to locale " + tokens[i]);
                                 lang = tokens[i];
                                 break;
                             }
@@ -51,7 +51,7 @@ var NRS = (function (NRS) {
                 }
                 if (!LOCALE_DATA[lang]) {
                     if (!currentLocale.lang) {
-                        NRS.logConsole("Cannot find locale definitions for language " + lang + " default to en-US");
+                        MRS.logConsole("Cannot find locale definitions for language " + lang + " default to en-US");
                     }
                     lang = "en-US";
                 }
@@ -64,7 +64,7 @@ var NRS = (function (NRS) {
             currentLocale.decimal = LOCALE_DATA[lang].decimal;
             currentLocale.section = LOCALE_DATA[lang].section;
             currentLocale.displayName = LOCALE_DATA[lang].displayName;
-            NRS.logConsole("Locale language: '" + currentLocale.lang +
+            MRS.logConsole("Locale language: '" + currentLocale.lang +
                 "' date format: '" + currentLocale.dateFormat +
                 "' decimal separator: '" + currentLocale.decimal +
                 "' section separator: '" + currentLocale.section +
@@ -290,5 +290,5 @@ var NRS = (function (NRS) {
         return LOCALE_DATA[a].displayName.localeCompare(LOCALE_DATA[b].displayName);
     });
 
-    return NRS;
-}(NRS || {}));
+    return MRS;
+}(MRS || {}));

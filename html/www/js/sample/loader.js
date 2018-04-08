@@ -1,11 +1,11 @@
 try {
-    var loader = require("./../nrs.node.bridge.js"); // during development
+    var loader = require("./../mrs.node.bridge.js"); // during development
 } catch(e) {
     console.log("Release mode");
 }
 
 try {
-    loader = require("nxt-blockchain"); // when using the NPM module
+    loader = require("metro-blockchain"); // when using the NPM module
 } catch(e) {
     console.log("Development mode");
 }

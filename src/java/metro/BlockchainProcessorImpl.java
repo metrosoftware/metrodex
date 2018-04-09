@@ -1090,34 +1090,63 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
      * @throws MetroException
      */
     private boolean processNewBlock(BlockImpl block) throws MetroException {
-        BlockImpl lastBlock = blockchain.getLastBlock();
-        // TODO correct logic when a new keyBlock arrives from peer
-        if (block.getPreviousBlockId() == lastBlock.getId()) {
-            pushBlock(block);
-            return true;
-        } else if (block.getPreviousBlockId() == lastBlock.getPreviousBlockId() && block.getTimestamp() < lastBlock.getTimestamp()) {
-            blockchain.writeLock();
-            try {
-                if (lastBlock.getId() != blockchain.getLastBlock().getId()) {
-                    return false; // blockchain changed, ignore the block
-                }
-                BlockImpl previousBlock = blockchain.getBlock(lastBlock.getPreviousBlockId());
-                lastBlock = popOffTo(previousBlock).get(0);
+        if (!block.isKeyBlock()) {
+            BlockImpl lastBlock = blockchain.getLastBlock();
+            // TODO correct logic when a new keyBlock arrives from peer
+            if (block.getPreviousBlockId() == lastBlock.getId()) {
+                pushBlock(block);
+                return true;
+            } else if (block.getPreviousBlockId() == lastBlock.getPreviousBlockId() && block.getTimestamp() < lastBlock.getTimestamp()) {
+                blockchain.writeLock();
                 try {
-                    pushBlock(block);
-                    TransactionProcessorImpl.getInstance().processLater(lastBlock.getTransactions());
-                    Logger.logDebugMessage("Last block " + lastBlock.getStringId() + " was replaced by " + block.getStringId());
-                    return true;
-                } catch (BlockNotAcceptedException e) {
-                    Logger.logDebugMessage("Replacement block failed to be accepted, pushing back our last block");
-                    pushBlock(lastBlock);
-                    TransactionProcessorImpl.getInstance().processLater(block.getTransactions());
+                    if (lastBlock.getId() != blockchain.getLastBlock().getId()) {
+                        return false; // blockchain changed, ignore the block
+                    }
+                    BlockImpl previousBlock = blockchain.getBlock(lastBlock.getPreviousBlockId());
+                    lastBlock = popOffTo(previousBlock).get(0);
+                    try {
+                        pushBlock(block);
+                        TransactionProcessorImpl.getInstance().processLater(lastBlock.getTransactions());
+                        Logger.logDebugMessage("Last block " + lastBlock.getStringId() + " was replaced by " + block.getStringId());
+                        return true;
+                    } catch (BlockNotAcceptedException e) {
+                        Logger.logDebugMessage("Replacement block failed to be accepted, pushing back our last block");
+                        pushBlock(lastBlock);
+                        TransactionProcessorImpl.getInstance().processLater(block.getTransactions());
+                    }
+                } finally {
+                    blockchain.writeUnlock();
                 }
-            } finally {
-                blockchain.writeUnlock();
-            }
-        } // else ignore the block
-        return false;
+            } // else ignore the block
+            return false;
+        } else {
+            BlockImpl lastKeyBlock = blockchain.getLastKeyBlock();
+            BlockImpl common = blockchain.getBlock(block.getPreviousBlockId());
+            if (common != null && (lastKeyBlock == null || lastKeyBlock.getHeight() < common.getHeight() +1)) {
+
+                blockchain.writeLock();
+                try {
+                    List<BlockImpl> fork = popOffTo(common);
+                    try {
+                        pushBlock(block);
+                        for (BlockImpl posBlock: fork) {
+                            TransactionProcessorImpl.getInstance().processLater(posBlock.getTransactions());
+                            Logger.logDebugMessage("Pos block " + posBlock.getStringId() + " was replaced by key block " + block.getStringId());
+                        }
+                        return true;
+                    } catch (BlockNotAcceptedException e) {
+                        Logger.logDebugMessage("Replacement block failed to be accepted, pushing back our last block");
+                        for (BlockImpl posBlock: fork) {
+                            pushBlock(posBlock);
+                        }
+                        TransactionProcessorImpl.getInstance().processLater(block.getTransactions());
+                    }
+                } finally {
+                    blockchain.writeUnlock();
+                }
+            } // else ignore the block
+            return false;
+        }
     }
 
     @Override
@@ -1318,7 +1347,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 if (previousBlock.getHeight() != Math.max(previousPosBlock.getHeight(), previousKeyBlock != null ? previousKeyBlock.getHeight() : -1)) {
                     throw new IllegalStateException("Incorrect last key block");
                 }
-                block.setPrevious(previousBlock);
+                block.setPrevious(previousPosBlock, previousKeyBlock);
                 validate(block, previousBlock, previousKeyBlock, curTime);
 
                 long nextHitTime = Generator.getNextHitTime(previousBlock.getId(), curTime);
@@ -1337,7 +1366,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 validatePhasedTransactions(previousBlock.getHeight(), validPhasedTransactions, invalidPhasedTransactions, duplicates);
                 validateTransactions(block, previousBlock, curTime, duplicates, previousBlock.getHeight() >= Constants.LAST_CHECKSUM_BLOCK);
 
-                block.setPreceding(previousPosBlock, previousKeyBlock);
+                block.setPreceding();
                 blockListeners.notify(block, Event.BEFORE_BLOCK_ACCEPT);
                 TransactionProcessorImpl.getInstance().requeueAllUnconfirmedTransactions();
                 Logger.logDebugMessage("adding/storing/accepting new block=" + Convert.toHexString(block.getBytes()));
@@ -1635,9 +1664,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 }
             }
             blockListeners.notify(block, Event.BEFORE_BLOCK_APPLY);
-            if (!block.isKeyBlock()) {
-                block.apply();
-            }
+            block.apply(block.isKeyBlock());
             validPhasedTransactions.forEach(transaction -> transaction.getPhasing().countVotes(transaction));
             invalidPhasedTransactions.forEach(transaction -> transaction.getPhasing().reject(transaction));
             long fromTimestamp = Metro.getEpochTime() - Constants.MAX_PRUNABLE_LIFETIME;
@@ -2183,16 +2210,16 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             rewardMQT += transaction.getFeeMQT();
         }
 
+        blockTransactions.add(null);
         if (transactions.size() > 0) {
-            blockTransactions.add(null);
             for (UnconfirmedTransaction unconfirmedTransaction : transactions) {
                 TransactionImpl transaction = unconfirmedTransaction.getTransaction();
                 blockTransactions.add(transaction);
                 rewardMQT += transaction.getFeeMQT();
             }
-            TransactionImpl coinbase = buildCoinbase(generatorPublicKey, rewardMQT, blockTimestamp, secretPhrase);
-            blockTransactions.set(0, coinbase);
         }
+        TransactionImpl coinbase = buildCoinbase(generatorPublicKey, rewardMQT, blockTimestamp, secretPhrase);
+        blockTransactions.set(0, coinbase);
 
         return new BlockImpl(getKeyBlockVersion(previousBlock.getHeight()), blockTimestamp, baseTarget, previousBlock.getId(), previousKeyBlockId, 0, 0, 0, 0,
                 Convert.EMPTY_PAYLOAD_HASH, generatorPublicKey, null, blockSignature, previousBlockHash, previousKeyBlockHash, Convert.EMPTY_HASH, blockTransactions);

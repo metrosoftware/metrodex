@@ -25,7 +25,7 @@ public final class Constants {
     public static final boolean isLightClient = Metro.getBooleanProperty("metro.isLightClient");
     public static final String customLoginWarning = Metro.getStringProperty("metro.customLoginWarning", null, false, "UTF-8");
 
-    public static final String COIN_SYMBOL = "Metro";
+    public static final String COIN_SYMBOL = "MTR";
     public static final String ACCOUNT_PREFIX = "MTR";
     public static final String PROJECT_NAME = "Metro";
     public static final int MAX_NUMBER_OF_TRANSACTIONS = Metro.getIntProperty("metro.maxNumberOfTransactions", 255);

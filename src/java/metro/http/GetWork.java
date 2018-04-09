@@ -22,7 +22,6 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -33,7 +32,7 @@ public final class GetWork extends APIServlet.APIRequestHandler {
     static final GetWork instance = new GetWork();
 
     private final static String secretPhrase = Convert.emptyToNull(Metro.getStringProperty("metro.mine.secretPhrase"));
-    private AtomicReference<List<TransactionImpl>> transactions;
+    private AtomicReference<List<TransactionImpl>> transactions = new AtomicReference<>();
 
     private GetWork() {
         super(new APITag[]{APITag.MINING});
@@ -104,13 +103,9 @@ public final class GetWork extends APIServlet.APIRequestHandler {
             targetString = targetToLittleEndianString(Consensus.MAX_WORK_TARGET);
         } else {
             //TODO calculate target correctly, ticket #149
-            buffer = ByteBuffer.allocate(32);
-            buffer.order(ByteOrder.LITTLE_ENDIAN);
-            buffer.put(BitcoinJUtils.decodeCompactBits(lastKeyBlock.getBaseTarget()).toByteArray());
-            targetString = Convert.toHexString(buffer.array());
+            targetString = targetToLittleEndianString(BitcoinJUtils.decodeCompactBits(lastKeyBlock.getBaseTarget()));
         }
-        result.put("target", lastKeyBlock == null ? targetToLittleEndianString(Consensus.MAX_WORK_TARGET)
-                : targetString);
+        result.put("target", lastKeyBlock == null ? targetToLittleEndianString(Consensus.MAX_WORK_TARGET) : targetString);
         return JSON.prepare(response);
     }
 

@@ -17,7 +17,6 @@ package metro.mint;
 
 import metro.Constants;
 import metro.Metro;
-import metro.crypto.HashFunction;
 import metro.http.API;
 import metro.http.GetWork;
 import metro.util.Convert;
@@ -60,6 +59,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import static metro.Consensus.HASH_FUNCTION;
+
 public class CpuMiner {
 
     public static final int NONCE_BYTE_SIZE = 8;
@@ -82,7 +83,7 @@ public class CpuMiner {
         GetWork.reverseEvery4Bytes(data);
         int size = (int) readDataSize(data);
         data = Arrays.copyOf(data,size);
-        long initialNonce = Metro.getIntProperty("metro.mint.initialNonce");
+        long initialNonce = Metro.getIntProperty("metro.mine.initialNonce");
 
         int threadPoolSize = Metro.getIntProperty("metro.mine.threadPoolSize");
         if (threadPoolSize == 0) {
@@ -96,9 +97,9 @@ public class CpuMiner {
             counter++;
             try {
                 JSONObject response = mineImpl(counter, data, target, initialNonce, threadPoolSize, executorService, isSubmitted);
-                Logger.logInfoMessage("currency mint response:" + response.toJSONString());
+                Logger.logInfoMessage("currency mine response:" + response.toJSONString());
             } catch (Exception e) {
-                Logger.logInfoMessage("mint error", e);
+                Logger.logInfoMessage("mine error", e);
                 if (isStopOnError) {
                     Logger.logInfoMessage("stopping on error");
                     break;
@@ -127,7 +128,7 @@ public class CpuMiner {
         byte[] dataWithoutNonce = Arrays.copyOf(data,data.length - NONCE_BYTE_SIZE);
         List<Callable<Integer>> workersList = new ArrayList<>();
         for (int i = 0; i < threadPoolSize; i++) {
-            CpuMiner.HashSolver hashSolver = new CpuMiner.HashSolver(HashFunction.SHA3.getId(), dataWithoutNonce, initialNonce + i, target, threadPoolSize);
+            CpuMiner.HashSolver hashSolver = new CpuMiner.HashSolver(dataWithoutNonce, initialNonce + i, target, threadPoolSize);
             workersList.add(hashSolver);
         }
         int solution = solve(executorService, workersList);
@@ -277,15 +278,13 @@ public class CpuMiner {
 
     private static class HashSolver implements Callable<Integer> {
 
-        private final HashFunction hashFunction;
         private final long nonce;
         private final byte[] target;
         private final int poolSize;
         private final byte[] data;
 
-        private HashSolver(byte algorithm, byte[] data, long nonce,
+        private HashSolver(byte[] data, long nonce,
                            byte[] target, int poolSize) {
-            this.hashFunction = HashFunction.getHashFunction(algorithm);
             this.data = data;
             this.nonce = nonce;
             this.target = target;
@@ -301,11 +300,11 @@ public class CpuMiner {
                 buffer.put(data);
                 buffer.putLong(n);
 
-                byte[] hash = hashFunction.hash(buffer.array());
+                byte[] hash = HASH_FUNCTION.hash(buffer.array());
                 if (new BigInteger(1, hash).compareTo(new BigInteger(1, target)) < 0) {
                     Logger.logDebugMessage("%s found solution hash %s nonce %d" +
                                     " hash %s meets target %d",
-                            Thread.currentThread().getName(), hashFunction, n,
+                            Thread.currentThread().getName(), HASH_FUNCTION, n,
                             Arrays.toString(hash), new BigInteger(target));
                     return n;
                 }

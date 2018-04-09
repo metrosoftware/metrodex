@@ -34,7 +34,7 @@ public class FakeForgingTest extends AbstractForgingTest {
         properties.setProperty("nxt.fakeForgingAccount", "NXT-9KZM-KNYY-QBXZ-5TD8V");
 
         AbstractForgingTest.init(properties);
-        Assert.assertTrue("nxt.fakeForgingAccount must be defined in nxt.properties", Metro.getStringProperty("nxt.fakeForgingAccount") != null);
+        Assert.assertTrue("nxt.fakeForgingAccount must be defined in metro.properties", Metro.getStringProperty("nxt.fakeForgingAccount") != null);
     }
 
     @Test

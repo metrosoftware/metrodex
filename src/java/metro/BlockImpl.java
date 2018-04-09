@@ -507,44 +507,44 @@ public final class BlockImpl implements Block {
         }
     }
 
-    void apply() {
+    void apply(boolean isKeyBlock) {
         Account generatorAccount = Account.addOrGetAccount(getGeneratorId());
         generatorAccount.apply(getGeneratorPublicKey());
-        long totalBackFees = 0;
-        if (this.localHeight > 3) {
-            long[] backFees = new long[3];
-            for (TransactionImpl transaction : getTransactions()) {
-                long[] fees = transaction.getBackFees();
-                for (int i = 0; i < fees.length; i++) {
-                    backFees[i] += fees[i];
+
+        long reward = rewardMQT;
+
+        if (!isKeyBlock) {
+            long totalBackFees = 0;
+            if (this.localHeight > 3) {
+                long[] backFees = new long[3];
+                for (TransactionImpl transaction : getTransactions()) {
+                    long[] fees = transaction.getBackFees();
+                    for (int i = 0; i < fees.length; i++) {
+                        backFees[i] += fees[i];
+                    }
+                }
+                for (int i = 0; i < backFees.length; i++) {
+                    if (backFees[i] == 0) {
+                        break;
+                    }
+                    totalBackFees += backFees[i];
+                    Account previousGeneratorAccount = Account.getAccount(BlockDb.findBlockAtLocalHeight(this.localHeight - i - 1, false).getGeneratorId());
+                    Logger.logDebugMessage("Back fees %f %s to forger at POS height %d", ((double) backFees[i]) / Constants.ONE_MTR, Constants.COIN_SYMBOL, this.localHeight - i - 1);
+                    previousGeneratorAccount.addToBalanceAndUnconfirmedBalanceMQT(LedgerEvent.BLOCK_GENERATED, getId(), backFees[i]);
+                    previousGeneratorAccount.addToForgedBalanceMQT(backFees[i]);
                 }
             }
-            for (int i = 0; i < backFees.length; i++) {
-                if (backFees[i] == 0) {
-                    break;
-                }
-                totalBackFees += backFees[i];
-                Account previousGeneratorAccount = Account.getAccount(BlockDb.findBlockAtLocalHeight(this.localHeight - i - 1, false).getGeneratorId());
-                Logger.logDebugMessage("Back fees %f %s to forger at POS height %d", ((double)backFees[i])/Constants.ONE_MTR, Constants.COIN_SYMBOL, this.localHeight - i - 1);
-                previousGeneratorAccount.addToBalanceAndUnconfirmedBalanceMQT(LedgerEvent.BLOCK_GENERATED, getId(), backFees[i]);
-                previousGeneratorAccount.addToForgedBalanceMQT(backFees[i]);
+            if (totalBackFees != 0) {
+                Logger.logDebugMessage("Fee reduced by %f %s at POS height %d", ((double) totalBackFees) / Constants.ONE_MTR, Constants.COIN_SYMBOL, this.localHeight);
             }
+            reward = rewardMQT - totalBackFees;
         }
-        if (totalBackFees != 0) {
-            Logger.logDebugMessage("Fee reduced by %f %s at POS height %d", ((double)totalBackFees)/Constants.ONE_MTR, Constants.COIN_SYMBOL, this.localHeight);
-        }
-        generatorAccount.addToBalanceAndUnconfirmedBalanceMQT(LedgerEvent.BLOCK_GENERATED, getId(), rewardMQT - totalBackFees);
-        generatorAccount.addToForgedBalanceMQT(rewardMQT - totalBackFees);
+
+        generatorAccount.addToBalanceAndUnconfirmedBalanceMQT(LedgerEvent.BLOCK_GENERATED, getId(), reward);
+        generatorAccount.addToForgedBalanceMQT(reward);
     }
 
-    void setPrevious(BlockImpl previousBlock) {
-        if (previousBlock == null) {
-            throw new IllegalArgumentException("Should not use for genesis block");
-        }
-        this.height = previousBlock.getHeight() + 1;
-    }
-
-    void setPreceding(BlockImpl posBlock, BlockImpl keyBlock) {
+    void setPrevious(BlockImpl posBlock, BlockImpl keyBlock) {
         BlockImpl prevBlock;
         if (posBlock == null) {
             throw new IllegalArgumentException("Previous pos block is null");
@@ -552,6 +552,8 @@ public final class BlockImpl implements Block {
 
         boolean prevBlockIsKeyBlock = keyBlock != null && keyBlock.getHeight() > posBlock.getHeight();
         prevBlock = prevBlockIsKeyBlock ? keyBlock : posBlock;
+
+        this.height = prevBlock.getHeight() + 1;
 
         if (prevBlock.getId() != getPreviousBlockId()) {
             // shouldn't happen as previous id is already verified, but just in case
@@ -579,6 +581,9 @@ public final class BlockImpl implements Block {
 
         this.cumulativeDifficulty = prevCumulativeDifficulty.add(squareRoot(keyBlockWork.multiply(currentBatch)));
 
+    }
+
+    void setPreceding() {
         short index = 0;
         for (TransactionImpl transaction : getTransactions()) {
             transaction.setBlock(this);

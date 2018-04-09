@@ -1,7 +1,11 @@
 package metro.http;
 
-import metro.*;
+import metro.Block;
+import metro.BlockImpl;
+import metro.Consensus;
 import metro.Metro;
+import metro.MetroException;
+import metro.TransactionImpl;
 import metro.crypto.Crypto;
 import metro.util.BitcoinJUtils;
 import metro.util.Convert;
@@ -20,6 +24,8 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public final class GetWork extends APIServlet.APIRequestHandler {
@@ -27,6 +33,7 @@ public final class GetWork extends APIServlet.APIRequestHandler {
     static final GetWork instance = new GetWork();
 
     private final static String secretPhrase = Convert.emptyToNull(Metro.getStringProperty("metro.mine.secretPhrase"));
+    private AtomicReference<List<TransactionImpl>> transactions;
 
     private GetWork() {
         super(new APITag[]{APITag.MINING});
@@ -68,7 +75,7 @@ public final class GetWork extends APIServlet.APIRequestHandler {
                         }
                         //TODO ticket #177 read secretPhrase as forging do
                         byte[] generatorPublicKey = Crypto.getPublicKey(secretPhrase);
-                        Block extra = Metro.getBlockchain().composeKeyBlock(blockHeaderBytes, generatorPublicKey);
+                        Block extra = Metro.getBlockchain().composeKeyBlock(blockHeaderBytes, generatorPublicKey, transactions.get());
                         boolean blockAccepted = Metro.getBlockchainProcessor().processMinerBlock(extra);
                         Logger.logDebugMessage("Solution found. Block Accepted:" + blockAccepted);
                         JSONObject response = new JSONObject();
@@ -82,6 +89,8 @@ public final class GetWork extends APIServlet.APIRequestHandler {
         }
 
         Block block = Metro.getBlockchainProcessor().prepareMinerBlock();
+        transactions.set((List<TransactionImpl>)block.getTransactions());
+
         byte[] blockBytes = reverseEvery4Bytes(padZeroValuesSpecialAndSize(block.getBytes()));
         JSONObject response = new JSONObject();
         JSONObject result = new JSONObject();

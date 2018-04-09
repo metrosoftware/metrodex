@@ -2174,21 +2174,32 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         byte[] blockSignature = null;
         long previousKeyBlockId = previousKeyBlock == null ? 0 : previousKeyBlock.getId();
         long baseTarget = BitcoinJUtils.encodeCompactBits(Consensus.MAX_WORK_TARGET);
-        return new BlockImpl(getKeyBlockVersion(previousBlock.getHeight()), Metro.getEpochTime(), baseTarget, previousBlock.getId(), previousKeyBlockId, 0, 0, 0, 0,
-                Convert.EMPTY_PAYLOAD_HASH, generatorPublicKey, null, blockSignature, previousBlockHash, previousKeyBlockHash, Convert.EMPTY_HASH, null);
+        long blockTimestamp = Metro.getEpochTime();
+        List<TransactionImpl> blockTransactions = new ArrayList<>();
+
+        long rewardMQT = Consensus.getBlockSubsidy(previousKeyBlock != null ? previousKeyBlock.getLocalHeight() + 1 : 1);
+        SortedSet<UnconfirmedTransaction> transactions = getTransactionsForKeyBlockGeneration();
+        for (Transaction transaction : transactions) {
+            rewardMQT += transaction.getFeeMQT();
+        }
+
+        if (transactions.size() > 0) {
+            blockTransactions.add(null);
+            for (UnconfirmedTransaction unconfirmedTransaction : transactions) {
+                TransactionImpl transaction = unconfirmedTransaction.getTransaction();
+                blockTransactions.add(transaction);
+                rewardMQT += transaction.getFeeMQT();
+            }
+            TransactionImpl coinbase = buildCoinbase(generatorPublicKey, rewardMQT, blockTimestamp, secretPhrase);
+            blockTransactions.set(0, coinbase);
+        }
+
+        return new BlockImpl(getKeyBlockVersion(previousBlock.getHeight()), blockTimestamp, baseTarget, previousBlock.getId(), previousKeyBlockId, 0, 0, 0, 0,
+                Convert.EMPTY_PAYLOAD_HASH, generatorPublicKey, null, blockSignature, previousBlockHash, previousKeyBlockHash, Convert.EMPTY_HASH, blockTransactions);
     }
 
-    private static byte[] revertByteArray(byte[] array) {
-        int i = 0;
-        int j = array.length - 1;
-        byte tmp;
-        while (j > i) {
-            tmp = array[j];
-            array[j] = array[i];
-            array[i] = tmp;
-            j--;
-            i++;
-        }
-        return array;
+    private SortedSet<UnconfirmedTransaction> getTransactionsForKeyBlockGeneration() {
+        //TODO ticket #183
+        return new TreeSet<>();
     }
 }

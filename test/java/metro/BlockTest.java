@@ -4,6 +4,8 @@ import metro.util.Convert;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.ArrayList;
+
 import static metro.Consensus.HASH_FUNCTION;
 
 public class BlockTest extends BlockchainTest {
@@ -28,7 +30,7 @@ public class BlockTest extends BlockchainTest {
         byte[] header = block0.bytes();
 //        System.out.println(Convert.toHexString(header));
 //        System.out.println(header.length);
-        Block block1 = Metro.getBlockchain().composeKeyBlock(header, generatorPublicKey);
+        Block block1 = Metro.getBlockchain().composeKeyBlock(header, generatorPublicKey, new ArrayList<>());
         Assert.assertArrayEquals(header, block1.getBytes());
         Assert.assertEquals(block0, block1);
     }

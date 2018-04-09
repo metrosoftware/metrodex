@@ -390,7 +390,7 @@ final class BlockchainImpl implements Blockchain {
     }
 
     @Override
-    public Block composeKeyBlock(byte[] headerData, byte[] generatorPublicKey) {
+    public Block composeKeyBlock(byte[] headerData, byte[] generatorPublicKey, List<TransactionImpl> transactions) {
         ByteBuffer header = ByteBuffer.wrap(headerData);
         header.order(ByteOrder.LITTLE_ENDIAN);
         short version = header.getShort();
@@ -429,7 +429,7 @@ final class BlockchainImpl implements Blockchain {
 
         return new BlockImpl(version, timestamp, baseTarget, previousBlockId, Convert.fullHashToId(previousKeyBlockHash), nonce,
                 0, rewardMQT, 0, txMerkleRoot, generatorPublicKey,
-                generationSignature, null, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, null);
+                generationSignature, null, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, transactions);
     }
 
     @Override

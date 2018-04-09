@@ -16,9 +16,36 @@
 
 package metro.http;
 
-import metro.*;
+import metro.Account;
+import metro.AccountLedger;
 import metro.AccountLedger.LedgerEntry;
+import metro.AccountRestrictions;
+import metro.Alias;
+import metro.Appendix;
+import metro.Asset;
+import metro.AssetDelete;
+import metro.AssetDividend;
+import metro.AssetTransfer;
+import metro.Attachment;
+import metro.Block;
+import metro.Constants;
+import metro.FundingMonitor;
+import metro.Generator;
+import metro.HoldingType;
 import metro.Metro;
+import metro.Order;
+import metro.PhasingPoll;
+import metro.PhasingVote;
+import metro.Poll;
+import metro.PrunableMessage;
+import metro.Shuffler;
+import metro.Shuffling;
+import metro.ShufflingParticipant;
+import metro.Token;
+import metro.Trade;
+import metro.Transaction;
+import metro.Vote;
+import metro.VoteWeighting;
 import metro.crypto.Crypto;
 import metro.crypto.EncryptedData;
 import metro.db.DbIterator;
@@ -269,7 +296,7 @@ public final class JSONData {
         json.put("timestamp", block.getTimestamp());
         json.put("numberOfTransactions", block.getTransactions().size());
         json.put("totalAmountMQT", String.valueOf(block.getTotalAmountMQT()));
-        json.put("totalFeeMQT", String.valueOf(block.getTotalFeeMQT()));
+        json.put("rewardMQT", String.valueOf(block.getRewardMQT()));
         json.put("payloadLength", block.getPayloadLength());
         json.put("version", block.getVersion());
         json.put("baseTarget", Long.toUnsignedString(block.getBaseTarget()));

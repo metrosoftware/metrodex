@@ -64,7 +64,7 @@ public interface Block {
 
     long getTotalAmountMQT();
 
-    long getTotalFeeMQT();
+    long getRewardMQT();
 
     int getPayloadLength();
 

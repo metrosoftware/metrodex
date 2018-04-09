@@ -28,7 +28,7 @@ class MetroDbVersion extends DbVersion {
                 apply("CREATE TABLE IF NOT EXISTS block (db_id IDENTITY, id BIGINT NOT NULL, version SMALLINT NOT NULL, "
                         + "timestamp BIGINT NOT NULL, previous_block_id BIGINT, previous_key_block_id BIGINT, "
                         + "total_amount BIGINT NOT NULL, "
-                        + "total_fee BIGINT NOT NULL, payload_length INT, "
+                        + "reward BIGINT NOT NULL, payload_length INT, "
                         + "previous_block_hash BINARY(32), previous_key_block_hash BINARY(32), "
                         + "cumulative_difficulty VARBINARY NOT NULL, stake_batch_difficulty VARBINARY NOT NULL, base_target BIGINT NOT NULL, "
                         + "next_block_id BIGINT, "

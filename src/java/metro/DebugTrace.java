@@ -338,8 +338,8 @@ public final class DebugTrace {
     }
 
     private Map<String,String> getValues(long accountId, Block block) {
-        long fee = block.getTotalFeeMQT();
-        if (fee == 0) {
+        long reward = block.getRewardMQT();
+        if (reward == 0) {
             return Collections.emptyMap();
         }
         long totalBackFees = 0;
@@ -360,7 +360,7 @@ public final class DebugTrace {
                 if (include(previousGeneratorId)) {
                     Map<String,String> map = getValues(previousGeneratorId, false);
                     map.put("effective balance", String.valueOf(Account.getAccount(previousGeneratorId).getEffectiveBalanceMTR()));
-                    map.put("generation fee", String.valueOf(backFees[i]));
+                    map.put("generation reward", String.valueOf(backFees[i]));
                     map.put("block", block.getStringId());
                     map.put("event", "block");
                     map.put("timestamp", String.valueOf(block.getTimestamp()));
@@ -371,7 +371,7 @@ public final class DebugTrace {
         }
         Map<String,String> map = getValues(accountId, false);
         map.put("effective balance", String.valueOf(Account.getAccount(accountId).getEffectiveBalanceMTR()));
-        map.put("generation fee", String.valueOf(fee - totalBackFees));
+        map.put("generation reward", String.valueOf(reward - totalBackFees));
         map.put("block", block.getStringId());
         map.put("event", "block");
         map.put("timestamp", String.valueOf(block.getTimestamp()));

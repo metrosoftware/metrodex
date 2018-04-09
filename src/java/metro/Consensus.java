@@ -16,6 +16,7 @@ public class Consensus {
     public static final long MAX_WORK_BITS = Constants.isTestnet ? Long.parseUnsignedLong(Metro.getStringProperty("metro.testnetMaxWorkTarget", "1e00ffff"),16) : 0x1d00ffffL;
     public static final BigInteger MAX_WORK_TARGET = BitcoinJUtils.decodeCompactBits(MAX_WORK_BITS);
     public static final int SUBSIDY_HALVING_INTERVAL = 210000;
+    public static final long INITIAL_SUBSIDY = 2000 * Constants.ONE_MTR;
 
     public static final int GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS = 30;
 
@@ -31,4 +32,11 @@ public class Consensus {
         return 1;
     }
 
+    public static long getBlockSubsidy(int atLocalHeight) {
+        int halvings = atLocalHeight / SUBSIDY_HALVING_INTERVAL;
+        if (halvings >= 64)
+            return 0;
+        // Subsidy is cut in half every 210,000 blocks which will occur approximately every 4 years.
+        return INITIAL_SUBSIDY >> halvings;
+    }
 }

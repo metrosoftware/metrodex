@@ -262,19 +262,19 @@ var MRS = (function(MRS, $) {
 	MRS.blocksPageLoaded = function(blocks) {
 		var rows = "";
 		var totalAmount = new BigInteger("0");
-		var totalFees = new BigInteger("0");
+		var reward = new BigInteger("0");
 		var totalTransactions = 0;
 
 		for (var i = 0; i < blocks.length; i++) {
 			var block = blocks[i];
 			totalAmount = totalAmount.add(new BigInteger(block.totalAmountMQT));
-			totalFees = totalFees.add(new BigInteger(block.totalFeeMQT));
+			reward = reward.add(new BigInteger(block.rewardNQT));
 			totalTransactions += block.numberOfTransactions;
 			rows += "<tr>" +
                 "<td><a href='#' data-block='" + MRS.escapeRespStr(block.height) + "' data-blockid='" + MRS.escapeRespStr(block.block) + "' class='block show_block_modal_action'" + (block.numberOfTransactions > 0 ? " style='font-weight:bold'" : "") + ">" + MRS.escapeRespStr(block.height) + "</a></td>" +
                 "<td>" + MRS.formatTimestamp(block.timestamp) + "</td>" +
                 "<td>" + MRS.formatAmount(block.totalAmountMQT) + "</td>" +
-                "<td>" + MRS.formatAmount(block.totalFeeMQT) + "</td>" +
+				"<td>" + NRS.formatAmount(block.rewardNQT) + "</td>" +
                 "<td>" + MRS.formatAmount(block.numberOfTransactions) + "</td>" +
                 "<td>" + MRS.getAccountLink(block, "generator") + "</td>" +
                 "<td>" + MRS.formatVolume(block.payloadLength) + "</td>" +
@@ -312,7 +312,7 @@ var MRS = (function(MRS, $) {
             var averageFee = 0;
             var averageAmount = 0;
 			if (blocks.length) {
-				averageFee = new Big(totalFees.toString()).div(new Big("100000000")).div(new Big(String(blocks.length))).toFixed(2);
+				averageFee = new Big(reward.toString()).div(new Big("100000000")).div(new Big(String(blocks.length))).toFixed(2);
 				averageAmount = new Big(totalAmount.toString()).div(new Big("100000000")).div(new Big(String(blocks.length))).toFixed(2);
 			}
 			averageFee = MRS.convertToMQT(averageFee);

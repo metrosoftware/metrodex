@@ -63,6 +63,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static metro.Consensus.HASH_FUNCTION;
+import static metro.Consensus.getBlockSubsidy;
 import static metro.Consensus.getKeyBlockVersion;
 import static metro.Consensus.getPosBlockVersion;
 import static metro.Consensus.getTransactionVersion;
@@ -1526,6 +1527,20 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         return Block.ValidationResult.OK;
     }
 
+
+    private void validateCoinbaseTx(TransactionImpl tx, Block block, long blockTotalFeeMQT) throws TransactionNotAcceptedException {
+        if (!tx.getType().isCoinbase()) {
+            throw new TransactionNotAcceptedException("First tx should be coinbase", tx);
+        }
+        if (tx.getSenderId() != block.getGeneratorId() || tx.getSenderId() != tx.getRecipientId()) {
+            throw new TransactionNotAcceptedException("Coinbase sender and recipient should be equal to block generator", tx);
+        }
+        long reward = blockTotalFeeMQT + (block.isKeyBlock() ? getBlockSubsidy(block.getLocalHeight()) : 0);
+        if (tx.getAmountMQT() != reward) {
+            throw new TransactionNotAcceptedException("Coinbase amount is" + tx.getAmountMQT() + " instead of " + reward, tx);
+        }
+    }
+
     private void validateTransactions(BlockImpl block, BlockImpl previousLastBlock, long curTime, Map<TransactionType, Map<String, Integer>> duplicates,
                                       boolean fullValidation) throws BlockNotAcceptedException {
         long payloadLength = 0;
@@ -1533,61 +1548,70 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         long calculatedTotalFee = 0;
         MessageDigest digest = Crypto.sha256();
         boolean hasPrunedTransactions = false, isKeyBlock = block.isKeyBlock();
-        for (TransactionImpl transaction : block.getTransactions()) {
-            if (transaction.getTimestamp() > curTime + Constants.MAX_TIMEDRIFT) {
-                throw new BlockOutOfOrderException("Invalid transaction timestamp: " + transaction.getTimestamp()
-                        + ", current time is " + curTime, block);
-            }
-            if (!transaction.verifySignature()) {
-                throw new TransactionNotAcceptedException("Transaction signature verification failed at height " + previousLastBlock.getHeight(), transaction);
-            }
-            if (fullValidation) {
-                if (transaction.getTimestamp() > block.getTimestamp() + Constants.MAX_TIMEDRIFT
-                        || transaction.getExpiration() < block.getTimestamp()) {
-                    throw new TransactionNotAcceptedException("Invalid transaction timestamp " + transaction.getTimestamp()
-                            + ", current time is " + curTime + ", block timestamp is " + block.getTimestamp(), transaction);
+        if (block.getTransactions().size() > 0) {
+
+            for (int i = 0; i < block.getTransactions().size(); i++) {
+                TransactionImpl transaction = block.getTransactions().get(i);
+                if (transaction.getType().isCoinbase() && i > 0) {
+                    throw new TransactionNotAcceptedException("Coinbase should be only first transaction in block", transaction);
                 }
-                if (TransactionDb.hasTransaction(transaction.getId(), previousLastBlock.getHeight())) {
-                    throw new TransactionNotAcceptedException("Transaction is already in the blockchain", transaction);
+
+                if (transaction.getTimestamp() > curTime + Constants.MAX_TIMEDRIFT) {
+                    throw new BlockOutOfOrderException("Invalid transaction timestamp: " + transaction.getTimestamp()
+                            + ", current time is " + curTime, block);
                 }
-                if (transaction.referencedTransactionFullHash() != null && !hasAllReferencedTransactions(transaction, transaction.getTimestamp(), 0)) {
-                    throw new TransactionNotAcceptedException("Missing or invalid referenced transaction "
-                            + transaction.getReferencedTransactionFullHash(), transaction);
+                if (!transaction.verifySignature()) {
+                    throw new TransactionNotAcceptedException("Transaction signature verification failed at height " + previousLastBlock.getHeight(), transaction);
                 }
-                if (transaction.getVersion() != getTransactionVersion(previousLastBlock.getHeight())) {
-                    throw new TransactionNotAcceptedException("Invalid transaction version " + transaction.getVersion()
-                            + " at height " + previousLastBlock.getHeight(), transaction);
-                }
-                if (transaction.getId() == 0L) {
-                    throw new TransactionNotAcceptedException("Invalid transaction id 0", transaction);
-                }
-                try {
-                    transaction.validate();
-                } catch (MetroException.ValidationException e) {
-                    throw new TransactionNotAcceptedException(e.getMessage(), transaction);
-                }
-            }
-            if (transaction.attachmentIsDuplicate(duplicates, true)) {
-                throw new TransactionNotAcceptedException("Transaction is a duplicate", transaction);
-            }
-            if (!hasPrunedTransactions) {
-                for (Appendix.AbstractAppendix appendage : transaction.getAppendages()) {
-                    if ((appendage instanceof Appendix.Prunable) && !((Appendix.Prunable)appendage).hasPrunableData()) {
-                        hasPrunedTransactions = true;
-                        break;
+                if (fullValidation) {
+                    if (transaction.getTimestamp() > block.getTimestamp() + Constants.MAX_TIMEDRIFT
+                            || transaction.getExpiration() < block.getTimestamp()) {
+                        throw new TransactionNotAcceptedException("Invalid transaction timestamp " + transaction.getTimestamp()
+                                + ", current time is " + curTime + ", block timestamp is " + block.getTimestamp(), transaction);
+                    }
+                    if (TransactionDb.hasTransaction(transaction.getId(), previousLastBlock.getHeight())) {
+                        throw new TransactionNotAcceptedException("Transaction is already in the blockchain", transaction);
+                    }
+                    if (transaction.referencedTransactionFullHash() != null && !hasAllReferencedTransactions(transaction, transaction.getTimestamp(), 0)) {
+                        throw new TransactionNotAcceptedException("Missing or invalid referenced transaction "
+                                + transaction.getReferencedTransactionFullHash(), transaction);
+                    }
+                    if (transaction.getVersion() != getTransactionVersion(previousLastBlock.getHeight())) {
+                        throw new TransactionNotAcceptedException("Invalid transaction version " + transaction.getVersion()
+                                + " at height " + previousLastBlock.getHeight(), transaction);
+                    }
+                    if (transaction.getId() == 0L) {
+                        throw new TransactionNotAcceptedException("Invalid transaction id 0", transaction);
+                    }
+                    try {
+                        transaction.validate();
+                    } catch (MetroException.ValidationException e) {
+                        throw new TransactionNotAcceptedException(e.getMessage(), transaction);
                     }
                 }
-            }
-            if (!isKeyBlock) {
-                calculatedTotalAmount += transaction.getAmountMQT();
+                if (transaction.attachmentIsDuplicate(duplicates, true)) {
+                    throw new TransactionNotAcceptedException("Transaction is a duplicate", transaction);
+                }
+                if (!hasPrunedTransactions) {
+                    for (Appendix.AbstractAppendix appendage : transaction.getAppendages()) {
+                        if ((appendage instanceof Appendix.Prunable) && !((Appendix.Prunable) appendage).hasPrunableData()) {
+                            hasPrunedTransactions = true;
+                            break;
+                        }
+                    }
+                }
                 calculatedTotalFee += transaction.getFeeMQT();
-                payloadLength += transaction.getFullSize();
-                digest.update(transaction.bytes());
+                if (!isKeyBlock) {
+                    calculatedTotalAmount += transaction.getAmountMQT();
+                    payloadLength += transaction.getFullSize();
+                    digest.update(transaction.bytes());
+                }
             }
+            validateCoinbaseTx(block.getTransactions().get(0), block, calculatedTotalFee);
         }
         if (!isKeyBlock) {
             // TODO #165 when Coinbase is introduced for POS blocks, totalFee shouldn't be in the block anymore
-            if (calculatedTotalAmount != block.getTotalAmountMQT() || calculatedTotalFee != block.getTotalFeeMQT()) {
+            if (calculatedTotalAmount != block.getTotalAmountMQT() || calculatedTotalFee != block.getRewardMQT()) {
                 throw new BlockNotAcceptedException("Total amount or fee don't match transaction totals", block);
             }
             // TODO #164 validate txMerkleRoot for key block, payloadHash is not populated
@@ -1845,6 +1869,23 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     }
 
 
+    private TransactionImpl buildCoinbase(byte[] publicKey, long rewardMQT, long timestamp, String secretPhrase) {
+        byte[] publicKeyHash = Crypto.sha256().digest(publicKey);
+        long generatorId = Convert.fullHashToId(publicKeyHash);
+        //FIXME what is deadline is 1 will be enough?
+        short COINBASE_DEADLINE = 10000;
+
+        Transaction.Builder builder = Metro.newTransactionBuilder(publicKey, rewardMQT, 0L, COINBASE_DEADLINE, Attachment.ORDINARY_COINBASE);
+        builder.timestamp(timestamp);
+        builder.recipientId(generatorId);
+        try {
+            return (TransactionImpl)builder.build(secretPhrase);
+        } catch (MetroException.NotValidException e) {
+            throw new RuntimeException("Generated coinbase transaction not valid");
+        }
+    }
+
+
     private static final Comparator<UnconfirmedTransaction> transactionArrivalComparator = Comparator
             .comparingLong(UnconfirmedTransaction::getArrivalTimestamp)
             .thenComparingInt(UnconfirmedTransaction::getHeight)
@@ -1869,30 +1910,42 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         List<TransactionImpl> blockTransactions = new ArrayList<>();
         MessageDigest digest = Crypto.sha256();
         long totalAmountMQT = 0;
-        long totalFeeMQT = 0;
+        long rewardMQT = 0;
         int payloadLength = 0;
-        for (UnconfirmedTransaction unconfirmedTransaction : sortedTransactions) {
-            TransactionImpl transaction = unconfirmedTransaction.getTransaction();
-            blockTransactions.add(transaction);
-            digest.update(transaction.bytes());
-            totalAmountMQT += transaction.getAmountMQT();
-            totalFeeMQT += transaction.getFeeMQT();
-            payloadLength += transaction.getFullSize();
+        final byte[] publicKey = Crypto.getPublicKey(secretPhrase);
+
+        if (sortedTransactions.size() > 0) {
+            blockTransactions.add(null);
+            for (UnconfirmedTransaction unconfirmedTransaction : sortedTransactions) {
+                TransactionImpl transaction = unconfirmedTransaction.getTransaction();
+                blockTransactions.add(transaction);
+                totalAmountMQT += transaction.getAmountMQT();
+                rewardMQT += transaction.getFeeMQT();
+                payloadLength += transaction.getFullSize();
+            }
+            TransactionImpl coinbase = buildCoinbase(publicKey, rewardMQT, blockTimestamp, secretPhrase);
+            blockTransactions.set(0, coinbase);
+            totalAmountMQT += rewardMQT;
+            payloadLength += coinbase.getFullSize();
+            for (TransactionImpl transaction : blockTransactions) {
+                digest.update(transaction.bytes());
+            }
         }
+
+
         byte[] payloadHash = digest.digest();
 
-        final byte[] publicKey = Crypto.getPublicKey(secretPhrase);
         final byte[] generationSequence = Convert.generationSequence(previousBlock.getGenerationSequence(), publicKey);
         final byte[] previousBlockHash = HASH_FUNCTION.hash(previousBlock.bytes());
 
-        BlockImpl block = new BlockImpl(getPosBlockVersion(previousBlock.getHeight()), blockTimestamp, previousBlock.getId(), 0l, 0l, totalAmountMQT, totalFeeMQT, payloadLength,
+        BlockImpl block = new BlockImpl(getPosBlockVersion(previousBlock.getHeight()), blockTimestamp, previousBlock.getId(), 0l, 0l, totalAmountMQT, rewardMQT, payloadLength,
                 payloadHash, publicKey, generationSequence, previousBlockHash, null, null, blockTransactions, secretPhrase);
 
         try {
             pushBlock(block);
             blockListeners.notify(block, Event.BLOCK_GENERATED);
             Logger.logDebugMessage("Account " + Long.toUnsignedString(block.getGeneratorId()) + " generated block " + block.getStringId()
-                    + " at height " + block.getHeight() + " timestamp " + block.getTimestamp() + " fee " + ((float)block.getTotalFeeMQT())/Constants.ONE_MTR);
+                    + " at height " + block.getHeight() + " timestamp " + block.getTimestamp() + " fee " + ((float)block.getRewardMQT())/Constants.ONE_MTR);
         } catch (TransactionNotAcceptedException e) {
             Logger.logDebugMessage("Generate block failed: " + e.getMessage());
             TransactionProcessorImpl.getInstance().processWaitingTransactions();

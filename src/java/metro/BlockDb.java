@@ -297,7 +297,7 @@ final class BlockDb {
             long previousKeyBlockId = rs.getLong("previous_key_block_id");
             long nonce = rs.getLong("nonce");
             long totalAmountMQT = rs.getLong("total_amount");
-            long totalFeeMQT = rs.getLong("total_fee");
+            long rewardMQT = rs.getLong("reward");
             int payloadLength = rs.getInt("payload_length");
             long generatorId = rs.getLong("generator_id");
             byte[] previousBlockHash = rs.getBytes("previous_block_hash");
@@ -318,7 +318,7 @@ final class BlockDb {
             // TODO #164
             byte[] payloadHash = rs.getBytes("payload_hash");
             long id = rs.getLong("id");
-            return new BlockImpl(version, timestamp, previousBlockId, previousKeyBlockId, nonce, totalAmountMQT, totalFeeMQT, payloadLength, payloadHash,
+            return new BlockImpl(version, timestamp, previousBlockId, previousKeyBlockId, nonce, totalAmountMQT, rewardMQT, payloadLength, payloadHash,
                     generatorId, generationSequence, blockSignature, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot,
                     cumulativeDifficulty, stakeBatchDifficulty, baseTarget, nextBlockId, height, localHeight, id, loadTransactions ? TransactionDb.findBlockTransactions(con, id) : null);
         } catch (SQLException e) {
@@ -331,7 +331,7 @@ final class BlockDb {
             // TODO #164 store also txMerkleRoot, that will be replacing payload_hash
             try (PreparedStatement pstmt = con.prepareStatement("INSERT INTO block (id, version, timestamp, previous_block_id, previous_key_block_id, nonce, "
                     + "previous_key_block_hash, forgers_merkle_root, "
-                    + "total_amount, total_fee, payload_length, previous_block_hash, next_block_id, cumulative_difficulty, stake_batch_difficulty, base_target, "
+                    + "total_amount, reward, payload_length, previous_block_hash, next_block_id, cumulative_difficulty, stake_batch_difficulty, base_target, "
                     + "height, local_height, generation_sequence, block_signature, payload_hash, generator_id) "
                     + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
                 int i = 0;
@@ -348,7 +348,7 @@ final class BlockDb {
                 DbUtils.setBytes(pstmt, ++i, block.getPreviousKeyBlockHash());
                 DbUtils.setBytes(pstmt, ++i, block.getForgersMerkleRoot());
                 pstmt.setLong(++i, block.getTotalAmountMQT());
-                pstmt.setLong(++i, block.getTotalFeeMQT());
+                pstmt.setLong(++i, block.getRewardMQT());
                 pstmt.setInt(++i, block.getPayloadLength());
                 pstmt.setBytes(++i, block.getPreviousBlockHash());
                 pstmt.setLong(++i, 0L); // next_block_id set to 0 at first

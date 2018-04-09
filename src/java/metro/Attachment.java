@@ -129,6 +129,15 @@ public interface Attachment extends Appendix {
 
     };
 
+    EmptyAttachment ORDINARY_COINBASE = new EmptyAttachment() {
+
+        @Override
+        public TransactionType getTransactionType() {
+            return TransactionType.Coinbase.ORDINARY;
+        }
+
+    };
+
     // the message payload is in the Appendix
     EmptyAttachment ARBITRARY_MESSAGE = new EmptyAttachment() {
 

@@ -314,7 +314,7 @@ final class TransactionImpl implements Transaction {
         this.appendagesSize = appendagesSize;
         if (builder.feeMQT <= 0 || (Constants.correctInvalidFees && builder.signature == null)) {
             int effectiveHeight = (height < Integer.MAX_VALUE ? height : Metro.getBlockchain().getHeight());
-            long minFee = getMinimumFeeMQT(effectiveHeight);
+            long minFee = type.isCoinbase() ? 0L : getMinimumFeeMQT(effectiveHeight);
             feeMQT = Math.max(minFee, builder.feeMQT);
         } else {
             feeMQT = builder.feeMQT;
@@ -946,7 +946,7 @@ final class TransactionImpl implements Transaction {
 
     @Override
     public void validate() throws MetroException.ValidationException {
-        if (timestamp == 0 ? (deadline != 0 || feeMQT != 0) : (deadline < 1 || feeMQT <= 0)
+        if (timestamp == 0 ? (deadline != 0 || feeMQT != 0) : (deadline < 1 || (feeMQT <= 0 && !type.isCoinbase()))
                 || feeMQT > Constants.MAX_BALANCE_MQT
                 || amountMQT < 0
                 || amountMQT > Constants.MAX_BALANCE_MQT
@@ -993,7 +993,7 @@ final class TransactionImpl implements Transaction {
         }
         int blockchainHeight = Metro.getBlockchain().getHeight();
         if (!validatingAtFinish) {
-            long minimumFeeMQT = getMinimumFeeMQT(blockchainHeight);
+            long minimumFeeMQT = type.isCoinbase() ? 0 : getMinimumFeeMQT(blockchainHeight);
             if (feeMQT < minimumFeeMQT) {
                 throw new MetroException.NotCurrentlyValidException(String.format("Transaction fee %f %s less than minimum fee %f %s at height %d",
                         ((double) feeMQT) / Constants.ONE_MTR, Constants.COIN_SYMBOL, ((double) minimumFeeMQT) / Constants.ONE_MTR, Constants.COIN_SYMBOL, blockchainHeight));

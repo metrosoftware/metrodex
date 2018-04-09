@@ -48,7 +48,7 @@ public final class BlockImpl implements Block {
     private final byte[] txMerkleRoot;
     private final byte[] forgersMerkleRoot;
     private final long totalAmountMQT;
-    private final long totalFeeMQT;
+    private final long rewardMQT;
     private final int payloadLength;
     private final byte[] generationSequence;
     private final byte[] payloadHash;
@@ -85,9 +85,9 @@ public final class BlockImpl implements Block {
      * Constructs and signs a new block, by passing a secretPhrase
      *
      */
-    BlockImpl(short version, long timestamp, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountMQT, long totalFeeMQT, int payloadLength, byte[] payloadHash,
+    BlockImpl(short version, long timestamp, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountMQT, long rewardMQT, int payloadLength, byte[] payloadHash,
               byte[] generatorPublicKey, byte[] generationSequence, byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] forgersMerkleRoot, List<TransactionImpl> transactions, String secretPhrase) {
-        this(version, timestamp, 0, previousBlockId, previousKeyBlockId, nonce, totalAmountMQT, totalFeeMQT, payloadLength, payloadHash,
+        this(version, timestamp, 0, previousBlockId, previousKeyBlockId, nonce, totalAmountMQT, rewardMQT, payloadLength, payloadHash,
                 generatorPublicKey, generationSequence, null, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, transactions);
         blockSignature = Crypto.sign(bytes(), secretPhrase);
         bytes = null;
@@ -97,7 +97,7 @@ public final class BlockImpl implements Block {
      * Typical constructor called for a block not yet in DB
      *
      */
-    BlockImpl(short version, long timestamp, long baseTarget, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountMQT, long totalFeeMQT, int payloadLength, byte[] payloadHash,
+    BlockImpl(short version, long timestamp, long baseTarget, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountMQT, long rewardMQT, int payloadLength, byte[] payloadHash,
               byte[] generatorPublicKey, byte[] generationSequence, byte[] blockSignature, byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] forgersMerkleRoot, List<TransactionImpl> transactions) {
         this.version = version;
         this.timestamp = timestamp;
@@ -106,7 +106,7 @@ public final class BlockImpl implements Block {
         this.previousKeyBlockId = previousKeyBlockId;
         this.nonce = nonce;
         this.totalAmountMQT = totalAmountMQT;
-        this.totalFeeMQT = totalFeeMQT;
+        this.rewardMQT = rewardMQT;
         this.payloadLength = payloadLength;
         this.payloadHash = payloadHash;
         // TODO #164
@@ -126,12 +126,12 @@ public final class BlockImpl implements Block {
      * Constructor used after existing block is loaded from DB
      *
      */
-    BlockImpl(short version, long timestamp, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountMQT, long totalFeeMQT, int payloadLength,
+    BlockImpl(short version, long timestamp, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountMQT, long rewardMQT, int payloadLength,
               byte[] payloadHash, long generatorId, byte[] generationSequence, byte[] blockSignature,
               byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] forgersMerkleRoot,
               BigInteger cumulativeDifficulty, BigInteger stakeBatchDifficulty, long baseTarget, long nextBlockId, int height, int localHeight, long id,
               List<TransactionImpl> blockTransactions) {
-        this(version, timestamp, baseTarget, previousBlockId, previousKeyBlockId, nonce, totalAmountMQT, totalFeeMQT, payloadLength, payloadHash,
+        this(version, timestamp, baseTarget, previousBlockId, previousKeyBlockId, nonce, totalAmountMQT, rewardMQT, payloadLength, payloadHash,
                 null, generationSequence, blockSignature, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, null);
         this.cumulativeDifficulty = cumulativeDifficulty;
         this.stakeBatchDifficulty = stakeBatchDifficulty;
@@ -211,8 +211,8 @@ public final class BlockImpl implements Block {
     }
 
     @Override
-    public long getTotalFeeMQT() {
-        return totalFeeMQT;
+    public long getRewardMQT() {
+        return rewardMQT;
     }
 
     @Override
@@ -353,7 +353,7 @@ public final class BlockImpl implements Block {
         }
         json.put("generationSequence", Convert.toHexString(generationSequence));
         json.put("totalAmountMQT", totalAmountMQT);
-        json.put("totalFeeMQT", totalFeeMQT);
+        json.put("rewardMQT", rewardMQT);
         json.put("generatorPublicKey", Convert.toHexString(getGeneratorPublicKey()));
 
         json.put("previousBlockHash", Convert.toHexString(previousBlockHash));
@@ -387,7 +387,7 @@ public final class BlockImpl implements Block {
             byte[] generationSequence = Convert.parseHexString((String) blockData.get("generationSequence"));
             long previousBlock = Convert.parseUnsignedLong((String) blockData.get("previousBlock"));
             long totalAmountMQT = Convert.parseLong(blockData.get("totalAmountMQT"));
-            long totalFeeMQT = Convert.parseLong(blockData.get("totalFeeMQT"));
+            long rewardMQT = Convert.parseLong(blockData.get("rewardMQT"));
             byte[] generatorPublicKey = Convert.parseHexString((String) blockData.get("generatorPublicKey"));
             byte[] blockSignature = Convert.parseHexString((String) blockData.get("blockSignature"));
             byte[] previousBlockHash = version == 1 ? null : Convert.parseHexString((String) blockData.get("previousBlockHash"));
@@ -395,7 +395,7 @@ public final class BlockImpl implements Block {
             for (Object transactionData : (JSONArray) blockData.get("transactions")) {
                 blockTransactions.add(TransactionImpl.parseTransaction((JSONObject) transactionData));
             }
-            BlockImpl block = new BlockImpl(version, timestamp, baseTarget, previousBlock, previousKeyBlock, nonce, totalAmountMQT, totalFeeMQT, payloadLength, payloadHash, generatorPublicKey,
+            BlockImpl block = new BlockImpl(version, timestamp, baseTarget, previousBlock, previousKeyBlock, nonce, totalAmountMQT, rewardMQT, payloadLength, payloadHash, generatorPublicKey,
                     generationSequence, blockSignature, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, blockTransactions);
             // TODO #144
             if (!keyBlock && !block.checkSignature()) {
@@ -433,15 +433,12 @@ public final class BlockImpl implements Block {
             final boolean isSignedPosBlock = !isKeyBlock && blockSignature != null;
             ByteBuffer buffer = ByteBuffer.allocate(getHeaderSize(isKeyBlock, isSignedPosBlock));
             buffer.order(ByteOrder.LITTLE_ENDIAN);
-
             // Block.version: the most significant bit to differentiate between block (0x0001...) and keyblock (0x8001...)
             buffer.putShort(version);
             // Block.timestamp: 8 bytes, milliseconds since MetroEpoch
             buffer.putLong(timestamp);
-            buffer.putLong(totalFeeMQT);
-
+            buffer.putLong(rewardMQT);
             buffer.put(payloadHash);
-
             buffer.put(previousBlockHash);
 
             if (isKeyBlock) {
@@ -536,8 +533,8 @@ public final class BlockImpl implements Block {
         if (totalBackFees != 0) {
             Logger.logDebugMessage("Fee reduced by %f %s at POS height %d", ((double)totalBackFees)/Constants.ONE_MTR, Constants.COIN_SYMBOL, this.localHeight);
         }
-        generatorAccount.addToBalanceAndUnconfirmedBalanceMQT(LedgerEvent.BLOCK_GENERATED, getId(), totalFeeMQT - totalBackFees);
-        generatorAccount.addToForgedBalanceMQT(totalFeeMQT - totalBackFees);
+        generatorAccount.addToBalanceAndUnconfirmedBalanceMQT(LedgerEvent.BLOCK_GENERATED, getId(), rewardMQT - totalBackFees);
+        generatorAccount.addToForgedBalanceMQT(rewardMQT - totalBackFees);
     }
 
     void setPrevious(BlockImpl previousBlock) {

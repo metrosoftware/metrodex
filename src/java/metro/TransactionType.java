@@ -38,6 +38,7 @@ public abstract class TransactionType {
     private static final byte TYPE_COLORED_COINS = 2;
     static final byte TYPE_SHUFFLING = 3;
     private static final byte TYPE_ACCOUNT_CONTROL = 4;
+    private static final byte TYPE_COINBASE = 5;
 
     private static final byte SUBTYPE_PAYMENT_ORDINARY_PAYMENT = 0;
 
@@ -65,6 +66,8 @@ public abstract class TransactionType {
 
     private static final byte SUBTYPE_ACCOUNT_CONTROL_EFFECTIVE_BALANCE_LEASING = 0;
     private static final byte SUBTYPE_ACCOUNT_CONTROL_PHASING_ONLY = 1;
+
+    private static final byte SUBTYPE_COINBASE_ORDINARY_COINBASE = 0;
 
     public static TransactionType findTransactionType(byte type, byte subtype) {
         switch (type) {
@@ -136,6 +139,13 @@ public abstract class TransactionType {
                 }
             case TYPE_SHUFFLING:
                 return ShufflingTransaction.findTransactionType(subtype);
+            case TYPE_COINBASE:
+                switch (subtype) {
+                    case SUBTYPE_COINBASE_ORDINARY_COINBASE:
+                        return Coinbase.ORDINARY;
+                    default:
+                        return null;
+                }
             default:
                 return null;
         }
@@ -150,6 +160,10 @@ public abstract class TransactionType {
 
     public abstract LedgerEvent getLedgerEvent();
 
+    public boolean isCoinbase() {
+        return getType() == TYPE_COINBASE;
+    }
+
     abstract Attachment.AbstractAttachment parseAttachment(ByteBuffer buffer) throws MetroException.NotValidException;
 
     abstract Attachment.AbstractAttachment parseAttachment(JSONObject attachmentData) throws MetroException.NotValidException;
@@ -157,19 +171,19 @@ public abstract class TransactionType {
     abstract void validateAttachment(Transaction transaction) throws MetroException.ValidationException;
 
     // return false iff double spending
-    final boolean applyUnconfirmed(TransactionImpl transaction, Account senderAccount) {
-        long amountMQT = transaction.getAmountMQT();
-        long feeMQT = transaction.getFeeMQT();
-        if (transaction.referencedTransactionFullHash() != null) {
+    final boolean applyUnconfirmed(TransactionImpl tx, Account senderAccount) {
+        long spendingAmountMQT = tx.getType().isCoinbase() ? 0 : tx.getAmountMQT();
+        long feeMQT = tx.getFeeMQT();
+        if (tx.referencedTransactionFullHash() != null) {
             feeMQT = Math.addExact(feeMQT, Constants.UNCONFIRMED_POOL_DEPOSIT_MQT);
         }
-        long totalAmountMQT = Math.addExact(amountMQT, feeMQT);
+        long totalAmountMQT = Math.addExact(spendingAmountMQT, feeMQT);
         if (senderAccount.getUnconfirmedBalanceMQT() < totalAmountMQT) {
             return false;
         }
-        senderAccount.addToUnconfirmedBalanceMQT(getLedgerEvent(), transaction.getId(), -amountMQT, -feeMQT);
-        if (!applyAttachmentUnconfirmed(transaction, senderAccount)) {
-            senderAccount.addToUnconfirmedBalanceMQT(getLedgerEvent(), transaction.getId(), amountMQT, feeMQT);
+        senderAccount.addToUnconfirmedBalanceMQT(getLedgerEvent(), tx.getId(), -spendingAmountMQT, -feeMQT);
+        if (!applyAttachmentUnconfirmed(tx, senderAccount)) {
+            senderAccount.addToUnconfirmedBalanceMQT(getLedgerEvent(), tx.getId(), spendingAmountMQT, feeMQT);
             return false;
         }
         return true;
@@ -177,18 +191,18 @@ public abstract class TransactionType {
 
     abstract boolean applyAttachmentUnconfirmed(Transaction transaction, Account senderAccount);
 
-    final void apply(TransactionImpl transaction, Account senderAccount, Account recipientAccount) {
-        long amount = transaction.getAmountMQT();
-        long transactionId = transaction.getId();
-        if (!transaction.attachmentIsPhased()) {
-            senderAccount.addToBalanceMQT(getLedgerEvent(), transactionId, -amount, -transaction.getFeeMQT());
+    final void apply(TransactionImpl tx, Account senderAccount, Account recipientAccount) {
+        long spendingAmountMQT = tx.getType().isCoinbase() ? 0 : tx.getAmountMQT();
+        long transactionId = tx.getId();
+        if (!tx.attachmentIsPhased()) {
+            senderAccount.addToBalanceMQT(getLedgerEvent(), transactionId, -spendingAmountMQT, -tx.getFeeMQT());
         } else {
-            senderAccount.addToBalanceMQT(getLedgerEvent(), transactionId, -amount);
+            senderAccount.addToBalanceMQT(getLedgerEvent(), transactionId, -spendingAmountMQT);
         }
         if (recipientAccount != null) {
-            recipientAccount.addToBalanceAndUnconfirmedBalanceMQT(getLedgerEvent(), transactionId, amount);
+            recipientAccount.addToBalanceAndUnconfirmedBalanceMQT(getLedgerEvent(), transactionId, tx.getAmountMQT());
         }
-        applyAttachment(transaction, senderAccount, recipientAccount);
+        applyAttachment(tx, senderAccount, recipientAccount);
     }
 
     abstract void applyAttachment(Transaction transaction, Account senderAccount, Account recipientAccount);
@@ -354,6 +368,82 @@ public abstract class TransactionType {
             void validateAttachment(Transaction transaction) throws MetroException.ValidationException {
                 if (transaction.getAmountMQT() <= 0 || transaction.getAmountMQT() >= Constants.MAX_BALANCE_MQT) {
                     throw new MetroException.NotValidException("Invalid ordinary payment");
+                }
+            }
+
+        };
+
+    }
+
+    public static abstract class Coinbase extends TransactionType {
+
+        private Coinbase() {
+        }
+
+        @Override
+        public final byte getType() {
+            return TransactionType.TYPE_COINBASE;
+        }
+
+        @Override
+        final boolean applyAttachmentUnconfirmed(Transaction transaction, Account senderAccount) {
+            return true;
+        }
+
+        @Override
+        final void applyAttachment(Transaction transaction, Account senderAccount, Account recipientAccount) {
+        }
+
+        @Override
+        final void undoAttachmentUnconfirmed(Transaction transaction, Account senderAccount) {
+        }
+
+        @Override
+        public final boolean canHaveRecipient() {
+            return true;
+        }
+
+        @Override
+        public final boolean mustHaveRecipient() {
+            return true;
+        }
+
+        @Override
+        public final boolean isPhasingSafe() {
+            return false;
+        }
+
+        public static final TransactionType ORDINARY = new Coinbase() {
+
+            @Override
+            public final byte getSubtype() {
+                return TransactionType.SUBTYPE_COINBASE_ORDINARY_COINBASE;
+            }
+
+            @Override
+            public final LedgerEvent getLedgerEvent() {
+                return LedgerEvent.ORDINARY_COINBASE;
+            } //???
+
+            @Override
+            public String getName() {
+                return "OrdinaryCoinbase";
+            }
+
+            @Override
+            Attachment.EmptyAttachment parseAttachment(ByteBuffer buffer) throws MetroException.NotValidException {
+                return Attachment.ORDINARY_PAYMENT;
+            }
+
+            @Override
+            Attachment.EmptyAttachment parseAttachment(JSONObject attachmentData) throws MetroException.NotValidException {
+                return Attachment.ORDINARY_PAYMENT;
+            }
+
+            @Override
+            void validateAttachment(Transaction transaction) throws MetroException.ValidationException {
+                if (transaction.getAmountMQT() < 0 || transaction.getAmountMQT() >= Constants.MAX_BALANCE_MQT) {
+                    throw new MetroException.NotValidException("Invalid ordinary coinbase");
                 }
             }
 

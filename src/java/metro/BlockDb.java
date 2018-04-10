@@ -18,6 +18,7 @@ package metro;
 
 import metro.db.DbUtils;
 import metro.util.Logger;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.math.BigInteger;
 import java.sql.Connection;
@@ -26,11 +27,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -266,16 +267,18 @@ final class BlockDb {
         }
     }
 
-    static Set<Long> getBlockGenerators(int startHeight) {
-        Set<Long> generators = new HashSet<>();
+    static List<Pair<Long,Integer>> getBlockGenerators(int startHeight) {
+        List<Pair<Long,Integer>> generators = new ArrayList<>();
         try (Connection con = Db.db.getConnection();
                 PreparedStatement pstmt = con.prepareStatement(
-                        "SELECT generator_id, COUNT(generator_id) AS count FROM block WHERE height >= ? GROUP BY generator_id")) {
+                        "SELECT generator_id, COUNT(generator_id) AS count FROM block WHERE height >= ? AND nonce IS NULL GROUP BY generator_id")) {
             pstmt.setInt(1, startHeight);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    if (rs.getInt("count") > 1) {
-                        generators.add(rs.getLong("generator_id"));
+                    int count = rs.getInt("count");
+                    // TODO comparing > 1 was inconvenient for testing
+                    if (count > 0) {
+                        generators.add(Pair.of(rs.getLong("generator_id"), count));
                     }
                 }
             }

@@ -105,6 +105,10 @@ final class BlockchainImpl implements Blockchain {
 
     @Override
     public int getGuaranteedBalanceHeight(int height) {
+        if (height < 2) {
+            // we have only Genesis in the DB
+            return height;
+        }
         BlockImpl keyHead = height == getHeight() ? getLastKeyBlock() : BlockDb.findLastKeyBlock(height);
         if (keyHead != null) {
             int pastLocalHeight = Math.max(keyHead.getLocalHeight() - GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS + 1, 1);
@@ -113,7 +117,7 @@ final class BlockchainImpl implements Blockchain {
                 // ignore additions in the 1st cluster
                 return 0;
             }
-            return BlockDb.findBlockAtLocalHeight(pastLocalHeight, true).getHeight();
+            return guaranteedMileStone.getHeight();
         } else {
             return 0;
         }

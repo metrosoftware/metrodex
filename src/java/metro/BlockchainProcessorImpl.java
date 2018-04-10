@@ -1482,26 +1482,23 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     }
 
     private Block.ValidationResult validateKeyBlock(Block keyblock) {
-        // TODO #144 validate length of the signature
-        // TODO height must be already set!!
         if (keyblock.getVersion() != Consensus.getKeyBlockVersion(keyblock.getHeight())) {
             return Block.ValidationResult.INCORRECT_VERSION;
         }
-        // txMerkleRoot: for stage 1, just ensure it contains all zeros
-        // TODO #132
-        // if we decide to proceed with adding Coinbase tx to each block,
-        // this would likely by the txid of it in the absence of any other txs in stage 1 in key block
+        // TODO #164
+        // this is likely just the txid of the Coinbase in the absence of any other txs in stage 1 in key block
 //        if (Convert.byteArrayComparator.compare(keyblock.getTxMerkleRoot(), Convert.EMPTY_HASH) != 0) {
 //            return Block.ValidationResult.TX_MERKLE_ROOT_DISCREPANCY;
 //        }
-        // TODO feat #131: verify how posBlocksSummary was calculated
-        // TODO feat #124: verify how stakeMerkleRoot was calculated
+        // TODO #188
+        if (Convert.byteArrayComparator.compare(keyblock.getForgersMerkleRoot(), Generator.getCurrentForgersMerkle()) != 0) {
+            return Block.ValidationResult.FORGERS_MERKLE_ROOT_DISCREPANCY;
+        }
 
         BigInteger target = BitcoinJUtils.decodeCompactBits(keyblock.getBaseTarget());
         if (target.signum() <= 0 || target.compareTo(Consensus.MAX_WORK_TARGET) > 0) {
             return Block.ValidationResult.DIFFICULTY_TARGET_OUT_OF_RANGE;
         }
-        // TODO ticket #129
         BigInteger hash = new BigInteger(1, HASH_FUNCTION.hash(keyblock.getBytes()));
         if (hash.compareTo(target) > 0) {
             return Block.ValidationResult.INSUFFICIENT_WORK;
@@ -1959,7 +1956,6 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         byte[] publicKey = Crypto.getPublicKey(secretPhrase);
         byte[] publicKeyHash = Crypto.sha256().digest(publicKey);
         long generatorId = Convert.fullHashToId(publicKeyHash);
-        //FIXME is 1 will be enough?
         short COINBASE_DEADLINE = 1;
         Map<Long, Long> recipients = coinbaseRecipients(publicKey, blockTransactions, isKeyBlock, localHeight);
         Transaction.Builder builder = Metro.newTransactionBuilder(publicKey, 0, 0L, COINBASE_DEADLINE, new Attachment.CoinbaseRecipientsAttachment(recipients, true));
@@ -2149,6 +2145,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                     blockchain.setLastBlock(currentBlock); // special case to avoid no last block
                     Genesis.apply();
                 } else {
+                    blockchain.forgetLastKeyBlock();
                     blockchain.setLastBlock(BlockDb.findBlockAtHeight(height - 1));
                 }
                 if (shutdown) {
@@ -2257,12 +2254,13 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         //TODO ticket # get generatorPublicKey from properties
         byte[] generatorPublicKey = Crypto.getPublicKey(secretPhrase);
         MessageDigest digest = Crypto.sha256();
-        digest.update(blockchain.getLastPosBlock().getGenerationSequence());
-        //TODO ticket #  fill stakeMerkleRoot, posBlockSummary, blockSignature
+                digest.update(blockchain.getLastPosBlock().getGenerationSequence());
+        //TODO ticket #144 (blockSignature)
         byte[] blockSignature = null;
         long previousKeyBlockId = previousKeyBlock == null ? 0 : previousKeyBlock.getId();
         long baseTarget = BitcoinJUtils.encodeCompactBits(Consensus.MAX_WORK_TARGET);
         long blockTimestamp = Metro.getEpochTime();
+        byte[] forgersMerkle = Generator.getCurrentForgersMerkle();
         List<TransactionImpl> blockTransactions = new ArrayList<>();
 
         int keyHight = previousKeyBlock != null ? previousKeyBlock.getLocalHeight() + 1 : 1;
@@ -2278,7 +2276,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         blockTransactions.set(0, coinbase);
 
         return new BlockImpl(getKeyBlockVersion(previousBlock.getHeight()), blockTimestamp, baseTarget, previousBlock.getId(), previousKeyBlockId, 0, 0, 0, 0,
-                Convert.EMPTY_PAYLOAD_HASH, generatorPublicKey, null, blockSignature, previousBlockHash, previousKeyBlockHash, Convert.EMPTY_HASH, blockTransactions);
+                Convert.EMPTY_PAYLOAD_HASH, generatorPublicKey, null, blockSignature, previousBlockHash, previousKeyBlockHash, forgersMerkle, blockTransactions);
     }
 
     private SortedSet<UnconfirmedTransaction> getTransactionsForKeyBlockGeneration() {

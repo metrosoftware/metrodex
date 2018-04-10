@@ -367,7 +367,7 @@ public final class BlockImpl implements Block {
         try {
             short version = ((Long) blockData.get("version")).shortValue();
             boolean keyBlock = isKeyBlockVersion(version);
-            long timestamp = ((Long) blockData.get("timestamp")).intValue();
+            long timestamp = ((Long) blockData.get("timestamp")).longValue();
             long previousKeyBlock = 0, nonce = 0, baseTarget = 0;
             int payloadLength = 0;
             byte[] previousKeyBlockHash = null, forgersMerkleRoot = null, payloadHash;

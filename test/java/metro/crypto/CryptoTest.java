@@ -1,0 +1,30 @@
+package metro.crypto;
+
+import metro.util.Convert;
+import org.junit.Assert;
+import org.junit.Test;
+
+public class CryptoTest {
+    /** Curve25519 test vectors from NaCl library: Alice's secret */
+    private static final String ALICE_SECRET = "77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a";
+
+    /** Curve25519 test vectors from NaCl library: Bob's secret */
+    private static final String BOB_SECRET = "5dab087e624a8a4b79e17f8b83800ee66f3bb1292618b6fd1c2f8b27ff88e0eb";
+    @Test
+    public void testSignVerify() {
+        byte[] signature = Crypto.sign(Convert.EMPTY_HASH, ALICE_SECRET);
+        Assert.assertTrue(Crypto.verify(signature, Convert.EMPTY_HASH, Crypto.getPublicKey(ALICE_SECRET)));
+        Assert.assertFalse(Crypto.verify(signature, Convert.EMPTY_BYTE, Crypto.getPublicKey(ALICE_SECRET)));
+        Assert.assertFalse(Crypto.verify(signature, Convert.EMPTY_HASH, Crypto.getPublicKey(BOB_SECRET)));
+        /*
+        27719813672
+        pubKey=39dc2e813bb45ff063a376e316b10cd0addd7306555ca0dd2890194d37960152
+        signature=98cd8e00a3b83dcede6dd50ba3a23e0748e37fd51d80d36c452f8264304c780f7a64ed4d98a6c6015784b9743e8bde21346c5a77ef11924a202f8933b4e0172b
+              030028ca3a74000000000000000000000000e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855b5aeda8963f00c5184fe550f83d68176f2477db6ac2734c8082bf4202e46b56bb5aeda8963f00c510000000000000000000000000000000039dc2e813bb45ff063a376e316b10cd0addd7306555ca0dd2890194d37960152
+        bytes=030028ca3a74060000000000000000000000e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855b5aeda8963f00c5184fe550f83d68176f2477db6ac2734c8082bf4202e46b56bb5aeda8963f00c510000000000000000000000000000000039dc2e813bb45ff063a376e316b10cd0addd7306555ca0dd2890194d37960152
+              030028ca3a74060000000000000000000000e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855b5aeda8963f00c5184fe550f83d68176f2477db6ac2734c8082bf4202e46b56bb5aeda8963f00c510000000000000000000000000000000039dc2e813bb45ff063a376e316b10cd0addd7306555ca0dd2890194d37960152
+        2018-04-10 15:42:38 FINE: adding/storing/accepting new block=0300fccb3a74060000000000000000000000e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855d595011930d95515717ce6fc7dc071132c6c9cf34d585eebe48d3bf849c777ded595011930d955150000000000000000000000000000000039dc2e813bb45ff063a376e316b10cd0addd7306555ca0dd2890194d37960152d51f967a57a039854c40a81537931494caf1897b61f8f42c9f62188e737b800215b7fbf09a8d577b0d0873b5e7c8d204d465b5990b8c99423ffd361712ef0ad8
+        2018-04-10 15:42:38 FINE: Account 3705364957971254799 generated block 5790037820711097604 at height 4 timestamp 27719814140 fee 0.0
+        */
+    }
+}

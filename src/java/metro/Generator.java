@@ -24,17 +24,24 @@ import metro.util.Logger;
 import metro.util.ThreadPool;
 
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+
+import static metro.Consensus.HASH_FUNCTION;
+import static metro.Consensus.MIN_FORKVOTING_AMOUNT_MTR;
 
 public final class Generator implements Comparable<Generator> {
 
@@ -368,17 +375,17 @@ public final class Generator implements Comparable<Generator> {
         return (generationLimit - hitTime > 3600000) ? generationLimit : (long)hitTime + 1;
     }
 
-    /** Active block generators */
-    private static final Set<Long> activeGeneratorIds = new HashSet<>();
-
     /** Active block identifier */
     private static long activeBlockId;
 
-    /** Sorted list of generators for the next block */
-    private static final List<ActiveGenerator> activeGenerators = new ArrayList<>();
+    /** Map generatorId->ActiveGenerator of generators for the next block */
+    private static final Map<Long, ActiveGenerator> activeGenerators = new HashMap<>();
 
     /** Generator list has been initialized */
     private static boolean generatorsInitialized = false;
+
+    /** Forgers Merkle has been calculated for this height, reset on each block push/pop */
+    private static byte[] forgersMerkle;
 
     /**
      * Return a list of generators for the next block.  The caller must hold the blockchain
@@ -387,54 +394,111 @@ public final class Generator implements Comparable<Generator> {
      * @return                      List of generator account identifiers
      */
     public static List<ActiveGenerator> getNextGenerators() {
-        List<ActiveGenerator> generatorList;
+        List<ActiveGenerator> generatorList = null;
         Blockchain blockchain = Metro.getBlockchain();
         synchronized(activeGenerators) {
             if (!generatorsInitialized) {
-                activeGeneratorIds.addAll(BlockDb.getBlockGenerators(Math.max(1, blockchain.getHeight() - 10000)));
-                activeGeneratorIds.forEach(activeGeneratorId -> activeGenerators.add(new ActiveGenerator(activeGeneratorId)));
-                Logger.logDebugMessage(activeGeneratorIds.size() + " block generators found");
+                BlockDb.getBlockGenerators(Math.max(1, blockchain.getHeight() - Consensus.FORGER_ACTIVITY_SNAPSHOT_INTERVAL)).forEach(genIdAndCount -> {
+                    activeGenerators.put(genIdAndCount.getLeft(), new ActiveGenerator(genIdAndCount.getLeft(), genIdAndCount.getRight()));
+                });
+                Logger.logDebugMessage(activeGenerators.size() + " block generators found");
                 Metro.getBlockchainProcessor().addListener(block -> {
+                    if (block.isKeyBlock()) {
+                        return;
+                    }
                     long generatorId = block.getGeneratorId();
                     synchronized(activeGenerators) {
-                        if (!activeGeneratorIds.contains(generatorId)) {
-                            activeGeneratorIds.add(generatorId);
-                            activeGenerators.add(new ActiveGenerator(generatorId));
+                        ActiveGenerator generator = activeGenerators.get(generatorId);
+                        if (generator == null) {
+                            activeGenerators.put(generatorId, new ActiveGenerator(generatorId, 1));
+                        } else {
+                            generator.rollBackOrForward(1);
                         }
+                        forgersMerkle = null;
                     }
                 }, BlockchainProcessor.Event.BLOCK_PUSHED);
+                Metro.getBlockchainProcessor().addListener(block -> {
+                    if (block.isKeyBlock()) {
+                        return;
+                    }
+                    long generatorId = block.getGeneratorId();
+                    synchronized(activeGenerators) {
+                        ActiveGenerator activeGenerator = activeGenerators.get(generatorId);
+                        if (activeGenerator != null && activeGenerator.rollBackOrForward(-1)) {
+                            activeGenerators.remove(generatorId);
+                        }
+                        forgersMerkle = null;
+                    }
+                }, BlockchainProcessor.Event.BLOCK_POPPED);
                 generatorsInitialized = true;
             }
             long blockId = blockchain.getLastBlock().getId();
             if (blockId != activeBlockId) {
                 activeBlockId = blockId;
                 Block lastBlock = blockchain.getLastBlock();
-                for (ActiveGenerator generator : activeGenerators) {
+                generatorList = new ArrayList<>(activeGenerators.size());
+                for (ActiveGenerator generator : activeGenerators.values()) {
                     generator.setLastBlock(lastBlock);
+                    generatorList.add(generator);
                 }
-                Collections.sort(activeGenerators);
+                Collections.sort(generatorList);
             }
-            generatorList = new ArrayList<>(activeGenerators);
         }
         return generatorList;
+    }
+
+    /**
+     * On-demand calculation of forgersMerkle, called from GetWork and validateKeyBlock
+     * @return root of the hash tree
+     */
+    public static byte[] getCurrentForgersMerkle() {
+        Metro.getBlockchain().readLock();
+        try {
+            synchronized(activeGenerators) {
+                if (forgersMerkle != null) {
+                    return forgersMerkle;
+                }
+                forgersMerkle = Generator.getNextGenerators().stream().filter(gen -> gen.getEffectiveBalance() >= MIN_FORKVOTING_AMOUNT_MTR).
+                        sorted(Comparator.comparingLong(Generator.ActiveGenerator::getEffectiveBalance)).
+                        map(Generator.ActiveGenerator::getMerkleNode).reduce(
+                        new byte[0],
+                        (acc, val) -> {
+                            MessageDigest mdg = HASH_FUNCTION.messageDigest();
+                            mdg.update(acc);
+                            return mdg.digest(val);
+                        }
+                );
+                return forgersMerkle;
+            }
+        } finally {
+            Metro.getBlockchain().readUnlock();
+        }
     }
 
     /**
      * Active generator
      */
     public static class ActiveGenerator implements Comparable<ActiveGenerator> {
+        // TODO #188
         private final long accountId;
         private long hitTime;
         private long effectiveBalanceMTR;
         private byte[] publicKey;
+        private int blockCounter;
 
-        public ActiveGenerator(long accountId) {
+        public ActiveGenerator(long accountId, int blockCounter) {
             this.accountId = accountId;
             this.hitTime = Long.MAX_VALUE;
+            this.blockCounter = blockCounter;
         }
 
         public long getAccountId() {
             return accountId;
+        }
+
+        public boolean rollBackOrForward(int blocks) {
+            this.blockCounter += blocks;
+            return this.blockCounter <= 0;
         }
 
         public long getEffectiveBalance() {
@@ -482,6 +546,14 @@ public final class Generator implements Comparable<Generator> {
         @Override
         public int compareTo(ActiveGenerator obj) {
             return (hitTime < obj.hitTime ? -1 : (hitTime > obj.hitTime ? 1 : 0));
+        }
+
+        public byte[] getMerkleNode() {
+            ByteBuffer node = ByteBuffer.allocate(32 + 4);
+            node.order(ByteOrder.LITTLE_ENDIAN);
+            node.put(publicKey);
+            node.putInt((int)effectiveBalanceMTR);
+            return node.array();
         }
     }
 }

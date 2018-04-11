@@ -132,4 +132,6 @@ public interface Transaction {
     int getECBlockHeight();
 
     long getECBlockId();
+
+    long[] getBackFees();
 }

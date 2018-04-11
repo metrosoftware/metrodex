@@ -26,7 +26,9 @@ import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public interface Attachment extends Appendix {
 
@@ -129,14 +131,64 @@ public interface Attachment extends Appendix {
 
     };
 
-    EmptyAttachment ORDINARY_COINBASE = new EmptyAttachment() {
+
+    final class CoinbaseRecipientsAttachment extends AbstractAttachment {
+
+        private final Map<Long, Long> recipients;
+
+        CoinbaseRecipientsAttachment(ByteBuffer buffer) throws MetroException.NotValidException {
+            recipients = new HashMap<>();
+            for (byte i = 0; i < buffer.get(); i++) {
+                long accountId = buffer.getLong();
+                long amount = buffer.getLong();
+                recipients.put(accountId, amount);
+            }
+        }
+
+        CoinbaseRecipientsAttachment(JSONObject attachmentData) {
+            super(attachmentData);
+            recipients = new HashMap<>();
+            attachmentData.forEach((accountId, amount) -> recipients.put((Long) accountId, (Long) amount));
+        }
+
+        public CoinbaseRecipientsAttachment(Map<Long, Long> recipients, boolean fakeParameter) {
+            if (recipients.size() < 256) {
+                this.recipients = recipients;
+            } else {
+                this.recipients = new HashMap<>();
+            }
+        }
+
+        @Override
+        int getMySize() {
+            return 1 + recipients.size() * 16;
+        }
+
+        @Override
+        void putMyBytes(ByteBuffer buffer) {
+            buffer.put((byte)recipients.size());
+            for (Long recipient: recipients.keySet()) {
+                buffer.putLong(recipient);
+                buffer.putLong(recipients.get(recipient));
+            }
+        }
+
+        @Override
+        void putMyJSON(JSONObject attachment) {
+            for (Long recipient: recipients.keySet()) {
+                attachment.put(Long.toString(recipient), recipients.get(recipient));
+            }
+        }
 
         @Override
         public TransactionType getTransactionType() {
             return TransactionType.Coinbase.ORDINARY;
         }
 
-    };
+        public Map<Long, Long> getRecipients() {
+            return recipients;
+        }
+    }
 
     // the message payload is in the Appendix
     EmptyAttachment ARBITRARY_MESSAGE = new EmptyAttachment() {

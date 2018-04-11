@@ -392,6 +392,11 @@ public abstract class TransactionType {
 
         @Override
         final void applyAttachment(Transaction transaction, Account senderAccount, Account recipientAccount) {
+            Attachment.CoinbaseRecipientsAttachment attachment = (Attachment.CoinbaseRecipientsAttachment) transaction.getAttachment();
+            for (Long recipientId: attachment.getRecipients().keySet()) {
+                Account recipient = Account.getAccount(recipientId);
+                recipient.addToBalanceAndUnconfirmedBalanceMQT(AccountLedger.LedgerEvent.BLOCK_GENERATED, transaction.getBlockId(), attachment.getRecipients().get(recipientId));
+            }
         }
 
         @Override
@@ -431,19 +436,19 @@ public abstract class TransactionType {
             }
 
             @Override
-            Attachment.EmptyAttachment parseAttachment(ByteBuffer buffer) throws MetroException.NotValidException {
-                return Attachment.ORDINARY_PAYMENT;
+            Attachment.CoinbaseRecipientsAttachment parseAttachment(ByteBuffer buffer) throws MetroException.NotValidException {
+                return new Attachment.CoinbaseRecipientsAttachment(buffer);
             }
 
             @Override
-            Attachment.EmptyAttachment parseAttachment(JSONObject attachmentData) throws MetroException.NotValidException {
-                return Attachment.ORDINARY_PAYMENT;
+            Attachment.CoinbaseRecipientsAttachment parseAttachment(JSONObject attachmentData) throws MetroException.NotValidException {
+                return new Attachment.CoinbaseRecipientsAttachment(attachmentData);
             }
 
             @Override
             void validateAttachment(Transaction transaction) throws MetroException.ValidationException {
-                if (transaction.getAmountMQT() < 0 || transaction.getAmountMQT() >= Constants.MAX_BALANCE_MQT) {
-                    throw new MetroException.NotValidException("Invalid ordinary coinbase");
+                if (transaction.getAmountMQT() != 0) {
+                    throw new MetroException.NotValidException("Invalid ordinary coinbase ammount");
                 }
             }
 

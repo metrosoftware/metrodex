@@ -364,7 +364,8 @@ public final class TransactionImpl implements Transaction {
         return feeMQT;
     }
 
-    long[] getBackFees() {
+    @Override
+    public long[] getBackFees() {
         return type.getBackFees(this);
     }
 

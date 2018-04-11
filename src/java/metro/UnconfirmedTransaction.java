@@ -296,6 +296,11 @@ class UnconfirmedTransaction implements Transaction {
     }
 
     @Override
+    public long[] getBackFees() {
+        return transaction.getBackFees();
+    }
+
+    @Override
     public short getIndex() {
         return transaction.getIndex();
     }

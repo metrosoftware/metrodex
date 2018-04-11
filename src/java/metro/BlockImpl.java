@@ -16,7 +16,6 @@
 
 package metro;
 
-import metro.AccountLedger.LedgerEvent;
 import metro.crypto.Crypto;
 import metro.util.BitcoinJUtils;
 import metro.util.Convert;
@@ -507,41 +506,9 @@ public final class BlockImpl implements Block {
         }
     }
 
-    void apply(boolean isKeyBlock) {
+    void apply() {
         Account generatorAccount = Account.addOrGetAccount(getGeneratorId());
         generatorAccount.apply(getGeneratorPublicKey());
-
-        long reward = rewardMQT;
-
-        if (!isKeyBlock) {
-            long totalBackFees = 0;
-            if (this.localHeight > 3) {
-                long[] backFees = new long[3];
-                for (TransactionImpl transaction : getTransactions()) {
-                    long[] fees = transaction.getBackFees();
-                    for (int i = 0; i < fees.length; i++) {
-                        backFees[i] += fees[i];
-                    }
-                }
-                for (int i = 0; i < backFees.length; i++) {
-                    if (backFees[i] == 0) {
-                        break;
-                    }
-                    totalBackFees += backFees[i];
-                    Account previousGeneratorAccount = Account.getAccount(BlockDb.findBlockAtLocalHeight(this.localHeight - i - 1, false).getGeneratorId());
-                    Logger.logDebugMessage("Back fees %f %s to forger at POS height %d", ((double) backFees[i]) / Constants.ONE_MTR, Constants.COIN_SYMBOL, this.localHeight - i - 1);
-                    previousGeneratorAccount.addToBalanceAndUnconfirmedBalanceMQT(LedgerEvent.BLOCK_GENERATED, getId(), backFees[i]);
-                    previousGeneratorAccount.addToForgedBalanceMQT(backFees[i]);
-                }
-            }
-            if (totalBackFees != 0) {
-                Logger.logDebugMessage("Fee reduced by %f %s at POS height %d", ((double) totalBackFees) / Constants.ONE_MTR, Constants.COIN_SYMBOL, this.localHeight);
-            }
-            reward = rewardMQT - totalBackFees;
-        }
-
-        generatorAccount.addToBalanceAndUnconfirmedBalanceMQT(LedgerEvent.BLOCK_GENERATED, getId(), reward);
-        generatorAccount.addToForgedBalanceMQT(reward);
     }
 
     void setPrevious(BlockImpl posBlock, BlockImpl keyBlock) {

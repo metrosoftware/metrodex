@@ -274,7 +274,7 @@ var MRS = (function(MRS, $) {
                 "<td><a href='#' data-block='" + MRS.escapeRespStr(block.height) + "' data-blockid='" + MRS.escapeRespStr(block.block) + "' class='block show_block_modal_action'" + (block.numberOfTransactions > 0 ? " style='font-weight:bold'" : "") + ">" + MRS.escapeRespStr(block.height) + "</a></td>" +
                 "<td>" + MRS.formatTimestamp(block.timestamp) + "</td>" +
                 "<td>" + MRS.formatAmount(block.totalAmountMQT) + "</td>" +
-				"<td>" + NRS.formatAmount(block.rewardNQT) + "</td>" +
+				"<td>" + MRS.formatAmount(block.rewardNQT) + "</td>" +
                 "<td>" + MRS.formatAmount(block.numberOfTransactions) + "</td>" +
                 "<td>" + MRS.getAccountLink(block, "generator") + "</td>" +
                 "<td>" + MRS.formatVolume(block.payloadLength) + "</td>" +

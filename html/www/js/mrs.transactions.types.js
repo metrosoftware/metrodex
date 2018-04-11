@@ -222,6 +222,19 @@ var MRS = (function(MRS, $, undefined) {
                     'receiverPage': "transactions"
                 }
             }
+        },
+        5: {
+            'title': "Coinbase",
+            'i18nKeyTitle': 'coinbase',
+            'iconHTML': "<i class='ion-hammer'></i>",
+            'subTypes': {
+                0: {
+                    'title': "Ordinary Payment",
+                    'i18nKeyTitle': 'ordinary_coinbase',
+                    'iconHTML': "<i class='fa fa-money'></i>",
+                    'receiverPage': 'transactions'
+                }
+            }
         }
     };
 

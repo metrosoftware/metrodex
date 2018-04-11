@@ -63,7 +63,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static metro.Consensus.HASH_FUNCTION;
-import static metro.Consensus.getBlockSubsidy;
 import static metro.Consensus.getKeyBlockVersion;
 import static metro.Consensus.getPosBlockVersion;
 import static metro.Consensus.getTransactionVersion;
@@ -1557,16 +1556,28 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     }
 
 
-    private void validateCoinbaseTx(TransactionImpl tx, Block block, long blockTotalFeeMQT) throws TransactionNotAcceptedException {
+    private void validateCoinbaseTx(TransactionImpl tx, Block block) throws TransactionNotAcceptedException {
         if (!tx.getType().isCoinbase()) {
             throw new TransactionNotAcceptedException("First tx should be coinbase", tx);
         }
         if (tx.getSenderId() != block.getGeneratorId() || tx.getSenderId() != tx.getRecipientId()) {
             throw new TransactionNotAcceptedException("Coinbase sender and recipient should be equal to block generator", tx);
         }
-        long reward = blockTotalFeeMQT + (block.isKeyBlock() ? getBlockSubsidy(block.getLocalHeight()) : 0);
-        if (tx.getAmountMQT() != reward) {
-            throw new TransactionNotAcceptedException("Coinbase amount is" + tx.getAmountMQT() + " instead of " + reward, tx);
+
+        Map<Long, Long> recipients = coinbaseRecipients(block.getGeneratorPublicKey(), block.getTransactions(), block.isKeyBlock(), block.getLocalHeight());
+        Attachment.CoinbaseRecipientsAttachment attachment = (Attachment.CoinbaseRecipientsAttachment)tx.getAttachment();
+        for (Long recipient: attachment.getRecipients().keySet()) {
+            if (!recipients.containsKey(recipient)) {
+                throw new TransactionNotAcceptedException("Coinbase recipient " + recipient + " is absent.", tx);
+            }
+            if (!recipients.get(recipient).equals(attachment.getRecipients().get(recipient))) {
+                throw new TransactionNotAcceptedException("Coinbase amount is" + attachment.getRecipients().get(recipient) +
+                        " instead of " + recipients.get(recipient) + " for recipient " + recipient, tx);
+            }
+            recipients.remove(recipient);
+        }
+        if (recipients.keySet().size() > 0) {
+            throw new TransactionNotAcceptedException("Coinbase extra recipient " + recipients.keySet().iterator().next(), tx);
         }
     }
 
@@ -1636,12 +1647,11 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                     digest.update(transaction.bytes());
                 }
             }
-            validateCoinbaseTx(block.getTransactions().get(0), block, calculatedTotalFee);
+            validateCoinbaseTx(block.getTransactions().get(0), block);
         }
         if (!isKeyBlock) {
-            // TODO #165 when Coinbase is introduced for POS blocks, totalFee shouldn't be in the block anymore
-            if (calculatedTotalAmount != block.getTotalAmountMQT() || calculatedTotalFee != block.getRewardMQT()) {
-                throw new BlockNotAcceptedException("Total amount or fee don't match transaction totals", block);
+            if (calculatedTotalAmount != block.getTotalAmountMQT()) {
+                throw new BlockNotAcceptedException("Total amount don't match transaction totals", block);
             }
             // TODO #164 validate txMerkleRoot for key block, payloadHash is not populated
             if (!Arrays.equals(digest.digest(), block.getPayloadHash())) {
@@ -1664,7 +1674,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 }
             }
             blockListeners.notify(block, Event.BEFORE_BLOCK_APPLY);
-            block.apply(block.isKeyBlock());
+            block.apply();
             validPhasedTransactions.forEach(transaction -> transaction.getPhasing().countVotes(transaction));
             invalidPhasedTransactions.forEach(transaction -> transaction.getPhasing().reject(transaction));
             long fromTimestamp = Metro.getEpochTime() - Constants.MAX_PRUNABLE_LIFETIME;
@@ -1896,13 +1906,63 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     }
 
 
-    private TransactionImpl buildCoinbase(byte[] publicKey, long rewardMQT, long timestamp, String secretPhrase) {
+    private Map<Long, Long> coinbaseRecipients(byte[] publicKey, List<? extends Transaction> blockTransactions,
+                                               boolean isKeyBlock, int localHeight) {
+        Map<Long, Long> recipients = new HashMap<>();
+        long totalReward = isKeyBlock ? Consensus.getBlockSubsidy(localHeight) : 0;
+        long totalBackFees = 0;
+        long[] backFees = new long[3];
+        boolean oneRecipient = true;
+        for (Transaction transaction : blockTransactions) {
+            if (transaction == null) {
+                continue;
+            }
+            totalReward += transaction.getFeeMQT();
+            if (!isKeyBlock) {
+                if (localHeight > 3) {
+                    long[] fees = transaction.getBackFees();
+                    oneRecipient &= (fees.length == 0);
+                    for (int i = 0; i < fees.length; i++) {
+                        backFees[i] += fees[i];
+                    }
+                }
+            }
+            if (totalBackFees != 0) {
+                Logger.logDebugMessage("Fee reduced by %f %s at POS height %d", ((double) totalBackFees) / Constants.ONE_MTR, Constants.COIN_SYMBOL, localHeight);
+            }
+        }
+        if (!oneRecipient) {
+            for (int i = 0; i < backFees.length; i++) {
+                if (backFees[i] == 0) {
+                    break;
+                }
+                totalBackFees += backFees[i];
+                Long previousGenerator = BlockDb.findBlockAtLocalHeight(localHeight - i - 1, false).getGeneratorId();
+                Logger.logDebugMessage("Back fees %f %s to forger at POS height %d", ((double) backFees[i]) / Constants.ONE_MTR, Constants.COIN_SYMBOL, localHeight - i - 1);
+                long reward = backFees[i];
+                if (recipients.containsKey(previousGenerator)) {
+                    reward += recipients.get(previousGenerator);
+                }
+                recipients.put(previousGenerator, reward);
+                //previousGeneratorAccount.addToForgedBalanceMQT(backFees[i]);
+            }
+        }
+        Long generator = Account.getId(publicKey);
+        recipients.put(generator, totalReward - totalBackFees);
+        return recipients;
+    }
+
+
+
+    private TransactionImpl buildCoinbase(long timestamp, String secretPhrase, List<TransactionImpl> blockTransactions,
+                                          boolean isKeyBlock, int localHeight) {
+        byte[] publicKey = Crypto.getPublicKey(secretPhrase);
         byte[] publicKeyHash = Crypto.sha256().digest(publicKey);
         long generatorId = Convert.fullHashToId(publicKeyHash);
-        //FIXME what is deadline is 1 will be enough?
-        short COINBASE_DEADLINE = 10000;
-
-        Transaction.Builder builder = Metro.newTransactionBuilder(publicKey, rewardMQT, 0L, COINBASE_DEADLINE, Attachment.ORDINARY_COINBASE);
+        //FIXME is 1 will be enough?
+        short COINBASE_DEADLINE = 1;
+        Map<Long, Long> recipients = coinbaseRecipients(publicKey, blockTransactions, isKeyBlock, localHeight);
+        Transaction.Builder builder = Metro.newTransactionBuilder(publicKey, 0, 0L, COINBASE_DEADLINE, new Attachment.CoinbaseRecipientsAttachment(recipients, true));
         builder.timestamp(timestamp);
         builder.recipientId(generatorId);
         try {
@@ -1932,6 +1992,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         }
 
         BlockImpl previousBlock = blockchain.getLastBlock();
+        BlockImpl prevPosBlock = blockchain.getLastPosBlock();
         TransactionProcessorImpl.getInstance().processWaitingTransactions();
         SortedSet<UnconfirmedTransaction> sortedTransactions = selectUnconfirmedTransactions(duplicates, previousBlock, blockTimestamp);
         List<TransactionImpl> blockTransactions = new ArrayList<>();
@@ -1950,7 +2011,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 rewardMQT += transaction.getFeeMQT();
                 payloadLength += transaction.getFullSize();
             }
-            TransactionImpl coinbase = buildCoinbase(publicKey, rewardMQT, blockTimestamp, secretPhrase);
+            TransactionImpl coinbase = buildCoinbase(blockTimestamp, secretPhrase, blockTransactions, false, prevPosBlock.getLocalHeight() + 1);
             blockTransactions.set(0, coinbase);
             totalAmountMQT += rewardMQT;
             payloadLength += coinbase.getFullSize();
@@ -2196,7 +2257,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         //TODO ticket # get generatorPublicKey from properties
         byte[] generatorPublicKey = Crypto.getPublicKey(secretPhrase);
         MessageDigest digest = Crypto.sha256();
-                digest.update(blockchain.getLastPosBlock().getGenerationSequence());
+        digest.update(blockchain.getLastPosBlock().getGenerationSequence());
         //TODO ticket #  fill stakeMerkleRoot, posBlockSummary, blockSignature
         byte[] blockSignature = null;
         long previousKeyBlockId = previousKeyBlock == null ? 0 : previousKeyBlock.getId();
@@ -2204,21 +2265,16 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         long blockTimestamp = Metro.getEpochTime();
         List<TransactionImpl> blockTransactions = new ArrayList<>();
 
-        long rewardMQT = Consensus.getBlockSubsidy(previousKeyBlock != null ? previousKeyBlock.getLocalHeight() + 1 : 1);
+        int keyHight = previousKeyBlock != null ? previousKeyBlock.getLocalHeight() + 1 : 1;
         SortedSet<UnconfirmedTransaction> transactions = getTransactionsForKeyBlockGeneration();
-        for (Transaction transaction : transactions) {
-            rewardMQT += transaction.getFeeMQT();
-        }
-
         blockTransactions.add(null);
         if (transactions.size() > 0) {
             for (UnconfirmedTransaction unconfirmedTransaction : transactions) {
                 TransactionImpl transaction = unconfirmedTransaction.getTransaction();
                 blockTransactions.add(transaction);
-                rewardMQT += transaction.getFeeMQT();
             }
         }
-        TransactionImpl coinbase = buildCoinbase(generatorPublicKey, rewardMQT, blockTimestamp, secretPhrase);
+        TransactionImpl coinbase = buildCoinbase(blockTimestamp, secretPhrase, blockTransactions, true, keyHight);
         blockTransactions.set(0, coinbase);
 
         return new BlockImpl(getKeyBlockVersion(previousBlock.getHeight()), blockTimestamp, baseTarget, previousBlock.getId(), previousKeyBlockId, 0, 0, 0, 0,

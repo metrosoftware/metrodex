@@ -468,13 +468,15 @@ public final class Generator implements Comparable<Generator> {
                             return mdg.digest(val);
                         }
                 );
+                if (forgersMerkle.length == 0) {
+                    forgersMerkle = new byte[Convert.HASH_SIZE];
+                }
                 return forgersMerkle;
             }
         } finally {
             Metro.getBlockchain().readUnlock();
         }
     }
-
     /**
      * Active generator
      */

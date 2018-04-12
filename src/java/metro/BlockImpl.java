@@ -284,7 +284,6 @@ public final class BlockImpl implements Block {
     @Override
     public long getId() {
         if (id == 0) {
-            // TODO #144
             if (!isKeyBlock() && blockSignature == null) {
                 throw new IllegalStateException("Block is not signed yet");
             }
@@ -385,8 +384,7 @@ public final class BlockImpl implements Block {
             }
             BlockImpl block = new BlockImpl(version, timestamp, baseTarget, previousBlock, previousKeyBlock, nonce, totalAmountMQT, rewardMQT, payloadLength, txMerkleRoot, generatorPublicKey,
                     generationSequence, blockSignature, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, blockTransactions);
-            // TODO #144
-            if (!keyBlock && !block.checkSignature()) {
+            if (!block.checkSignature()) {
                 throw new MetroException.NotValidException("Invalid block signature");
             }
             return block;
@@ -463,7 +461,7 @@ public final class BlockImpl implements Block {
 
     private boolean checkSignature() {
         if (! hasValidSignature) {
-            byte[] data = Arrays.copyOf(bytes(), bytes.length - 64);
+            byte[] data = Arrays.copyOf(bytes(), bytes.length - (isKeyBlock() ? 0 : 64));
             hasValidSignature = blockSignature != null && Crypto.verify(blockSignature, data, getGeneratorPublicKey());
         }
         return hasValidSignature;

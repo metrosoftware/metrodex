@@ -359,7 +359,6 @@ final class BlockDb {
                 pstmt.setInt(++i, block.getHeight());
                 pstmt.setInt(++i, block.getLocalHeight());
                 pstmt.setBytes(++i, block.getGenerationSequence());
-                // TODO #144 block signature NOT NULL, made nullable temporarily for testing
                 pstmt.setBytes(++i, block.getBlockSignature());
                 pstmt.setBytes(++i, block.getTxMerkleRoot());
 

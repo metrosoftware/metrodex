@@ -23,7 +23,6 @@ class MetroDbVersion extends DbVersion {
     protected void update(int nextUpdate) {
         switch (nextUpdate) {
             case 1:
-                // TODO #144 block_signature BINARY(64) NOT NULL
                 // alter table block alter column block_signature drop not null (if you have old DB) - in order to test key blocks
                 apply("CREATE TABLE IF NOT EXISTS block (db_id IDENTITY, id BIGINT NOT NULL, version SMALLINT NOT NULL, "
                         + "timestamp BIGINT NOT NULL, previous_block_id BIGINT, previous_key_block_id BIGINT, "

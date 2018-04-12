@@ -1473,9 +1473,6 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             long generatorBalance = generatorAccount == null ? 0 : generatorAccount.getEffectiveBalanceMTR();
             throw new BlockNotAcceptedException("Generation signature verification failed, effective balance " + generatorBalance, block);
         }
-        // FIXME #144 the following check skipped for testing submitBlockSolution
-        if (block.isKeyBlock())
-            return;
         if (!block.verifyBlockSignature()) {
             throw new BlockNotAcceptedException("Block signature verification failed", block);
         }
@@ -1485,11 +1482,6 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         if (keyBlock.getVersion() != Consensus.getKeyBlockVersion(keyBlock.getHeight())) {
             return Block.ValidationResult.INCORRECT_VERSION;
         }
-        // TODO #164
-        // this is likely just the txid of the Coinbase in the absence of any other txs in stage 1 in key block
-//        if (Convert.byteArrayComparator.compare(keyblock.getTxMerkleRoot(), Convert.EMPTY_HASH) != 0) {
-//            return Block.ValidationResult.TX_MERKLE_ROOT_DISCREPANCY;
-//        }
         // TODO #188
         if (Convert.byteArrayComparator.compare(keyBlock.getForgersMerkleRoot(), Generator.getCurrentForgersMerkle()) != 0) {
             return Block.ValidationResult.FORGERS_MERKLE_ROOT_DISCREPANCY;
@@ -2216,8 +2208,6 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         byte[] generatorPublicKey = Crypto.getPublicKey(secretPhrase);
         MessageDigest digest = Crypto.sha256();
                 digest.update(blockchain.getLastPosBlock().getGenerationSequence());
-        //TODO ticket #144 (blockSignature)
-        byte[] blockSignature = null;
         long previousKeyBlockId = previousKeyBlock == null ? 0 : previousKeyBlock.getId();
         long baseTarget = BitcoinJUtils.encodeCompactBits(Metro.getBlockchain().getNextTarget());
         long blockTimestamp = Metro.getEpochTime();
@@ -2244,7 +2234,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         byte[] txMerkleRoot = tree.get(tree.size() - 1);
 
         return new BlockImpl(getKeyBlockVersion(previousBlock.getHeight()), blockTimestamp, baseTarget, previousBlock.getId(), previousKeyBlockId, 0, 0, 0, 0,
-                txMerkleRoot, generatorPublicKey, null, blockSignature, previousBlockHash, previousKeyBlockHash, forgersMerkle, blockTransactions);
+                txMerkleRoot, generatorPublicKey, null, null, previousBlockHash, previousKeyBlockHash, forgersMerkle, blockTransactions);
     }
 
     private SortedSet<UnconfirmedTransaction> getTransactionsForKeyBlockGeneration(Block previousBlock) {

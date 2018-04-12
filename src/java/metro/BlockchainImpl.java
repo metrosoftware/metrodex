@@ -405,7 +405,6 @@ final class BlockchainImpl implements Blockchain {
             throw new IllegalArgumentException("Wrong block version: 0x" + Integer.toUnsignedString(Short.toUnsignedInt(version), 16));
         }
         long timestamp = header.getLong();
-        long rewardMQT = header.getLong();
         final int hashSize = Convert.HASH_SIZE;
         byte[] txMerkleRoot = new byte[hashSize];
         header.get(txMerkleRoot);
@@ -432,7 +431,10 @@ final class BlockchainImpl implements Blockchain {
 
         long baseTarget = header.getInt();
         long nonce = header.getLong();
-
+        long rewardMQT = 0L;
+        for (Transaction tx: transactions) {
+            rewardMQT += tx.getFeeMQT();
+        }
         return new BlockImpl(version, timestamp, baseTarget, previousBlockId, Convert.fullHashToId(previousKeyBlockHash), nonce,
                 0, rewardMQT, 0, txMerkleRoot, generatorPublicKey,
                 generationSignature, null, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, transactions);

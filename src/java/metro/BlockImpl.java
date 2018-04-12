@@ -402,7 +402,7 @@ public final class BlockImpl implements Block {
     }
 
     public static int getHeaderSize(boolean keyBlock, boolean signed) {
-        return 2 + 8 + 8 + 32*2 + (keyBlock ? (32*2 + 4 + 8) : 56) + (signed ? 64 : 0);
+        return 2 + 8 + 32*2 + (keyBlock ? (32*2 + 4 + 8) : 8 + 56) + (signed ? 64 : 0);
     }
 
     /**
@@ -425,7 +425,6 @@ public final class BlockImpl implements Block {
             buffer.putShort(version);
             // Block.timestamp: 8 bytes, milliseconds since MetroEpoch
             buffer.putLong(timestamp);
-            buffer.putLong(rewardMQT);
             buffer.put(txMerkleRoot);
             buffer.put(previousBlockHash);
 
@@ -438,6 +437,7 @@ public final class BlockImpl implements Block {
                 // 8 rather than 4 bytes, so no "extranonce" needed
                 buffer.putLong(nonce);
             } else {
+                buffer.putLong(rewardMQT);
                 // keep previousBlockId here to preserve compatibility with MTR original POS -
                 // previousBlockId is just 8 contiguous bytes from previousBlockHash
                 buffer.putLong(previousBlockId);

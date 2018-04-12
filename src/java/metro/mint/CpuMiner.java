@@ -97,7 +97,7 @@ public class CpuMiner {
             counter++;
             try {
                 JSONObject response = mineImpl(counter, data, target, initialNonce, threadPoolSize, executorService, isSubmitted);
-                Logger.logInfoMessage("currency mine response:" + response.toJSONString());
+                Logger.logInfoMessage("mine response:" + response.toJSONString());
             } catch (Exception e) {
                 Logger.logInfoMessage("mine error", e);
                 if (isStopOnError) {

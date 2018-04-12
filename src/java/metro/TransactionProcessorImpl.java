@@ -333,6 +333,18 @@ final class TransactionProcessorImpl implements TransactionProcessor {
     }
 
     @Override
+    public DbIterator<UnconfirmedTransaction> getAllKeyBlockUnconfirmedTransactions() {
+        DbClause dbClause = new DbClause.BooleanClause("is_key_tx", true);
+        return unconfirmedTransactionTable.getManyBy(dbClause, 0, -1);
+    }
+
+    @Override
+    public DbIterator<UnconfirmedTransaction> getAllPoSUnconfirmedTransactions() {
+        DbClause dbClause = new DbClause.BooleanClause("is_key_tx", false);
+        return unconfirmedTransactionTable.getManyBy(dbClause, 0, -1);
+    }
+
+    @Override
     public Transaction getUnconfirmedTransaction(long transactionId) {
         DbKey dbKey = unconfirmedTransactionDbKeyFactory.newKey(transactionId);
         return getUnconfirmedTransaction(dbKey);

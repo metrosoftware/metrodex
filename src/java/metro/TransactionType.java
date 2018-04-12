@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 
 public abstract class TransactionType {
@@ -39,6 +40,10 @@ public abstract class TransactionType {
     static final byte TYPE_SHUFFLING = 3;
     private static final byte TYPE_ACCOUNT_CONTROL = 4;
     private static final byte TYPE_COINBASE = 5;
+
+    private static final int[] KEYBLOCK_TRANSACTION_TYPES = {TYPE_PAYMENT, TYPE_MESSAGING, TYPE_COLORED_COINS, TYPE_SHUFFLING,
+            TYPE_ACCOUNT_CONTROL, TYPE_COINBASE};
+    private static final int[] POSBLOCK_TRANSACTION_TYPES = {};
 
     private static final byte SUBTYPE_PAYMENT_ORDINARY_PAYMENT = 0;
 
@@ -163,6 +168,9 @@ public abstract class TransactionType {
     public boolean isCoinbase() {
         return getType() == TYPE_COINBASE;
     }
+
+    public boolean isKeyBlockTransaction() { return IntStream.of(KEYBLOCK_TRANSACTION_TYPES).anyMatch(value -> value == getType()); }
+    public boolean isPoSBlockTransaction() { return IntStream.of(POSBLOCK_TRANSACTION_TYPES).anyMatch(value -> value == getType()); }
 
     abstract Attachment.AbstractAttachment parseAttachment(ByteBuffer buffer) throws MetroException.NotValidException;
 

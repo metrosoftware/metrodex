@@ -146,7 +146,7 @@ class MetroDbVersion extends DbVersion {
             case 37:
                 apply("CREATE TABLE IF NOT EXISTS unconfirmed_transaction (db_id IDENTITY, id BIGINT NOT NULL, expiration BIGINT NOT NULL, "
                         + "transaction_height INT NOT NULL, fee_per_byte BIGINT NOT NULL, arrival_timestamp BIGINT NOT NULL, "
-                        + "transaction_bytes VARBINARY NOT NULL, prunable_json VARCHAR, height INT NOT NULL)");
+                        + "transaction_bytes VARBINARY NOT NULL, prunable_json VARCHAR, height INT NOT NULL, is_key_tx  BOOLEAN NOT NULL)");
             case 38:
                 apply("CREATE UNIQUE INDEX IF NOT EXISTS unconfirmed_transaction_id_idx ON unconfirmed_transaction (id)");
             case 39:
@@ -428,6 +428,8 @@ class MetroDbVersion extends DbVersion {
             case 149:
                 apply("CREATE INDEX IF NOT EXISTS block_local_height_idx ON block (local_height)");
             case 150:
+                apply("CREATE INDEX IF NOT EXISTS unconfirmed_transaction_is_key_tx_idx ON unconfirmed_transaction (is_key_tx)");
+            case 151:
                 return;
             default:
                 throw new RuntimeException("Blockchain database inconsistent with code, at update " + nextUpdate

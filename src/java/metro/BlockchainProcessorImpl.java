@@ -1823,7 +1823,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     SortedSet<UnconfirmedTransaction> selectUnconfirmedTransactions(Map<TransactionType, Map<String, Integer>> duplicates, Block previousBlock, long blockTimestamp) {
         List<UnconfirmedTransaction> orderedUnconfirmedTransactions = new ArrayList<>();
         try (FilteringIterator<UnconfirmedTransaction> unconfirmedTransactions = new FilteringIterator<>(
-                TransactionProcessorImpl.getInstance().getAllUnconfirmedTransactions(),
+                TransactionProcessorImpl.getInstance().getAllPoSUnconfirmedTransactions(),
                 transaction -> hasAllReferencedTransactions(transaction.getTransaction(), transaction.getTimestamp(), 0))) {
             for (UnconfirmedTransaction unconfirmedTransaction : unconfirmedTransactions) {
                 orderedUnconfirmedTransactions.add(unconfirmedTransaction);
@@ -2225,7 +2225,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         List<TransactionImpl> blockTransactions = new ArrayList<>();
 
         int keyHight = previousKeyBlock != null ? previousKeyBlock.getLocalHeight() + 1 : 0;
-        SortedSet<UnconfirmedTransaction> transactions = getTransactionsForKeyBlockGeneration();
+        SortedSet<UnconfirmedTransaction> transactions = getTransactionsForKeyBlockGeneration(previousBlock);
         blockTransactions.add(null);
         if (transactions.size() > 0) {
             for (UnconfirmedTransaction unconfirmedTransaction : transactions) {
@@ -2240,8 +2240,44 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 Convert.EMPTY_PAYLOAD_HASH, generatorPublicKey, null, blockSignature, previousBlockHash, previousKeyBlockHash, forgersMerkle, blockTransactions);
     }
 
-    private SortedSet<UnconfirmedTransaction> getTransactionsForKeyBlockGeneration() {
-        //TODO ticket #183
-        return new TreeSet<>();
+    private SortedSet<UnconfirmedTransaction> getTransactionsForKeyBlockGeneration(Block previousBlock) {
+        List<UnconfirmedTransaction> orderedUnconfirmedTransactions = new ArrayList<>();
+        try (FilteringIterator<UnconfirmedTransaction> unconfirmedTransactions = new FilteringIterator<>(
+                TransactionProcessorImpl.getInstance().getAllKeyBlockUnconfirmedTransactions(),
+                transaction -> hasAllReferencedTransactions(transaction.getTransaction(), transaction.getTimestamp(), 0))) {
+            for (UnconfirmedTransaction unconfirmedTransaction : unconfirmedTransactions) {
+                orderedUnconfirmedTransactions.add(unconfirmedTransaction);
+            }
+        }
+        SortedSet<UnconfirmedTransaction> sortedTransactions = new TreeSet<>(transactionArrivalComparator);
+        int payloadLength = 0;
+        while (payloadLength <= Constants.KEYBLOCK_MAX_PAYLOAD_LENGTH && sortedTransactions.size() <= Constants.KEYBLOCK_MAX_NUMBER_OF_TRANSACTIONS) {
+            int prevNumberOfNewTransactions = sortedTransactions.size();
+            for (UnconfirmedTransaction unconfirmedTransaction : orderedUnconfirmedTransactions) {
+                int transactionLength = unconfirmedTransaction.getTransaction().getFullSize();
+                if (sortedTransactions.contains(unconfirmedTransaction) || payloadLength + transactionLength > Constants.KEYBLOCK_MAX_PAYLOAD_LENGTH) {
+                    continue;
+                }
+                if (unconfirmedTransaction.getVersion() != getTransactionVersion(previousBlock.getHeight())) {
+                    continue;
+                }
+                //TODO investigate same logic with timestamp in generateBlock and implement if needed here
+//                if (blockTimestamp > 0 && (unconfirmedTransaction.getTimestamp() > blockTimestamp + Constants.MAX_TIMEDRIFT
+//                        || unconfirmedTransaction.getExpiration() < blockTimestamp)) {
+//                    continue;
+//                }
+                try {
+                    unconfirmedTransaction.getTransaction().validate();
+                } catch (MetroException.ValidationException e) {
+                    continue;
+                }
+                sortedTransactions.add(unconfirmedTransaction);
+                payloadLength += transactionLength;
+            }
+            if (sortedTransactions.size() == prevNumberOfNewTransactions) {
+                break;
+            }
+        }
+        return sortedTransactions;
     }
 }

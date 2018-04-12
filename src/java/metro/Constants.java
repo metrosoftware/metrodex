@@ -31,6 +31,10 @@ public final class Constants {
     public static final int MAX_NUMBER_OF_TRANSACTIONS = Metro.getIntProperty("metro.maxNumberOfTransactions", 255);
     public static final int MIN_TRANSACTION_SIZE = 176;
     public static final int MAX_PAYLOAD_LENGTH = MAX_NUMBER_OF_TRANSACTIONS * MIN_TRANSACTION_SIZE;
+    public static final int KEYBLOCK_MAX_NUMBER_OF_TRANSACTIONS = Metro.getIntProperty("metro.keyblockMaxNumberOfTransactions", 255);
+    public static final int KEYBLOCK_MIN_TRANSACTION_SIZE = 176;
+    public static final int KEYBLOCK_MAX_PAYLOAD_LENGTH = MAX_NUMBER_OF_TRANSACTIONS * KEYBLOCK_MIN_TRANSACTION_SIZE;
+
     public static final long MAX_BALANCE_MTR = 1000000000;
     public static final long ONE_MTR = 100000000;
     public static final long MAX_BALANCE_MQT = MAX_BALANCE_MTR * ONE_MTR;

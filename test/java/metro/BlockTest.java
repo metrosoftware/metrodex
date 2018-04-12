@@ -4,6 +4,8 @@ import metro.util.Convert;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 
 import static metro.Consensus.HASH_FUNCTION;
@@ -28,44 +30,75 @@ public class BlockTest extends BlockchainTest {
                 0, 0, 0, Convert.EMPTY_HASH, generatorPublicKey,
                 generationSignature, null, prevBlockHash, prevKeyBlockHash, zero32bytes, null);
         byte[] header = block0.bytes();
-//        System.out.println(Convert.toHexString(header));
-//        System.out.println(header.length);
         Block block1 = Metro.getBlockchain().composeKeyBlock(header, generatorPublicKey, new ArrayList<>());
         Assert.assertArrayEquals(header, block1.getBytes());
         Assert.assertEquals(block0, block1);
     }
 
-//    @Test
-//    public void testProcessHeaderWrongVersion() {
-//        String keyBlockHeader = SubmitBlockSolution.generateHeaderFromTemplate(BlockImpl.getHeaderSize(true, false));
-//        try {
-//            Metro.getBlockchain().composeKeyBlock(Convert.parseHexString("0170" + keyBlockHeader.substring(4, keyBlockHeader.length())), generatorPublicKey);
-//        } catch (IllegalArgumentException e) {
-//            Assert.assertEquals("Wrong block version: 0x7001", e.getMessage());
-//        }
-//    }
-//
-//    @Test
-//    public void testComposeKeyBlockNonExistentPrevBlock() {
-//        String keyBlockHeader = SubmitBlockSolution.generateHeaderFromTemplate(BlockImpl.getHeaderSize(true, false));
-//        try {
-//            Metro.getBlockchain().composeKeyBlock(Convert.parseHexString("0180" + keyBlockHeader), generatorPublicKey);
-//        } catch (IllegalArgumentException e) {
-//            Assert.assertEquals("Wrong prev block hash: b855d2b2f262b742308ad54465acf12b9fee64f4e574443fdf531cfd2c827572", e.getMessage());
-//        }
-//    }
-//
-//    @Test
-//    public void testPseudoMining() throws Exception {
-//        generateBlock();
-//        generateBlock();
-//        generateBlock();
-//        Block posBlock = Metro.getBlockchain().getLastBlock();
-//        String keyBlockHeader = SubmitBlockSolution.generateHeaderFromTemplate(BlockImpl.getHeaderSize(true, false));
-//        Block block1 = Metro.getBlockchain().composeKeyBlock(Convert.parseHexString(keyBlockHeader), generatorPublicKey);
-//        Assert.assertEquals("previousBlockId should match posBlock.getId()", posBlock.getId(), block1.getPreviousBlockId());
-//        boolean blockAccepted = Metro.getBlockchainProcessor().processMinerBlock(block1);
-//        // TODO #126 add validateKeyBlock() call to BlockchainProcessor.validate()
-//        Assert.assertTrue(blockAccepted);
-//    }
+    @Test
+    public void testPrepareAndValidateKeyBlockWithoutSolving() throws MetroException {
+        BlockImpl preparedBlock = Metro.getBlockchainProcessor().prepareKeyBlock();
+        Assert.assertEquals(0x8000, Short.toUnsignedInt(preparedBlock.getVersion()) & 0x8000);
+
+        // prev block hash must point to Genesis
+        BlockImpl genesis = BlockDb.findBlockAtHeight(0);
+        Assert.assertEquals(genesis.getId(), preparedBlock.getPreviousBlockId());
+        Assert.assertArrayEquals(Consensus.HASH_FUNCTION.hash(genesis.bytes()), preparedBlock.getPreviousBlockHash());
+        Assert.assertArrayEquals(Convert.EMPTY_HASH, preparedBlock.getPreviousKeyBlockHash());
+        Assert.assertNotEquals("non-zero txMerkleRoot expected", Convert.toHexString(Convert.EMPTY_HASH), Convert.toHexString(preparedBlock.getTxMerkleRoot()));
+        Assert.assertEquals(1, preparedBlock.getTransactions().size());
+        Assert.assertTrue(preparedBlock.getTransactions().get(0).getType().isCoinbase());
+        // TODO #188 check forgersMerkle
+        try {
+            Metro.getBlockchainProcessor().processMinerBlock(preparedBlock);
+        } catch (BlockchainProcessor.BlockNotAcceptedException e) {
+            Assert.assertTrue(e.getMessage().startsWith("Special keyBlock validation failed: INSUFFICIENT_WORK"));
+        }
+    }
+
+    @Test
+    public void testPrepareAndValidateSolvedKeyBlock() throws MetroException {
+        Block minedBlock = mineBlock();
+        Assert.assertEquals(1, minedBlock.getTransactions().size());
+        Assert.assertTrue(minedBlock.getTransactions().get(0).getType().isCoinbase());
+        // TODO #188 check forgersMerkle
+
+    }
+
+    @Test
+    public void testProcessHeaderWrongVersion() {
+        BlockImpl preparedBlock = Metro.getBlockchainProcessor().prepareKeyBlock();
+        ByteBuffer buffer = ByteBuffer.wrap(preparedBlock.bytes());
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+        buffer.putShort(0, (short)0x7001);
+
+        try {
+            Metro.getBlockchain().composeKeyBlock(buffer.array(), preparedBlock.getGeneratorPublicKey(), preparedBlock.getTransactions());
+        } catch (IllegalArgumentException e) {
+            Assert.assertEquals("Wrong block version: 0x7001", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testComposeKeyBlockNonExistentPrevBlock() {
+        BlockImpl preparedBlock = Metro.getBlockchainProcessor().prepareKeyBlock();
+        ByteBuffer buffer = ByteBuffer.wrap(preparedBlock.bytes());
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(53, 0);
+
+        try {
+            Metro.getBlockchain().composeKeyBlock(buffer.array(), preparedBlock.getGeneratorPublicKey(), preparedBlock.getTransactions());
+        } catch (IllegalArgumentException e) {
+            Assert.assertEquals("Wrong prev block hash: d2b2f2000000008ad54465acf12b9fee64f4e574443fdf531cfd2c8275721f2c", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testKeyblockGenerationSequence() {
+        generateBlocks(2);
+        Block posBlock = Metro.getBlockchain().getLastBlock();
+        BlockImpl preparedBlock = Metro.getBlockchainProcessor().prepareKeyBlock();
+        Block blockTemplate = Metro.getBlockchain().composeKeyBlock(preparedBlock.bytes(), preparedBlock.getGeneratorPublicKey(), preparedBlock.getTransactions());
+        Assert.assertArrayEquals("generation sequence does not match", Convert.generationSequence(posBlock.getGenerationSequence(), blockTemplate.getGeneratorPublicKey()), blockTemplate.getGenerationSequence());
+    }
 }

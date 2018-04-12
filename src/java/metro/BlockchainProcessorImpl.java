@@ -2206,8 +2206,6 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         byte[] previousKeyBlockHash = previousKeyBlock == null ? Convert.EMPTY_HASH : Consensus.HASH_FUNCTION.hash(previousKeyBlock.bytes());
         //TODO ticket # get generatorPublicKey from properties
         byte[] generatorPublicKey = Crypto.getPublicKey(secretPhrase);
-        MessageDigest digest = Crypto.sha256();
-                digest.update(blockchain.getLastPosBlock().getGenerationSequence());
         long previousKeyBlockId = previousKeyBlock == null ? 0 : previousKeyBlock.getId();
         long baseTarget = BitcoinJUtils.encodeCompactBits(Metro.getBlockchain().getNextTarget());
         long blockTimestamp = Metro.getEpochTime();

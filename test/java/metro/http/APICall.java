@@ -56,7 +56,9 @@ public class APICall {
     private APICall(Builder builder) {
         this.params = builder.params;
         this.parts = builder.parts;
-        body(builder.body);
+        if (builder.body != null) {
+            body(builder.body);
+        }
     }
 
     public void body(String body) {

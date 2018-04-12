@@ -297,6 +297,7 @@ public class CpuMiner {
 
             while (!Thread.currentThread().isInterrupted()) {
                 ByteBuffer buffer = ByteBuffer.allocate(data.length + NONCE_BYTE_SIZE);
+                buffer.order(ByteOrder.LITTLE_ENDIAN);
                 buffer.put(data);
                 buffer.putLong(n);
 

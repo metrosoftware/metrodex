@@ -10,7 +10,7 @@ import static metro.Consensus.GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS;
 
 public class AccountTest extends BlockchainTest {
     @Test
-    public void testGuaranteedBalanceBeforeFirstKeyBlock() {
+    public void testEffectiveBalanceBeforeFirstKeyBlock() {
         generateBlocks(2);
         JSONObject response = new APICall.Builder("sendMoney").
                 param("secretPhrase", ALICE.getSecretPhrase()).
@@ -26,7 +26,7 @@ public class AccountTest extends BlockchainTest {
     }
 
     @Test
-    public void testGuaranteedBalanceInThe2ndCluster() throws MetroException {
+    public void testEffectiveBalanceInThe2ndCluster() throws MetroException {
         generateBlocks(3);
         JSONObject response = new APICall.Builder("sendMoney").
                 param("secretPhrase", ALICE.getSecretPhrase()).
@@ -36,17 +36,14 @@ public class AccountTest extends BlockchainTest {
                 build().invoke();
         Logger.logDebugMessage("sendMoney: " + response);
         generateBlocks(2);
-        //String keyBlockHeader = SubmitBlockSolution.generateHeaderFromTemplate(BlockImpl.getHeaderSize(true, false));
-        //Block block1 = Metro.getBlockchain().composeKeyBlock(Convert.parseHexString(keyBlockHeader), ALICE.getPublicKey());
-        //Metro.getBlockchainProcessor().processMinerBlock(block1, null);
+        Assert.assertNotNull(mineBlock());
         generateBlocks(4);
         Account bob = Account.getAccount(BOB.getId());
         Assert.assertEquals(1000000, bob.getEffectiveBalanceMTR());
     }
 
     @Test
-    public void testGuaranteedBalanceInThe30thCluster() throws MetroException {
-        generateBlocks(1);
+    public void testEffectiveBalanceInThe31stCluster() throws MetroException {
         JSONObject response = new APICall.Builder("sendMoney").
                 param("secretPhrase", ALICE.getSecretPhrase()).
                 param("recipient", BOB.getStrId()).
@@ -55,12 +52,10 @@ public class AccountTest extends BlockchainTest {
                 build().invoke();
         Logger.logDebugMessage("sendMoney: " + response);
         for (int i = 0; i < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS; i++) {
-            generateBlocks(1);
-            //String keyBlockHeader = SubmitBlockSolution.generateHeaderFromTemplate(BlockImpl.getHeaderSize(true, false));
-            //Block block1 = Metro.getBlockchain().composeKeyBlock(Convert.parseHexString(keyBlockHeader), ALICE.getPublicKey());
-            //Metro.getBlockchainProcessor().processMinerBlock(block1, null);
+            generateBlocks(3);
+            Assert.assertNotNull(mineBlock());
         }
-        generateBlocks(1);
+        generateBlocks(3);
         Account bob = Account.getAccount(BOB.getId());
         Assert.assertEquals(1000100, bob.getEffectiveBalanceMTR());
     }
@@ -76,9 +71,7 @@ public class AccountTest extends BlockchainTest {
         Logger.logDebugMessage("sendMoney: " + response);
         generateBlocks(2);
         for (int i = 0; i < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS; i++) {
-            //String keyBlockHeader = SubmitBlockSolution.generateHeaderFromTemplate(BlockImpl.getHeaderSize(true, false));
-            //Block block1 = Metro.getBlockchain().composeKeyBlock(Convert.parseHexString(keyBlockHeader), ALICE.getPublicKey());
-            //Metro.getBlockchainProcessor().processMinerBlock(block1, null);
+            Assert.assertNotNull(mineBlock());
         }
         Account bob = Account.getAccount(BOB.getId());
         Assert.assertEquals(1000100, bob.getEffectiveBalanceMTR());

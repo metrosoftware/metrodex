@@ -1071,7 +1071,7 @@ public final class Account {
         }
         Metro.getBlockchain().readLock();
         try {
-            long effectiveBalanceMQT = getLessorsGuaranteedBalanceMQT(height);
+            long effectiveBalanceMQT = getLessorsGuaranteedBalanceMQT(height, guaranteedBalanceHeight);
             if (activeLesseeId == 0) {
                 effectiveBalanceMQT += getGuaranteedBalanceMQT(confirmations, height);
             }
@@ -1081,7 +1081,7 @@ public final class Account {
         }
     }
 
-    private long getLessorsGuaranteedBalanceMQT(int height) {
+    private long getLessorsGuaranteedBalanceMQT(int height, int guaranteedBalanceHeight) {
         List<Account> lessors = new ArrayList<>();
         try (DbIterator<Account> iterator = getLessors(height)) {
             while (iterator.hasNext()) {
@@ -1101,7 +1101,7 @@ public final class Account {
                      + (height < blockchainHeight ? " AND height <= ? " : "")
                      + " GROUP BY account_id ORDER BY account_id")) {
             pstmt.setObject(1, lessorIds);
-            pstmt.setInt(2, Metro.getBlockchain().getGuaranteedBalanceHeight(height));
+            pstmt.setInt(2, guaranteedBalanceHeight);
             if (height < blockchainHeight) {
                 pstmt.setInt(3, height);
             }

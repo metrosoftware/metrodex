@@ -2,12 +2,10 @@ package metro.http;
 
 import metro.Block;
 import metro.BlockImpl;
-import metro.Consensus;
 import metro.Metro;
 import metro.MetroException;
 import metro.TransactionImpl;
 import metro.crypto.Crypto;
-import metro.util.BitcoinJUtils;
 import metro.util.Convert;
 import metro.util.JSON;
 import metro.util.Logger;
@@ -87,7 +85,7 @@ public final class GetWork extends APIServlet.APIRequestHandler {
             Logger.logErrorMessage("Parse request error:", e);
         }
 
-        Block block = Metro.getBlockchainProcessor().prepareMinerBlock();
+        Block block = Metro.getBlockchainProcessor().prepareKeyBlock();
         transactions.set((List<TransactionImpl>)block.getTransactions());
 
         byte[] blockBytes = reverseEvery4Bytes(padZeroValuesSpecialAndSize(block.getBytes()));
@@ -95,17 +93,8 @@ public final class GetWork extends APIServlet.APIRequestHandler {
         JSONObject result = new JSONObject();
         response.put("result", result);
         result.put("data", Convert.toHexString(blockBytes));
-
-        ByteBuffer buffer;
-        Block lastKeyBlock = Metro.getBlockchain().getLastKeyBlock();
-        String targetString;
-        if (lastKeyBlock == null) {
-            targetString = targetToLittleEndianString(Consensus.MAX_WORK_TARGET);
-        } else {
-            //TODO calculate target correctly, ticket #149
-            targetString = targetToLittleEndianString(BitcoinJUtils.decodeCompactBits(lastKeyBlock.getBaseTarget()));
-        }
-        result.put("target", lastKeyBlock == null ? targetToLittleEndianString(Consensus.MAX_WORK_TARGET) : targetString);
+        String targetString = targetToLittleEndianString(block.getDifficultyTargetAsInteger());
+        result.put("target", targetString);
         return JSON.prepare(response);
     }
 

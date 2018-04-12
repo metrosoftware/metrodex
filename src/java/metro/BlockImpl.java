@@ -601,6 +601,7 @@ public final class BlockImpl implements Block {
      *
      * difficultyTarget of the Genesis block is set to 0x1d07fff8L in org.bitcoinj.core.Block "Special case constructor"
      */
+    @Override
     public BigInteger getDifficultyTargetAsInteger() {
         BigInteger target = BitcoinJUtils.decodeCompactBits(baseTarget);
         if (target.signum() <= 0 || target.compareTo(Consensus.MAX_WORK_TARGET) > 0)

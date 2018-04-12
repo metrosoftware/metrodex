@@ -1481,8 +1481,8 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         }
     }
 
-    private Block.ValidationResult validateKeyBlock(Block keyblock) {
-        if (keyblock.getVersion() != Consensus.getKeyBlockVersion(keyblock.getHeight())) {
+    private Block.ValidationResult validateKeyBlock(Block keyBlock) {
+        if (keyBlock.getVersion() != Consensus.getKeyBlockVersion(keyBlock.getHeight())) {
             return Block.ValidationResult.INCORRECT_VERSION;
         }
         // TODO #164
@@ -1491,64 +1491,25 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 //            return Block.ValidationResult.TX_MERKLE_ROOT_DISCREPANCY;
 //        }
         // TODO #188
-        if (Convert.byteArrayComparator.compare(keyblock.getForgersMerkleRoot(), Generator.getCurrentForgersMerkle()) != 0) {
+        if (Convert.byteArrayComparator.compare(keyBlock.getForgersMerkleRoot(), Generator.getCurrentForgersMerkle()) != 0) {
             return Block.ValidationResult.FORGERS_MERKLE_ROOT_DISCREPANCY;
         }
 
-        BigInteger target = BitcoinJUtils.decodeCompactBits(keyblock.getBaseTarget());
+        BigInteger target = keyBlock.getDifficultyTargetAsInteger();
         if (target.signum() <= 0 || target.compareTo(Consensus.MAX_WORK_TARGET) > 0) {
             return Block.ValidationResult.DIFFICULTY_TARGET_OUT_OF_RANGE;
         }
-        BigInteger hash = new BigInteger(1, HASH_FUNCTION.hash(keyblock.getBytes()));
+        BigInteger hash = new BigInteger(1, HASH_FUNCTION.hash(keyBlock.getBytes()));
         if (hash.compareTo(target) > 0) {
             return Block.ValidationResult.INSUFFICIENT_WORK;
         }
-        //TODO ticket #149
-//        Block prevLastKeyBlock = blockchain.getLastKeyBlock();
-//        if (prevLastKeyBlock != null || keyblock.getLocalHeight() > 1) {
-//            long prevDifficultyTarget = prevLastKeyBlock.getBaseTarget();
-//            // Is this supposed to be a difficulty transition point?
-//            if ((keyblock.getHeight() % Consensus.DIFFICULTY_TRANSITION_INTERVAL) > 0) {
-//                // No ... so check the difficulty didn't actually change
-//                if (keyblock.getBaseTarget() != prevDifficultyTarget) {
-//                    return Block.ValidationResult.INCORRECT_DIFFICULTY_TRANSITION_HEIGHT;
-//                }
-//            } else {
-//                BlockImpl blockIntervalAgo = BlockDb.findBlockAtLocalHeight(keyblock.getLocalHeight() - Consensus.DIFFICULTY_TRANSITION_INTERVAL, true);
-//                // If it's not found, skip this check, we don't have blockchain that far in the past
-//                if (blockIntervalAgo != null) {
-//                    Logger.logDebugMessage("blockIntervalAgo found=" + Convert.toHexString(blockIntervalAgo.bytes()));
-//                    long prevTimestamp = prevLastKeyBlock.getTimestamp();
-//                    long oldTimestamp = blockIntervalAgo.getTimestamp();
-//                    long timespan = prevTimestamp - oldTimestamp;
-//                    // Limit the adjustment step
-//                    if (timespan < Consensus.TARGET_TIMESPAN / 4)
-//                        timespan = Consensus.TARGET_TIMESPAN / 4;
-//                    if (timespan > Consensus.TARGET_TIMESPAN * 4)
-//                        timespan = Consensus.TARGET_TIMESPAN * 4;
-//
-//                    BigInteger newTarget = BitcoinJUtils.decodeCompactBits(prevDifficultyTarget);
-//                    newTarget = newTarget.multiply(BigInteger.valueOf(timespan));
-//                    newTarget = newTarget.divide(BigInteger.valueOf(Consensus.TARGET_TIMESPAN));
-//
-//                    if (newTarget.compareTo(Consensus.MAX_WORK_TARGET) > 0) {
-//                        newTarget = Consensus.MAX_WORK_TARGET;
-//                    }
-//
-//                    int accuracyBytes = (int) (keyblock.getBaseTarget() >>> 24) - 3;
-//                    long receivedTargetCompact = keyblock.getBaseTarget();
-//
-//                    // The calculated difficulty is to a higher precision than received, so reduce here.
-//                    BigInteger mask = BigInteger.valueOf(0xFFFFFFL).shiftLeft(accuracyBytes * 8);
-//                    newTarget = newTarget.and(mask);
-//                    long newTargetCompact = BitcoinJUtils.encodeCompactBits(newTarget);
-//
-//                    if (newTargetCompact != receivedTargetCompact) {
-//                        return Block.ValidationResult.INCORRECT_NEW_DIFFICULTY;
-//                    }
-//                }
-//            }
-//        }
+        try {
+            if (keyBlock.getBaseTarget() != BitcoinJUtils.encodeCompactBits(Metro.getBlockchain().getTargetAtLocalHeight(keyBlock.getLocalHeight()))) {
+                return Block.ValidationResult.INCORRECT_DIFFICULTY;
+            }
+        } catch (IllegalArgumentException ex) {
+            return Block.ValidationResult.UNKNOWN_ERROR;
+        }
         return Block.ValidationResult.OK;
     }
 
@@ -2246,7 +2207,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         }
     }
 
-    public BlockImpl prepareMinerBlock() {
+    public BlockImpl prepareKeyBlock() {
         BlockImpl previousBlock = blockchain.getLastBlock();
         BlockImpl previousKeyBlock = blockchain.getLastKeyBlock();
         byte[] previousBlockHash = Consensus.HASH_FUNCTION.hash(previousBlock.bytes());
@@ -2258,12 +2219,12 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         //TODO ticket #144 (blockSignature)
         byte[] blockSignature = null;
         long previousKeyBlockId = previousKeyBlock == null ? 0 : previousKeyBlock.getId();
-        long baseTarget = BitcoinJUtils.encodeCompactBits(Consensus.MAX_WORK_TARGET);
+        long baseTarget = BitcoinJUtils.encodeCompactBits(Metro.getBlockchain().getNextTarget());
         long blockTimestamp = Metro.getEpochTime();
         byte[] forgersMerkle = Generator.getCurrentForgersMerkle();
         List<TransactionImpl> blockTransactions = new ArrayList<>();
 
-        int keyHight = previousKeyBlock != null ? previousKeyBlock.getLocalHeight() + 1 : 1;
+        int keyHight = previousKeyBlock != null ? previousKeyBlock.getLocalHeight() + 1 : 0;
         SortedSet<UnconfirmedTransaction> transactions = getTransactionsForKeyBlockGeneration();
         blockTransactions.add(null);
         if (transactions.size() > 0) {

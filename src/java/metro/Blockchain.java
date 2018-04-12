@@ -19,6 +19,7 @@ package metro;
 import metro.db.DbIterator;
 import metro.util.Filter;
 
+import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.List;
@@ -104,4 +105,7 @@ public interface Blockchain {
 
     DbIterator<? extends Transaction> getReferencingTransactions(long transactionId, int from, int to);
 
+    BigInteger getNextTarget();
+
+    BigInteger getTargetAtLocalHeight(int localHeight) throws IllegalArgumentException;
 }

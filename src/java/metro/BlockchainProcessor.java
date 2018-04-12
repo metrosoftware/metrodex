@@ -70,7 +70,7 @@ public interface BlockchainProcessor extends Observable<Block,BlockchainProcesso
 
     long getGenesisBlockId();
 
-    BlockImpl prepareMinerBlock();
+    BlockImpl prepareKeyBlock();
 
     class BlockNotAcceptedException extends MetroException {
 

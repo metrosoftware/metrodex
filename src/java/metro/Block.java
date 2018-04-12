@@ -24,8 +24,8 @@ import java.util.List;
 public interface Block {
 
     public enum ValidationResult {
-        OK, INSUFFICIENT_WORK, DIFFICULTY_TARGET_OUT_OF_RANGE, INCORRECT_DIFFICULTY_TRANSITION_HEIGHT, INCORRECT_NEW_DIFFICULTY, TX_MERKLE_ROOT_DISCREPANCY,
-        FORGERS_MERKLE_ROOT_DISCREPANCY, INCORRECT_VERSION
+        OK, INSUFFICIENT_WORK, DIFFICULTY_TARGET_OUT_OF_RANGE, INCORRECT_DIFFICULTY, TX_MERKLE_ROOT_DISCREPANCY,
+        FORGERS_MERKLE_ROOT_DISCREPANCY, INCORRECT_VERSION, UNKNOWN_ERROR
     }
 
     short getVersion();
@@ -85,6 +85,8 @@ public interface Block {
     byte[] getBytes();
 
     JSONObject getJSONObject();
+
+    BigInteger getDifficultyTargetAsInteger();
 
     void sign(String secretPhrase);
 

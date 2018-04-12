@@ -114,7 +114,7 @@ final class BlockchainImpl implements Blockchain {
         }
         BlockImpl keyHead = height == getHeight() ? getLastKeyBlock() : BlockDb.findLastKeyBlock(height);
         if (keyHead != null) {
-            int pastLocalHeight = Math.max(keyHead.getLocalHeight() - GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS + 1, 1);
+            int pastLocalHeight = Math.max(keyHead.getLocalHeight() - GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS + 1, 0);
             BlockImpl guaranteedMileStone = BlockDb.findBlockAtLocalHeight(pastLocalHeight, true);
             if (guaranteedMileStone.getLocalHeight() == 1 && keyHead.getLocalHeight() < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS) {
                 // ignore additions in the 1st cluster
@@ -407,7 +407,6 @@ final class BlockchainImpl implements Blockchain {
         long timestamp = header.getLong();
         long rewardMQT = header.getLong();
         final int hashSize = Convert.HASH_SIZE;
-        // we will have txMerkleRoot rather than payload_hash in all blocks, eventually:
         byte[] txMerkleRoot = new byte[hashSize];
         header.get(txMerkleRoot);
 
@@ -677,6 +676,9 @@ final class BlockchainImpl implements Blockchain {
 
     @Override
     public BigInteger getTargetAtLocalHeight(int localHeight) throws IllegalArgumentException {
+        if (localHeight == 0) {
+            return getTarget(null);
+        }
         if (getLastKeyBlock().getLocalHeight() < localHeight - 1) {
             throw new IllegalArgumentException("Too big key local heght.");
         }

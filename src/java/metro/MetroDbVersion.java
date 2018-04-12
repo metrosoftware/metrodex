@@ -31,10 +31,9 @@ class MetroDbVersion extends DbVersion {
                         + "reward BIGINT NOT NULL, payload_length INT, "
                         + "previous_block_hash BINARY(32), previous_key_block_hash BINARY(32), "
                         + "cumulative_difficulty VARBINARY NOT NULL, stake_batch_difficulty VARBINARY NOT NULL, base_target BIGINT NOT NULL, "
-                        + "next_block_id BIGINT, "
-                        + "nonce BIGINT, forgers_merkle_root BINARY(32), tx_merkle_root BINARY(32), "
+                        + "next_block_id BIGINT, nonce BIGINT, forgers_merkle_root BINARY(32), "
                         + "height INT NOT NULL, local_height INT NOT NULL, generation_sequence BINARY(32) NOT NULL, "
-                        + "block_signature BINARY(64), payload_hash BINARY(32), generator_id BIGINT NOT NULL)");
+                        + "block_signature BINARY(64), tx_merkle_root BINARY(32), generator_id BIGINT NOT NULL)");
             case 2:
                 apply("CREATE UNIQUE INDEX IF NOT EXISTS block_id_idx ON block (id)");
             case 3:

@@ -1543,13 +1543,14 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                                       boolean fullValidation) throws BlockNotAcceptedException {
         long payloadLength = 0;
         long calculatedTotalAmount = 0;
-        long calculatedTotalFee = 0;
-        MessageDigest digest = Crypto.sha256();
         boolean hasPrunedTransactions = false, isKeyBlock = block.isKeyBlock();
+        byte[] txMerkleRoot = Convert.EMPTY_HASH;
         if (block.getTransactions().size() > 0) {
 
+            List<byte[]> txids = new ArrayList<>();
             for (int i = 0; i < block.getTransactions().size(); i++) {
                 TransactionImpl transaction = block.getTransactions().get(i);
+                txids.add(Convert.parseHexString(transaction.getFullHash()));
                 if (transaction.getType().isCoinbase() && i > 0) {
                     throw new TransactionNotAcceptedException("Coinbase should be only first transaction in block", transaction);
                 }
@@ -1598,21 +1599,20 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                         }
                     }
                 }
-                calculatedTotalFee += transaction.getFeeMQT();
                 if (!isKeyBlock) {
                     calculatedTotalAmount += transaction.getAmountMQT();
                     payloadLength += transaction.getFullSize();
-                    digest.update(transaction.bytes());
                 }
             }
+            List<byte[]> tree = BitcoinJUtils.buildMerkleTree(txids);
+            txMerkleRoot = tree.get(tree.size()-1);
             validateCoinbaseTx(block.getTransactions().get(0), block);
         }
         if (!isKeyBlock) {
             if (calculatedTotalAmount != block.getTotalAmountMQT()) {
                 throw new BlockNotAcceptedException("Total amount don't match transaction totals", block);
             }
-            // TODO #164 validate txMerkleRoot for key block, payloadHash is not populated
-            if (!Arrays.equals(digest.digest(), block.getPayloadHash())) {
+            if (!Arrays.equals(txMerkleRoot, block.getTxMerkleRoot())) {
                 throw new BlockNotAcceptedException("Payload hash doesn't match", block);
             }
             if (hasPrunedTransactions ? payloadLength > block.getPayloadLength() : payloadLength != block.getPayloadLength()) {
@@ -1953,11 +1953,12 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         TransactionProcessorImpl.getInstance().processWaitingTransactions();
         SortedSet<UnconfirmedTransaction> sortedTransactions = selectUnconfirmedTransactions(duplicates, previousBlock, blockTimestamp);
         List<TransactionImpl> blockTransactions = new ArrayList<>();
-        MessageDigest digest = Crypto.sha256();
         long totalAmountMQT = 0;
         long rewardMQT = 0;
         int payloadLength = 0;
         final byte[] publicKey = Crypto.getPublicKey(secretPhrase);
+
+        byte[] txMerkleRoot = Convert.EMPTY_HASH;
 
         if (sortedTransactions.size() > 0) {
             blockTransactions.add(null);
@@ -1970,21 +1971,20 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             }
             TransactionImpl coinbase = buildCoinbase(blockTimestamp, secretPhrase, blockTransactions, false, prevPosBlock.getLocalHeight() + 1);
             blockTransactions.set(0, coinbase);
-            totalAmountMQT += rewardMQT;
             payloadLength += coinbase.getFullSize();
+            List<byte[]> txids = new ArrayList<>();
             for (TransactionImpl transaction : blockTransactions) {
-                digest.update(transaction.bytes());
+                txids.add(Convert.parseHexString(transaction.getFullHash()));
             }
+            List<byte[]> tree = BitcoinJUtils.buildMerkleTree(txids);
+            txMerkleRoot = tree.get(tree.size()-1);
         }
-
-
-        byte[] payloadHash = digest.digest();
 
         final byte[] generationSequence = Convert.generationSequence(previousBlock.getGenerationSequence(), publicKey);
         final byte[] previousBlockHash = HASH_FUNCTION.hash(previousBlock.bytes());
 
         BlockImpl block = new BlockImpl(getPosBlockVersion(previousBlock.getHeight()), blockTimestamp, previousBlock.getId(), 0l, 0l, totalAmountMQT, rewardMQT, payloadLength,
-                payloadHash, publicKey, generationSequence, previousBlockHash, null, null, blockTransactions, secretPhrase);
+                txMerkleRoot, publicKey, generationSequence, previousBlockHash, null, null, blockTransactions, secretPhrase);
 
         try {
             pushBlock(block);
@@ -2224,7 +2224,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         byte[] forgersMerkle = Generator.getCurrentForgersMerkle();
         List<TransactionImpl> blockTransactions = new ArrayList<>();
 
-        int keyHight = previousKeyBlock != null ? previousKeyBlock.getLocalHeight() + 1 : 0;
+        int keyHeight = previousKeyBlock != null ? previousKeyBlock.getLocalHeight() + 1 : 0;
         SortedSet<UnconfirmedTransaction> transactions = getTransactionsForKeyBlockGeneration(previousBlock);
         blockTransactions.add(null);
         if (transactions.size() > 0) {
@@ -2233,11 +2233,18 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 blockTransactions.add(transaction);
             }
         }
-        TransactionImpl coinbase = buildCoinbase(blockTimestamp, secretPhrase, blockTransactions, true, keyHight);
+        TransactionImpl coinbase = buildCoinbase(blockTimestamp, secretPhrase, blockTransactions, true, keyHeight);
         blockTransactions.set(0, coinbase);
 
+        List<byte[]> txids = new ArrayList<>();
+        for (TransactionImpl transaction : blockTransactions) {
+            txids.add(Convert.parseHexString(transaction.getFullHash()));
+        }
+        List<byte[]> tree = BitcoinJUtils.buildMerkleTree(txids);
+        byte[] txMerkleRoot = tree.get(tree.size() - 1);
+
         return new BlockImpl(getKeyBlockVersion(previousBlock.getHeight()), blockTimestamp, baseTarget, previousBlock.getId(), previousKeyBlockId, 0, 0, 0, 0,
-                Convert.EMPTY_PAYLOAD_HASH, generatorPublicKey, null, blockSignature, previousBlockHash, previousKeyBlockHash, forgersMerkle, blockTransactions);
+                txMerkleRoot, generatorPublicKey, null, blockSignature, previousBlockHash, previousKeyBlockHash, forgersMerkle, blockTransactions);
     }
 
     private SortedSet<UnconfirmedTransaction> getTransactionsForKeyBlockGeneration(Block previousBlock) {

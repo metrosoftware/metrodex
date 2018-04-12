@@ -318,10 +318,9 @@ final class BlockDb {
             int localHeight = rs.getInt("local_height");
             byte[] generationSequence = rs.getBytes("generation_sequence");
             byte[] blockSignature = rs.getBytes("block_signature");
-            // TODO #164
-            byte[] payloadHash = rs.getBytes("payload_hash");
+            byte[] txMerkleRoot = rs.getBytes("tx_merkle_root");
             long id = rs.getLong("id");
-            return new BlockImpl(version, timestamp, previousBlockId, previousKeyBlockId, nonce, totalAmountMQT, rewardMQT, payloadLength, payloadHash,
+            return new BlockImpl(version, timestamp, previousBlockId, previousKeyBlockId, nonce, totalAmountMQT, rewardMQT, payloadLength, txMerkleRoot,
                     generatorId, generationSequence, blockSignature, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot,
                     cumulativeDifficulty, stakeBatchDifficulty, baseTarget, nextBlockId, height, localHeight, id, loadTransactions ? TransactionDb.findBlockTransactions(con, id) : null);
         } catch (SQLException e) {
@@ -331,11 +330,10 @@ final class BlockDb {
 
     static void saveBlock(Connection con, BlockImpl block) {
         try {
-            // TODO #164 store also txMerkleRoot, that will be replacing payload_hash
             try (PreparedStatement pstmt = con.prepareStatement("INSERT INTO block (id, version, timestamp, previous_block_id, previous_key_block_id, nonce, "
                     + "previous_key_block_hash, forgers_merkle_root, "
                     + "total_amount, reward, payload_length, previous_block_hash, next_block_id, cumulative_difficulty, stake_batch_difficulty, base_target, "
-                    + "height, local_height, generation_sequence, block_signature, payload_hash, generator_id) "
+                    + "height, local_height, generation_sequence, block_signature, tx_merkle_root, generator_id) "
                     + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
                 int i = 0;
                 pstmt.setLong(++i, block.getId());
@@ -363,8 +361,7 @@ final class BlockDb {
                 pstmt.setBytes(++i, block.getGenerationSequence());
                 // TODO #144 block signature NOT NULL, made nullable temporarily for testing
                 pstmt.setBytes(++i, block.getBlockSignature());
-                // TODO #164
-                pstmt.setBytes(++i, block.getPayloadHash());
+                pstmt.setBytes(++i, block.getTxMerkleRoot());
 
                 pstmt.setLong(++i, block.getGeneratorId());
                 pstmt.executeUpdate();

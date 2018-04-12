@@ -50,7 +50,6 @@ public final class BlockImpl implements Block {
     private final long rewardMQT;
     private final int payloadLength;
     private final byte[] generationSequence;
-    private final byte[] payloadHash;
     private volatile List<TransactionImpl> blockTransactions;
 
     private byte[] blockSignature;
@@ -84,9 +83,9 @@ public final class BlockImpl implements Block {
      * Constructs and signs a new block, by passing a secretPhrase
      *
      */
-    BlockImpl(short version, long timestamp, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountMQT, long rewardMQT, int payloadLength, byte[] payloadHash,
+    BlockImpl(short version, long timestamp, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountMQT, long rewardMQT, int payloadLength, byte[] txMerkleRoot,
               byte[] generatorPublicKey, byte[] generationSequence, byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] forgersMerkleRoot, List<TransactionImpl> transactions, String secretPhrase) {
-        this(version, timestamp, 0, previousBlockId, previousKeyBlockId, nonce, totalAmountMQT, rewardMQT, payloadLength, payloadHash,
+        this(version, timestamp, 0, previousBlockId, previousKeyBlockId, nonce, totalAmountMQT, rewardMQT, payloadLength, txMerkleRoot,
                 generatorPublicKey, generationSequence, null, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, transactions);
         blockSignature = Crypto.sign(bytes(), secretPhrase);
         bytes = null;
@@ -96,7 +95,7 @@ public final class BlockImpl implements Block {
      * Typical constructor called for a block not yet in DB
      *
      */
-    BlockImpl(short version, long timestamp, long baseTarget, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountMQT, long rewardMQT, int payloadLength, byte[] payloadHash,
+    BlockImpl(short version, long timestamp, long baseTarget, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountMQT, long rewardMQT, int payloadLength, byte[] txMerkleRoot,
               byte[] generatorPublicKey, byte[] generationSequence, byte[] blockSignature, byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] forgersMerkleRoot, List<TransactionImpl> transactions) {
         this.version = version;
         this.timestamp = timestamp;
@@ -107,9 +106,7 @@ public final class BlockImpl implements Block {
         this.totalAmountMQT = totalAmountMQT;
         this.rewardMQT = rewardMQT;
         this.payloadLength = payloadLength;
-        this.payloadHash = payloadHash;
-        // TODO #164
-        this.txMerkleRoot = Convert.EMPTY_HASH;
+        this.txMerkleRoot = txMerkleRoot;
         this.generatorPublicKey = generatorPublicKey;
         this.generationSequence = generationSequence;
         this.blockSignature = blockSignature;
@@ -126,11 +123,11 @@ public final class BlockImpl implements Block {
      *
      */
     BlockImpl(short version, long timestamp, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountMQT, long rewardMQT, int payloadLength,
-              byte[] payloadHash, long generatorId, byte[] generationSequence, byte[] blockSignature,
+              byte[] txMerkleRoot, long generatorId, byte[] generationSequence, byte[] blockSignature,
               byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] forgersMerkleRoot,
               BigInteger cumulativeDifficulty, BigInteger stakeBatchDifficulty, long baseTarget, long nextBlockId, int height, int localHeight, long id,
               List<TransactionImpl> blockTransactions) {
-        this(version, timestamp, baseTarget, previousBlockId, previousKeyBlockId, nonce, totalAmountMQT, rewardMQT, payloadLength, payloadHash,
+        this(version, timestamp, baseTarget, previousBlockId, previousKeyBlockId, nonce, totalAmountMQT, rewardMQT, payloadLength, txMerkleRoot,
                 null, generationSequence, blockSignature, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, null);
         this.cumulativeDifficulty = cumulativeDifficulty;
         this.stakeBatchDifficulty = stakeBatchDifficulty;
@@ -195,11 +192,6 @@ public final class BlockImpl implements Block {
     }
 
     @Override
-    public byte[] getTxMerkleRoot() {
-        return txMerkleRoot;
-    }
-
-    @Override
     public byte[] getForgersMerkleRoot() {
         return forgersMerkleRoot;
     }
@@ -220,8 +212,8 @@ public final class BlockImpl implements Block {
     }
 
     @Override
-    public byte[] getPayloadHash() {
-        return payloadHash;
+    public byte[] getTxMerkleRoot() {
+        return txMerkleRoot;
     }
 
     @Override
@@ -339,7 +331,6 @@ public final class BlockImpl implements Block {
         json.put("version", version);
         json.put("timestamp", timestamp);
         json.put("previousBlock", Long.toUnsignedString(previousBlockId));
-        // TODO #164 txMerkleRoot for all blocks
         if (isKeyBlock()) {
             json.put("previousKeyBlock", Long.toUnsignedString(previousKeyBlockId));
             json.put("nonce", nonce);
@@ -348,8 +339,8 @@ public final class BlockImpl implements Block {
             json.put("forgersMerkleRoot", Convert.toHexString(forgersMerkleRoot));
         } else {
             json.put("payloadLength", payloadLength);
-            json.put("payloadHash", Convert.toHexString(payloadHash));
         }
+        json.put("txMerkleRoot", Convert.toHexString(txMerkleRoot));
         json.put("generationSequence", Convert.toHexString(generationSequence));
         json.put("totalAmountMQT", totalAmountMQT);
         json.put("rewardMQT", rewardMQT);
@@ -370,19 +361,17 @@ public final class BlockImpl implements Block {
             long timestamp = ((Long) blockData.get("timestamp")).longValue();
             long previousKeyBlock = 0, nonce = 0, baseTarget = 0;
             int payloadLength = 0;
-            byte[] previousKeyBlockHash = null, forgersMerkleRoot = null, payloadHash;
+            byte[] previousKeyBlockHash = null, forgersMerkleRoot = null, txMerkleRoot;
             if (keyBlock) {
                 previousKeyBlock = Convert.parseUnsignedLong((String) blockData.get("previousKeyBlock"));
                 nonce = Convert.parseLong(blockData.get("nonce"));
                 baseTarget = Convert.parseLong(blockData.get("baseTarget"));
                 previousKeyBlockHash = Convert.parseHexString((String) blockData.get("previousKeyBlockHash"));
                 forgersMerkleRoot = Convert.parseHexString((String) blockData.get("forgersMerkleRoot"));
-                // TODO #164 txMerkleRoot
-                payloadHash = Convert.EMPTY_PAYLOAD_HASH;
             } else {
                 payloadLength = ((Long) blockData.get("payloadLength")).intValue();
-                payloadHash = Convert.parseHexString((String) blockData.get("payloadHash"));
             }
+            txMerkleRoot = Convert.parseHexString((String) blockData.get("txMerkleRoot"));
             byte[] generationSequence = Convert.parseHexString((String) blockData.get("generationSequence"));
             long previousBlock = Convert.parseUnsignedLong((String) blockData.get("previousBlock"));
             long totalAmountMQT = Convert.parseLong(blockData.get("totalAmountMQT"));
@@ -394,7 +383,7 @@ public final class BlockImpl implements Block {
             for (Object transactionData : (JSONArray) blockData.get("transactions")) {
                 blockTransactions.add(TransactionImpl.parseTransaction((JSONObject) transactionData));
             }
-            BlockImpl block = new BlockImpl(version, timestamp, baseTarget, previousBlock, previousKeyBlock, nonce, totalAmountMQT, rewardMQT, payloadLength, payloadHash, generatorPublicKey,
+            BlockImpl block = new BlockImpl(version, timestamp, baseTarget, previousBlock, previousKeyBlock, nonce, totalAmountMQT, rewardMQT, payloadLength, txMerkleRoot, generatorPublicKey,
                     generationSequence, blockSignature, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, blockTransactions);
             // TODO #144
             if (!keyBlock && !block.checkSignature()) {
@@ -437,7 +426,7 @@ public final class BlockImpl implements Block {
             // Block.timestamp: 8 bytes, milliseconds since MetroEpoch
             buffer.putLong(timestamp);
             buffer.putLong(rewardMQT);
-            buffer.put(payloadHash);
+            buffer.put(txMerkleRoot);
             buffer.put(previousBlockHash);
 
             if (isKeyBlock) {
@@ -528,7 +517,7 @@ public final class BlockImpl implements Block {
         }
 
         if (isKeyBlock()) {
-            this.localHeight = (keyBlock == null ? 0 : keyBlock.getLocalHeight()) + 1;
+            this.localHeight = keyBlock == null ? 0 : keyBlock.getLocalHeight() + 1;
             this.stakeBatchDifficulty = Convert.two64.divide(BigInteger.valueOf(posBlock.baseTarget));
         } else {
             this.localHeight = posBlock.getLocalHeight() + 1;

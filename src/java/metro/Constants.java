@@ -71,7 +71,7 @@ public final class Constants {
     public static final int MAX_PRUNABLE_MESSAGE_LENGTH = 42 * 1024;
     public static final int MAX_PRUNABLE_ENCRYPTED_MESSAGE_LENGTH = 42 * 1024;
 
-    public static final long MIN_PRUNABLE_LIFETIME = isTestnet ? 1440 * 60 : 14 * 1440 * 60 * 1000;
+    public static final long MIN_PRUNABLE_LIFETIME = isTestnet ? 1440 * 60 * 1000 : 14 * 1440 * 60 * 1000;
     public static final long MAX_PRUNABLE_LIFETIME;
     public static final boolean ENABLE_PRUNING;
     public static final long MAX_MESSAGE_DATA_LENGTH = 42 * 1024;

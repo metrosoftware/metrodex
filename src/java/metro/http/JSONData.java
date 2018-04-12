@@ -308,7 +308,7 @@ public final class JSONData {
             json.put("nextBlock", Long.toUnsignedString(block.getNextBlockId()));
         }
         // TODO #145 if (block.isKeyblock()) { ... } report key block fields for UI
-        json.put("payloadHash", Convert.toHexString(block.getPayloadHash()));
+        json.put("txMerkleRoot", Convert.toHexString(block.getTxMerkleRoot()));
         json.put("generationSequence", Convert.toHexString(block.getGenerationSequence()));
         json.put("previousBlockHash", Convert.toHexString(block.getPreviousBlockHash()));
         json.put("blockSignature", Convert.toHexString(block.getBlockSignature()));

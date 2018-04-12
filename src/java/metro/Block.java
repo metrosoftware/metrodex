@@ -68,8 +68,6 @@ public interface Block {
 
     int getPayloadLength();
 
-    byte[] getPayloadHash();
-
     List<? extends Transaction> getTransactions();
 
     byte[] getGenerationSequence();

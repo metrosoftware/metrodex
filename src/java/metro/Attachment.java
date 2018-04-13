@@ -137,8 +137,10 @@ public interface Attachment extends Appendix {
         private final Map<Long, Long> recipients;
 
         CoinbaseRecipientsAttachment(ByteBuffer buffer) throws MetroException.NotValidException {
+            super(buffer);
             recipients = new HashMap<>();
-            for (byte i = 0; i < buffer.get(); i++) {
+            byte size = buffer.get();
+            for (byte i = 0; i < size; i++) {
                 long accountId = buffer.getLong();
                 long amount = buffer.getLong();
                 recipients.put(accountId, amount);
@@ -148,7 +150,8 @@ public interface Attachment extends Appendix {
         CoinbaseRecipientsAttachment(JSONObject attachmentData) {
             super(attachmentData);
             recipients = new HashMap<>();
-            attachmentData.forEach((accountId, amount) -> recipients.put((Long) accountId, (Long) amount));
+            JSONObject recipientsField = (JSONObject) attachmentData.get("recipients");
+            recipientsField.forEach((accountId, amount) -> recipients.put(Long.parseLong((String) accountId), (Long) amount));
         }
 
         public CoinbaseRecipientsAttachment(Map<Long, Long> recipients, boolean fakeParameter) {
@@ -175,8 +178,10 @@ public interface Attachment extends Appendix {
 
         @Override
         void putMyJSON(JSONObject attachment) {
-            for (Long recipient: recipients.keySet()) {
-                attachment.put(Long.toString(recipient), recipients.get(recipient));
+            JSONObject recipients = new JSONObject();
+            attachment.put("recipients", recipients);
+            for (Long recipient: this.recipients.keySet()) {
+                recipients.put(Long.toString(recipient), this.recipients.get(recipient));
             }
         }
 

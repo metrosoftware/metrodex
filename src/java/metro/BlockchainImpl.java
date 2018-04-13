@@ -117,8 +117,8 @@ final class BlockchainImpl implements Blockchain {
         if (keyHead != null) {
             int pastLocalHeight = Math.max(keyHead.getLocalHeight() - GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS + 1, 0);
             BlockImpl guaranteedMileStone = BlockDb.findBlockAtLocalHeight(pastLocalHeight, true);
-            if (guaranteedMileStone.getLocalHeight() == 1 && keyHead.getLocalHeight() < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS) {
-                // ignore additions in the 1st cluster
+            if (guaranteedMileStone.getLocalHeight() == 0 && keyHead.getLocalHeight() < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS - 1) {
+                // ignore additions in the 1st cluster before seeing the 30th key block
                 return 0;
             }
             return guaranteedMileStone.getHeight();
@@ -250,7 +250,7 @@ final class BlockchainImpl implements Blockchain {
     @Override
     public List<Long> getBlockIdsAfter(long blockId, int limit) {
         // Check the block cache
-        List<Long> result = new ArrayList<>(BlockDb.BLOCK_CACHE_SIZE);
+        List<Long> result = new ArrayList<>(BlockDb.BLOCK_CACHE_TOTAL_SIZE);
         synchronized(BlockDb.blockCache) {
             BlockImpl block = BlockDb.blockCache.get(blockId);
             if (block != null) {
@@ -288,7 +288,7 @@ final class BlockchainImpl implements Blockchain {
             return Collections.emptyList();
         }
         // Check the block cache
-        List<BlockImpl> result = new ArrayList<>(BlockDb.BLOCK_CACHE_SIZE);
+        List<BlockImpl> result = new ArrayList<>(BlockDb.BLOCK_CACHE_TOTAL_SIZE);
         synchronized(BlockDb.blockCache) {
             BlockImpl block = BlockDb.blockCache.get(blockId);
             if (block != null) {
@@ -326,7 +326,7 @@ final class BlockchainImpl implements Blockchain {
             return Collections.emptyList();
         }
         // Check the block cache
-        List<BlockImpl> result = new ArrayList<>(BlockDb.BLOCK_CACHE_SIZE);
+        List<BlockImpl> result = new ArrayList<>(BlockDb.BLOCK_CACHE_TOTAL_SIZE);
         synchronized(BlockDb.blockCache) {
             BlockImpl block = BlockDb.blockCache.get(blockId);
             if (block != null) {

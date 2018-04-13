@@ -58,6 +58,7 @@ public abstract class BlockchainTest extends AbstractBlockchainTest {
             properties.setProperty("metro.enableFakeForging", "true");
             properties.setProperty("metro.fakeForgingAccount", forgerAccountId);
             properties.setProperty("metro.testnetMaxWorkTarget", "1f00ffff");
+            properties.setProperty("metro.testnetGuaranteedBalanceKeyblockConfirmations", "3");
             properties.setProperty("metro.mine.secretPhrase", aliceSecretPhrase);
             properties.setProperty("metro.timeMultiplier", "1");
             properties.setProperty("metro.testnetGuaranteedBalanceConfirmations", "1");
@@ -106,6 +107,7 @@ public abstract class BlockchainTest extends AbstractBlockchainTest {
         }
     }
 
+    // TODO get rid of this copy-paste from HashSolver
     public static Block mineBlock() throws MetroException {
         BlockImpl preparedBlock = Metro.getBlockchainProcessor().prepareKeyBlock();
         int currentNonce = 0, poolSize = 1, startingNonce = 0;

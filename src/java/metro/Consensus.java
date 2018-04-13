@@ -20,7 +20,7 @@ public class Consensus {
     public static final long INITIAL_SUBSIDY = 2000 * Constants.ONE_MTR;
 
     // these are fork voting related settings
-    public static final int GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS = 30;
+    public static final int GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS = Constants.isTestnet ? Metro.getIntProperty("metro.testnetGuaranteedBalanceKeyblockConfirmations", 30) : 30;
     public static final int MIN_FORKVOTING_AMOUNT_MTR = 10000;
     // ~ 15 days
     public static final int FORGER_ACTIVITY_SNAPSHOT_INTERVAL = 500000;

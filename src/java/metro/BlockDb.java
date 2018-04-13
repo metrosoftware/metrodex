@@ -35,10 +35,13 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import static metro.Consensus.GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS;
+
 final class BlockDb {
 
     /** Block cache */
-    static final int BLOCK_CACHE_SIZE = 10;
+    static final int POS_BLOCK_CACHE_SIZE = 10;
+    static final int BLOCK_CACHE_TOTAL_SIZE = POS_BLOCK_CACHE_SIZE + GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS;
     static final Map<Long, BlockImpl> blockCache = new HashMap<>();
     static final SortedMap<Integer, BlockImpl> heightMap = new TreeMap<>();
     static final SortedMap<Integer, BlockImpl> posLocalHeightMap = new TreeMap<>();
@@ -54,22 +57,22 @@ final class BlockDb {
                 while (it.hasNext()) {
                     boolean remove = false;
                     Block cacheBlock = it.next();
-
-                    int cacheHeight = cacheBlock.getHeight();
-                    if (cacheHeight <= height - BLOCK_CACHE_SIZE || cacheHeight >= height) {
-                        cacheBlock.getTransactions().forEach((tx) -> transactionCache.remove(tx.getId()));
-                        heightMap.remove(cacheHeight);
-                        remove = true;
-                    }
-
-                    cacheHeight = cacheBlock.getLocalHeight();
-                    if (cacheHeight <= localHeight - BLOCK_CACHE_SIZE || cacheHeight >= localHeight) {
-                        if (block.isKeyBlock()) {
-                            keyLocalHeightMap.remove(cacheHeight);
-                        } else {
-                            posLocalHeightMap.remove(cacheHeight);
+                    if (cacheBlock.isKeyBlock()) {
+                        int cacheKeyHeight = cacheBlock.getLocalHeight();
+                        if (cacheKeyHeight <= localHeight - GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS || cacheKeyHeight >= localHeight) {
+                            cacheBlock.getTransactions().forEach((tx) -> transactionCache.remove(tx.getId()));
+                            heightMap.remove(cacheBlock.getHeight());
+                            keyLocalHeightMap.remove(cacheKeyHeight);
+                            remove = true;
                         }
-                        remove = true;
+                    } else {
+                        int cachePOSHeight = cacheBlock.getLocalHeight();
+                        if (cachePOSHeight <= localHeight - POS_BLOCK_CACHE_SIZE || cachePOSHeight >= localHeight) {
+                            cacheBlock.getTransactions().forEach((tx) -> transactionCache.remove(tx.getId()));
+                            heightMap.remove(cacheBlock.getHeight());
+                            posLocalHeightMap.remove(cachePOSHeight);
+                            remove = true;
+                        }
                     }
                     if (remove) {
                         it.remove();
@@ -83,6 +86,9 @@ final class BlockDb {
                     posLocalHeightMap.put(localHeight, (BlockImpl) block);
                 }
                 blockCache.put(block.getId(), (BlockImpl)block);
+                if (blockCache.size() > BLOCK_CACHE_TOTAL_SIZE + 1) {
+                    Logger.logErrorMessage("BLOCK CACHE OVERFLOW: size=" + blockCache.size());
+                }
             }
         }, BlockchainProcessor.Event.BLOCK_PUSHED);
     }

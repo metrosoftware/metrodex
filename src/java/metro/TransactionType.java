@@ -41,9 +41,9 @@ public abstract class TransactionType {
     private static final byte TYPE_ACCOUNT_CONTROL = 4;
     private static final byte TYPE_COINBASE = 5;
 
-    private static final int[] KEYBLOCK_TRANSACTION_TYPES = {TYPE_PAYMENT, TYPE_MESSAGING, TYPE_COLORED_COINS, TYPE_SHUFFLING,
+    private static final int[] KEYBLOCK_TRANSACTION_TYPES = {};
+    private static final int[] POSBLOCK_TRANSACTION_TYPES = {TYPE_PAYMENT, TYPE_MESSAGING, TYPE_COLORED_COINS, TYPE_SHUFFLING,
             TYPE_ACCOUNT_CONTROL, TYPE_COINBASE};
-    private static final int[] POSBLOCK_TRANSACTION_TYPES = {};
 
     private static final byte SUBTYPE_PAYMENT_ORDINARY_PAYMENT = 0;
 

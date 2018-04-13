@@ -60,8 +60,8 @@ class UnconfirmedTransaction implements Transaction {
 
     void save(Connection con) throws SQLException {
         try (PreparedStatement pstmt = con.prepareStatement("INSERT INTO unconfirmed_transaction (id, transaction_height, "
-                + "fee_per_byte, expiration, transaction_bytes, prunable_json, arrival_timestamp, height) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)")) {
+                + "fee_per_byte, expiration, transaction_bytes, prunable_json, arrival_timestamp, height, is_key_tx) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
             int i = 0;
             pstmt.setLong(++i, transaction.getId());
             pstmt.setInt(++i, transaction.getHeight());
@@ -76,6 +76,7 @@ class UnconfirmedTransaction implements Transaction {
             }
             pstmt.setLong(++i, arrivalTimestamp);
             pstmt.setInt(++i, Metro.getBlockchain().getHeight());
+            pstmt.setBoolean(++i, transaction.getType().isKeyBlockTransaction());
             pstmt.executeUpdate();
         }
     }

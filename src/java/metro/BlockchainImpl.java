@@ -437,14 +437,31 @@ final class BlockchainImpl implements Blockchain {
         header.get(forgersMerkleRoot);
 
         long baseTarget = header.getInt();
+
+        long uncleMerkleId = header.getLong();
+        short clusterSize = header.getShort();
+
         long nonce = header.getLong();
         long rewardMQT = 0L;
         for (Transaction tx: transactions) {
             rewardMQT += tx.getFeeMQT();
         }
+
+        ////////////////
+        //
+        // TODO ticket #201
+
+        int halvingSize = 1;
+        byte[] uncleMerkleRoot = Convert.EMPTY_HASH;
+
+        //
+        ////////////
+
+        BlockImpl.UncleData uncleData = new BlockImpl.UncleData(uncleMerkleRoot, uncleMerkleId, halvingSize, clusterSize);
+
         return new BlockImpl(version, timestamp, baseTarget, previousBlockId, previousKeyBlockId, nonce,
                 0, rewardMQT, 0, txMerkleRoot, generatorPublicKey,
-                generationSignature, null, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, transactions);
+                generationSignature, null, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, transactions, uncleData);
     }
 
     @Override

@@ -326,9 +326,18 @@ final class BlockDb {
             byte[] blockSignature = rs.getBytes("block_signature");
             byte[] txMerkleRoot = rs.getBytes("tx_merkle_root");
             long id = rs.getLong("id");
+
+            byte[] uncleMerkleRoot = rs.getBytes("uncle_merkle_root");
+            long uncleMerkleId = rs.getLong("uncle_merkle_id");
+            int halvingHeight = rs.getInt("halving_height");
+            short clusterSize = rs.getShort("cluster_size");
+
+            BlockImpl.UncleData uncleData = new BlockImpl.UncleData(uncleMerkleRoot, uncleMerkleId, halvingHeight, clusterSize);
+
             return new BlockImpl(version, timestamp, previousBlockId, previousKeyBlockId, nonce, totalAmountMQT, rewardMQT, payloadLength, txMerkleRoot,
                     generatorId, generationSequence, blockSignature, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot,
-                    cumulativeDifficulty, stakeBatchDifficulty, baseTarget, nextBlockId, height, localHeight, id, loadTransactions ? TransactionDb.findBlockTransactions(con, id) : null);
+                    cumulativeDifficulty, stakeBatchDifficulty, baseTarget, nextBlockId, height, localHeight, id,
+                    loadTransactions ? TransactionDb.findBlockTransactions(con, id) : null, uncleData);
         } catch (SQLException e) {
             throw new RuntimeException(e.toString(), e);
         }

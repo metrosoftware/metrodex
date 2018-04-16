@@ -36,6 +36,20 @@ import static org.bouncycastle.pqc.math.linearalgebra.IntegerFunctions.squareRoo
 
 public final class BlockImpl implements Block {
 
+    public static class UncleData {
+        private final byte[] uncleMerkleRoot;
+        private final long uncleMerkleId;
+        private final int halvingHeight;
+        private final short clusterSize;
+
+        public UncleData(byte[] uncleMerkleRoot, long uncleMerkleId, int halvingHeight, short clusterSize) {
+            this.uncleMerkleRoot = uncleMerkleRoot;
+            this.uncleMerkleId = uncleMerkleId;
+            this.halvingHeight = halvingHeight;
+            this.clusterSize = clusterSize;
+        }
+    }
+    private final UncleData uncleData;
     private final short version;
     private final long timestamp;
     private final long previousBlockId;
@@ -73,7 +87,7 @@ public final class BlockImpl implements Block {
     BlockImpl(byte[] generatorPublicKey, byte[] generationSequence) {
         // the Genesis block is POS with version 0x0000
         this(Consensus.GENESIS_BLOCK_VERSION, 0, Constants.INITIAL_BASE_TARGET, 0, 0, 0, 0, 0, 0, new byte[HASH_SIZE], generatorPublicKey, generationSequence, new byte[HASH_SIZE * 2],
-                Convert.EMPTY_HASH, null, null, Collections.emptyList());
+                Convert.EMPTY_HASH, null, null, Collections.emptyList(), null);
         this.height = 0;
         this.localHeight = 0;
         this.stakeBatchDifficulty = Convert.two64.divide(BigInteger.valueOf(Constants.INITIAL_BASE_TARGET));
@@ -86,7 +100,7 @@ public final class BlockImpl implements Block {
     BlockImpl(short version, long timestamp, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountMQT, long rewardMQT, int payloadLength, byte[] txMerkleRoot,
               byte[] generatorPublicKey, byte[] generationSequence, byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] forgersMerkleRoot, List<TransactionImpl> transactions, String secretPhrase) {
         this(version, timestamp, 0, previousBlockId, previousKeyBlockId, nonce, totalAmountMQT, rewardMQT, payloadLength, txMerkleRoot,
-                generatorPublicKey, generationSequence, null, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, transactions);
+                generatorPublicKey, generationSequence, null, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, transactions, null);
         blockSignature = Crypto.sign(bytes(), secretPhrase);
         bytes = null;
     }
@@ -96,7 +110,8 @@ public final class BlockImpl implements Block {
      *
      */
     BlockImpl(short version, long timestamp, long baseTarget, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountMQT, long rewardMQT, int payloadLength, byte[] txMerkleRoot,
-              byte[] generatorPublicKey, byte[] generationSequence, byte[] blockSignature, byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] forgersMerkleRoot, List<TransactionImpl> transactions) {
+              byte[] generatorPublicKey, byte[] generationSequence, byte[] blockSignature, byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] forgersMerkleRoot, List<TransactionImpl> transactions,
+              UncleData uncleData) {
         this.version = version;
         this.timestamp = timestamp;
         this.baseTarget = baseTarget;
@@ -116,6 +131,7 @@ public final class BlockImpl implements Block {
         if (transactions != null) {
             this.blockTransactions = Collections.unmodifiableList(transactions);
         }
+        this.uncleData = uncleData;
     }
 
     /**
@@ -126,9 +142,9 @@ public final class BlockImpl implements Block {
               byte[] txMerkleRoot, long generatorId, byte[] generationSequence, byte[] blockSignature,
               byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] forgersMerkleRoot,
               BigInteger cumulativeDifficulty, BigInteger stakeBatchDifficulty, long baseTarget, long nextBlockId, int height, int localHeight, long id,
-              List<TransactionImpl> blockTransactions) {
+              List<TransactionImpl> blockTransactions, UncleData uncleData) {
         this(version, timestamp, baseTarget, previousBlockId, previousKeyBlockId, nonce, totalAmountMQT, rewardMQT, payloadLength, txMerkleRoot,
-                null, generationSequence, blockSignature, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, null);
+                null, generationSequence, blockSignature, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, null, uncleData);
         this.cumulativeDifficulty = cumulativeDifficulty;
         this.stakeBatchDifficulty = stakeBatchDifficulty;
         this.nextBlockId = nextBlockId;
@@ -314,6 +330,22 @@ public final class BlockImpl implements Block {
         return generatorId;
     }
 
+    public byte[] getUncleMerkleRoot() {
+        return  uncleData != null ? uncleData.uncleMerkleRoot : null;
+    }
+
+    public long getUncleMerkleId() {
+        return uncleData != null ? uncleData.uncleMerkleId : 0;
+    }
+
+    public int getHalvingHeight() {
+        return uncleData != null ? uncleData.halvingHeight : 0;
+    }
+
+    public short getClusterSize() {
+        return uncleData != null ? uncleData.clusterSize : 0;
+    }
+
     @Override
     public boolean equals(Object o) {
         return o instanceof BlockImpl && this.getId() == ((BlockImpl)o).getId();
@@ -350,6 +382,11 @@ public final class BlockImpl implements Block {
         JSONArray transactionsData = new JSONArray();
         getTransactions().forEach(transaction -> transactionsData.add(transaction.getJSONObject()));
         json.put("transactions", transactionsData);
+        json.put("uncleMerkleRoot",Convert.toHexString(getUncleMerkleRoot()));
+        json.put("uncleMerkleId", getUncleMerkleId());
+        json.put("halvingHeight", getHalvingHeight());
+        json.put("clusterSize", getClusterSize());
+
         return json;
     }
 
@@ -382,8 +419,15 @@ public final class BlockImpl implements Block {
             for (Object transactionData : (JSONArray) blockData.get("transactions")) {
                 blockTransactions.add(TransactionImpl.parseTransaction((JSONObject) transactionData));
             }
+
+            byte[] uncleMerkleRoot = Convert.parseHexString((String) blockData.get("uncleMerkleRoot"));
+            long uncleMerkleId = Convert.parseLong(blockData.get("uncleMerkleId"));
+            int halvingHeight = ((Long) blockData.get("halvingHeight")).intValue();
+            short clusterSize = ((Long) blockData.get("clusterSize")).shortValue();
+            BlockImpl.UncleData uncleData = new BlockImpl.UncleData(uncleMerkleRoot, uncleMerkleId, halvingHeight, clusterSize);
+
             BlockImpl block = new BlockImpl(version, timestamp, baseTarget, previousBlock, previousKeyBlock, nonce, totalAmountMQT, rewardMQT, payloadLength, txMerkleRoot, generatorPublicKey,
-                    generationSequence, blockSignature, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, blockTransactions);
+                    generationSequence, blockSignature, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, blockTransactions, uncleData);
             if (!block.checkSignature()) {
                 throw new MetroException.NotValidException("Invalid block signature");
             }
@@ -400,7 +444,7 @@ public final class BlockImpl implements Block {
     }
 
     public static int getHeaderSize(boolean keyBlock, boolean signed) {
-        return 2 + 8 + 32 + 8 + (keyBlock ? (8 + 32 + 4 + 8) : 8 + 32 + 4 + 8 + 4 + 32) + (signed ? 64 : 0);
+        return 2 + 8 + 32 + 8 + (keyBlock ? (8 + 32 + 4 + 8 + 2 + 8) : 8 + 32 + 4 + 8 + 4 + 32) + (signed ? 64 : 0);
     }
 
     /**
@@ -432,6 +476,8 @@ public final class BlockImpl implements Block {
                 buffer.put(forgersMerkleRoot);
                 // only 4 bytes of target are needed for PoW
                 buffer.putInt((int) (baseTarget & 0xffffffffL));
+                buffer.putLong(getUncleMerkleId());
+                buffer.putShort(getClusterSize());
                 // 8 rather than 4 bytes, so no "extranonce" needed
                 buffer.putLong(nonce);
             } else {

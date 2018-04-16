@@ -2231,8 +2231,11 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         List<byte[]> tree = BitcoinJUtils.buildMerkleTree(txids);
         byte[] txMerkleRoot = tree.get(tree.size() - 1);
 
+        //TODO ticket #201
+        BlockImpl.UncleData uncleData = null;
+
         return new BlockImpl(getKeyBlockVersion(previousBlock.getHeight()), blockTimestamp, baseTarget, previousBlock.getId(), previousKeyBlockId, 0, 0, 0, 0,
-                txMerkleRoot, generatorPublicKey, null, null, previousBlockHash, previousKeyBlockHash, forgersMerkle, blockTransactions);
+                txMerkleRoot, generatorPublicKey, null, null, previousBlockHash, previousKeyBlockHash, forgersMerkle, blockTransactions, uncleData);
     }
 
     private SortedSet<UnconfirmedTransaction> getTransactionsForKeyBlockGeneration(Block previousBlock) {

@@ -26,9 +26,12 @@ public class BlockTest extends BlockchainTest {
 
         byte[] generationSignature = Convert.generationSequence(posBlock.getGenerationSequence(), generatorPublicKey);
 
+        //TODO ticket #201
+        BlockImpl.UncleData uncleData = new BlockImpl.UncleData(Convert.EMPTY_HASH, 0, 1, (short)0);
+
         BlockImpl block0 = new BlockImpl(Consensus.getKeyBlockVersion(posBlock.getHeight()), Metro.getEpochTime(), 0x9299FF3, prevBlockId, 0, 1,
                 0, 0, 0, Convert.EMPTY_HASH, generatorPublicKey,
-                generationSignature, null, prevBlockHash, prevKeyBlockHash, zero32bytes, null);
+                generationSignature, null, prevBlockHash, prevKeyBlockHash, zero32bytes, null, uncleData);
         byte[] header = block0.bytes();
         Block block1 = Metro.getBlockchain().composeKeyBlock(header, generatorPublicKey, new ArrayList<>());
         Assert.assertArrayEquals(header, block1.getBytes());

@@ -268,13 +268,13 @@ var MRS = (function(MRS, $) {
 		for (var i = 0; i < blocks.length; i++) {
 			var block = blocks[i];
 			totalAmount = totalAmount.add(new BigInteger(block.totalAmountMQT));
-			reward = reward.add(new BigInteger(block.rewardNQT));
+			reward = reward.add(new BigInteger(block.rewardMQT));
 			totalTransactions += block.numberOfTransactions;
 			rows += "<tr>" +
                 "<td><a href='#' data-block='" + MRS.escapeRespStr(block.height) + "' data-blockid='" + MRS.escapeRespStr(block.block) + "' class='block show_block_modal_action'" + (block.numberOfTransactions > 0 ? " style='font-weight:bold'" : "") + ">" + MRS.escapeRespStr(block.height) + "</a></td>" +
                 "<td>" + MRS.formatTimestamp(block.timestamp) + "</td>" +
                 "<td>" + MRS.formatAmount(block.totalAmountMQT) + "</td>" +
-				"<td>" + MRS.formatAmount(block.rewardNQT) + "</td>" +
+				"<td>" + MRS.formatAmount(block.rewardMQT) + "</td>" +
                 "<td>" + MRS.formatAmount(block.numberOfTransactions) + "</td>" +
                 "<td>" + MRS.getAccountLink(block, "generator") + "</td>" +
                 "<td>" + MRS.formatVolume(block.payloadLength) + "</td>" +

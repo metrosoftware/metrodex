@@ -442,6 +442,13 @@ final class BlockchainImpl implements Blockchain {
         for (Transaction tx: transactions) {
             rewardMQT += tx.getFeeMQT();
         }
+        TransactionImpl coinbase = transactions.get(0);
+        Attachment.CoinbaseRecipientsAttachment attachment = (Attachment.CoinbaseRecipientsAttachment)coinbase.getAttachment();
+        Map<Long, Long> coinbaseRewards = attachment.getRecipients();
+        for (long id: coinbaseRewards.keySet()) {
+            rewardMQT += coinbaseRewards.get(id);
+        }
+
         return new BlockImpl(version, timestamp, baseTarget, previousBlockId, previousKeyBlockId, nonce,
                 0, rewardMQT, 0, txMerkleRoot, generatorPublicKey,
                 generationSignature, null, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, transactions);

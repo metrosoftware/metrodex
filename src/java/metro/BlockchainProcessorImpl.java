@@ -1535,6 +1535,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                                       boolean fullValidation) throws BlockNotAcceptedException {
         long payloadLength = 0;
         long calculatedTotalAmount = 0;
+        long calculatedReward = 0;
         boolean hasPrunedTransactions = false, isKeyBlock = block.isKeyBlock();
         byte[] txMerkleRoot = Convert.EMPTY_HASH;
         if (block.getTransactions().size() > 0) {
@@ -1595,10 +1596,14 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                     calculatedTotalAmount += transaction.getAmountMQT();
                     payloadLength += transaction.getFullSize();
                 }
+                calculatedReward += transaction.getFeeMQT();
             }
             List<byte[]> tree = BitcoinJUtils.buildMerkleTree(txids);
             txMerkleRoot = tree.get(tree.size()-1);
             validateCoinbaseTx(block.getTransactions().get(0), block);
+        }
+        if ((calculatedReward + (isKeyBlock ? Consensus.getBlockSubsidy(block.getLocalHeight()): 0)) != block.getRewardMQT()) {
+            throw new BlockNotAcceptedException("Reward don't match transaction totals", block);
         }
         if (!isKeyBlock) {
             if (calculatedTotalAmount != block.getTotalAmountMQT()) {

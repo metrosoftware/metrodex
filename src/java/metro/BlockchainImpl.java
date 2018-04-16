@@ -406,8 +406,7 @@ final class BlockchainImpl implements Blockchain {
             throw new IllegalArgumentException("Wrong block version: 0x" + Integer.toUnsignedString(Short.toUnsignedInt(version), 16));
         }
         long timestamp = header.getLong();
-        final int hashSize = Convert.HASH_SIZE;
-        byte[] txMerkleRoot = new byte[hashSize];
+        byte[] txMerkleRoot = new byte[Convert.HASH_SIZE];
         header.get(txMerkleRoot);
 
         long previousBlockId = header.getLong();
@@ -418,12 +417,11 @@ final class BlockchainImpl implements Blockchain {
             throw new IllegalStateException("Generation sequence is not yet set in block " + previousBlockId + " given as previous");
         }
         byte[] previousBlockHash = HASH_FUNCTION.hash(previousBlock.getBytes());
-
-        byte[] generationSignature = Convert.generationSequence(previousBlock.getGenerationSequence(), generatorPublicKey);
+        byte[] generationSequence = Convert.generationSequence(previousBlock.getGenerationSequence(), generatorPublicKey);
 
         long previousKeyBlockId = header.getLong();
         byte[] previousKeyBlockHash;
-        if (previousBlockId > 0) {
+        if (previousBlockId != 0) {
             BlockImpl previousKeyBlock = BlockDb.findBlock(previousKeyBlockId);
             if (previousKeyBlock == null) {
                 throw new IllegalArgumentException("Wrong prev key block id: " + previousKeyBlockId);
@@ -433,13 +431,18 @@ final class BlockchainImpl implements Blockchain {
             previousKeyBlockHash = Convert.EMPTY_HASH;
         }
 
-        byte[] forgersMerkleRoot = new byte[hashSize];
+        byte[] forgersMerkleRoot = new byte[Convert.HASH_SIZE];
         header.get(forgersMerkleRoot);
 
         long baseTarget = header.getInt();
 
         long uncleMerkleId = header.getLong();
         short clusterSize = header.getShort();
+
+        long generatorId = header.getLong();
+        if (Convert.fullHashToId(generatorPublicKey) != generatorId) {
+            throw new IllegalArgumentException("Wrong generator id: " + generatorId);
+        }
 
         long nonce = header.getLong();
         long rewardMQT = 0L;
@@ -461,7 +464,7 @@ final class BlockchainImpl implements Blockchain {
 
         return new BlockImpl(version, timestamp, baseTarget, previousBlockId, previousKeyBlockId, nonce,
                 0, rewardMQT, 0, txMerkleRoot, generatorPublicKey,
-                generationSignature, null, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, transactions, uncleData);
+                generationSequence, null, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, transactions, uncleData);
     }
 
     @Override

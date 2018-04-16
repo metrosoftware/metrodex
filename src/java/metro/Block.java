@@ -82,6 +82,10 @@ public interface Block {
 
     byte[] getBytes();
 
+    long getUncleMerkleId();
+
+    short getClusterSize();
+
     JSONObject getJSONObject();
 
     BigInteger getDifficultyTargetAsInteger();

@@ -334,6 +334,7 @@ public final class BlockImpl implements Block {
         return  uncleData != null ? uncleData.uncleMerkleRoot : null;
     }
 
+    @Override
     public long getUncleMerkleId() {
         return uncleData != null ? uncleData.uncleMerkleId : 0;
     }
@@ -342,6 +343,7 @@ public final class BlockImpl implements Block {
         return uncleData != null ? uncleData.halvingHeight : 0;
     }
 
+    @Override
     public short getClusterSize() {
         return uncleData != null ? uncleData.clusterSize : 0;
     }
@@ -477,6 +479,7 @@ public final class BlockImpl implements Block {
                 // only 4 bytes of target are needed for PoW
                 buffer.putInt((int) (baseTarget & 0xffffffffL));
                 buffer.putLong(getUncleMerkleId());
+                buffer.putLong(generatorId);
                 buffer.putShort(getClusterSize());
                 // 8 rather than 4 bytes, so no "extranonce" needed
                 buffer.putLong(nonce);

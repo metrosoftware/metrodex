@@ -316,7 +316,6 @@ final class BlockDb {
             BigInteger stakeBatchDifficulty = new BigInteger(rs.getBytes("stake_batch_difficulty"));
             long baseTarget = rs.getLong("base_target");
             long nextBlockId = rs.getLong("next_block_id");
-            // TODO #155
             if (nextBlockId == 0 && !rs.wasNull() && version != Consensus.GENESIS_BLOCK_VERSION) {
                 throw new IllegalStateException("Attempting to load invalid block");
             }

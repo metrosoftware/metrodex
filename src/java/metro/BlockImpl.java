@@ -400,7 +400,7 @@ public final class BlockImpl implements Block {
     }
 
     public static int getHeaderSize(boolean keyBlock, boolean signed) {
-        return 2 + 8 + 32*2 + (keyBlock ? (32*2 + 4 + 8) : 8 + 56) + (signed ? 64 : 0);
+        return 2 + 8 + 32 + 8 + (keyBlock ? (8 + 32 + 4 + 8) : 8 + 32 + 4 + 8 + 4 + 32) + (signed ? 64 : 0);
     }
 
     /**
@@ -424,11 +424,11 @@ public final class BlockImpl implements Block {
             // Block.timestamp: 8 bytes, milliseconds since MetroEpoch
             buffer.putLong(timestamp);
             buffer.put(txMerkleRoot);
-            buffer.put(previousBlockHash);
+            buffer.putLong(previousBlockId);
 
             if (isKeyBlock) {
                 // Key blocks (starting from the 2nd) have non-null previousKeyBlock reference
-                buffer.put(previousKeyBlockHash);
+                buffer.putLong(previousKeyBlockId);
                 buffer.put(forgersMerkleRoot);
                 // only 4 bytes of target are needed for PoW
                 buffer.putInt((int) (baseTarget & 0xffffffffL));
@@ -436,10 +436,7 @@ public final class BlockImpl implements Block {
                 buffer.putLong(nonce);
             } else {
                 buffer.putLong(rewardMQT);
-                // keep previousBlockId here to preserve compatibility with MTR original POS -
-                // previousBlockId is just 8 contiguous bytes from previousBlockHash
-                buffer.putLong(previousBlockId);
-                // these three seem to be necessary because of MTR pruning concept
+                buffer.put(previousBlockHash);
                 buffer.putInt(getTransactions().size());
                 buffer.putLong(totalAmountMQT);
                 buffer.putInt(payloadLength);

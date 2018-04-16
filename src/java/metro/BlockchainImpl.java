@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static metro.Consensus.GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS;
+import static metro.Consensus.HASH_FUNCTION;
 
 final class BlockchainImpl implements Blockchain {
 
@@ -409,23 +410,29 @@ final class BlockchainImpl implements Blockchain {
         byte[] txMerkleRoot = new byte[hashSize];
         header.get(txMerkleRoot);
 
-        byte[] previousBlockHash = new byte[hashSize];
-        header.get(previousBlockHash);
-        long previousBlockId = Convert.fullHashToId(previousBlockHash);
-
-        // generatorPublicKey is only needed in the Peg to verify block signature, and can be discarded afterwards,
-        // so is not part of the header
-        // generationSequence in key header is not needed anymore, due to different POS verification approach - thus we calculate it here
-        // from the previous block
+        long previousBlockId = header.getLong();
         BlockImpl previousBlock = BlockDb.findBlock(previousBlockId);
         if (previousBlock == null) {
-            throw new IllegalArgumentException("Wrong prev block hash: " + Convert.toHexString(previousBlockHash));
+            throw new IllegalArgumentException("Wrong prev block id: " + previousBlockId);
         } else if (previousBlock.getGenerationSequence() == null) {
-            throw new IllegalStateException("Generation sequence is not yet set in block " + Convert.toHexString(previousBlockHash) + " given as previous");
+            throw new IllegalStateException("Generation sequence is not yet set in block " + previousBlockId + " given as previous");
         }
+        byte[] previousBlockHash = HASH_FUNCTION.hash(previousBlock.getBytes());
+
         byte[] generationSignature = Convert.generationSequence(previousBlock.getGenerationSequence(), generatorPublicKey);
-        byte[] previousKeyBlockHash = new byte[hashSize];
-        header.get(previousKeyBlockHash);
+
+        long previousKeyBlockId = header.getLong();
+        byte[] previousKeyBlockHash;
+        if (previousBlockId > 0) {
+            BlockImpl previousKeyBlock = BlockDb.findBlock(previousKeyBlockId);
+            if (previousKeyBlock == null) {
+                throw new IllegalArgumentException("Wrong prev key block id: " + previousKeyBlockId);
+            }
+            previousKeyBlockHash = HASH_FUNCTION.hash(previousKeyBlock.getBytes());
+        } else {
+            previousKeyBlockHash = Convert.EMPTY_HASH;
+        }
+
         byte[] forgersMerkleRoot = new byte[hashSize];
         header.get(forgersMerkleRoot);
 
@@ -435,7 +442,7 @@ final class BlockchainImpl implements Blockchain {
         for (Transaction tx: transactions) {
             rewardMQT += tx.getFeeMQT();
         }
-        return new BlockImpl(version, timestamp, baseTarget, previousBlockId, Convert.fullHashToId(previousKeyBlockHash), nonce,
+        return new BlockImpl(version, timestamp, baseTarget, previousBlockId, previousKeyBlockId, nonce,
                 0, rewardMQT, 0, txMerkleRoot, generatorPublicKey,
                 generationSignature, null, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, transactions);
     }

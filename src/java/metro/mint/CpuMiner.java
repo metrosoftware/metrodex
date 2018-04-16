@@ -170,7 +170,7 @@ public class CpuMiner {
         JSONObject requestBody = new JSONObject();
         JSONArray paramsArray = new JSONArray();
         ByteBuffer buffer = ByteBuffer.allocate(NONCE_BYTE_SIZE + data.length);
-        buffer.order(ByteOrder.BIG_ENDIAN);
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
         buffer.put(data);
         buffer.putLong(nonce);
         String solution = Convert.toHexString(buffer.array());

@@ -423,7 +423,7 @@ final class BlockchainImpl implements Blockchain {
 
         long previousKeyBlockId = header.getLong();
         byte[] previousKeyBlockHash;
-        if (previousBlockId > 0) {
+        if (previousKeyBlockId != 0) {
             BlockImpl previousKeyBlock = BlockDb.findBlock(previousKeyBlockId);
             if (previousKeyBlock == null) {
                 throw new IllegalArgumentException("Wrong prev key block id: " + previousKeyBlockId);

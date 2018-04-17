@@ -53,11 +53,11 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static metro.Consensus.HASH_FUNCTION;
 
@@ -111,6 +111,10 @@ public class CpuMiner {
             resultObject = (JSONObject) miningTarget.get("result");
             targetReverted = Convert.parseHexString((String) resultObject.get("target"));
             target = revertByteArray(targetReverted);
+            data = Convert.parseHexString((String) resultObject.get("data"));
+            GetWork.reverseEvery4Bytes(data);
+            size = (int) readDataSize(data);
+            data = Arrays.copyOf(data,size);
         }
     }
 
@@ -132,14 +136,19 @@ public class CpuMiner {
             workersList.add(hashSolver);
         }
         int solution = solve(executorService, workersList);
+        JSONObject response;
+        if (solution < 0) {
+            response = new JSONObject();
+            response.put("message", "No solution in interval");
+            return response;
+        }
         long computationTime = System.currentTimeMillis() - startTime;
         if (computationTime == 0) {
             computationTime = 1;
         }
         long hashes = solution - initialNonce;
-        Logger.logInfoMessage("solution nonce %d counter %d computed hashes %d time [sec] %.2f hash rate [KH/Sec] %d is submitted %b",
+        Logger.logInfoMessage("solution nonce %d counter %d computed hashes %d time [sec] %.2f hash rate [KH/Sec] %d isSubmitted %b",
                 solution, counter, hashes, (float) computationTime / 1000, hashes / computationTime, isSubmitted);
-        JSONObject response;
         if (isSubmitted) {
             response = submitSolution(dataWithoutNonce, solution);
         } else {
@@ -149,12 +158,18 @@ public class CpuMiner {
         return response;
     }
 
-    private int solve(Executor executor, Collection<Callable<Integer>> solvers) {
+    private int solve(ExecutorService executor, Collection<Callable<Integer>> solvers) {
         CompletionService<Integer> ecs = new ExecutorCompletionService<>(executor);
         List<Future<Integer>> futures = new ArrayList<>(solvers.size());
         solvers.forEach(solver -> futures.add(ecs.submit(solver)));
         try {
-            return ecs.take().get();
+            Future<Integer> task = ecs.poll(1, TimeUnit.SECONDS);
+            if (task == null) {
+                return -1;
+            } else {
+                Integer result = task.get();
+                return result;
+            }
         } catch (ExecutionException | InterruptedException e) {
             throw new IllegalStateException(e);
         } finally {

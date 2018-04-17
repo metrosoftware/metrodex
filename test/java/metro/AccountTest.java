@@ -6,6 +6,8 @@ import org.json.simple.JSONObject;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Arrays;
+
 import static metro.Consensus.GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS;
 
 public class AccountTest extends BlockchainTest {
@@ -99,5 +101,36 @@ public class AccountTest extends BlockchainTest {
         }
         Account bob = Account.getAccount(BOB.getId());
         Assert.assertEquals(1999999, bob.getEffectiveBalanceMTR());
+    }
+
+    @Test
+    public void testRescan() throws MetroException {
+        // TODO #207 more complex testing of forgers Merkle
+        JSONObject response = new APICall.Builder("sendMoney").
+                param("secretPhrase", ALICE.getSecretPhrase()).
+                param("recipient", BOB.getStrId()).
+                param("amountMQT", 100 * Constants.ONE_MTR).
+                param("feeMQT", Constants.ONE_MTR).
+                build().invoke();
+        Logger.logDebugMessage("sendMoney: " + response);
+        generateBlocks(2);
+        Block lastMined = null;
+        for (int i = 0; i < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS; i++) {
+            lastMined = mineBlock();
+            Assert.assertNotNull(lastMined);
+        }
+        byte[] forgersMerkle1 = lastMined.getForgersMerkleRoot();
+        generateBlockBy(ALICE);
+        for (int i = 0; i < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS; i++) {
+            lastMined = mineBlock();
+            Assert.assertNotNull(lastMined);
+        }
+        Assert.assertFalse("forgersMerkle must change (from the initial one) after the 3rd key block", Arrays.equals(forgersMerkle1, lastMined.getForgersMerkleRoot()));
+        Account bob = Account.getAccount(BOB.getId());
+        Assert.assertEquals(1000100, bob.getEffectiveBalanceMTR());
+        blockchainProcessor.scan(0, true);
+        Assert.assertEquals("scan failed to preserve block records", 9, blockchain.getHeight());
+        blockchainProcessor.scan(7, true);
+        Assert.assertEquals("scan #2 failed to preserve block records", 9, blockchain.getHeight());
     }
 }

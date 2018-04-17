@@ -2099,13 +2099,14 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 BlockImpl currentBlock = BlockDb.findBlockAtHeight(height);
                 blockListeners.notify(currentBlock, Event.RESCAN_BEGIN);
                 long currentBlockId = currentBlock.getId();
+                blockchain.forgetLastKeyBlock();
                 if (height == 0) {
                     blockchain.setLastBlock(currentBlock); // special case to avoid no last block
                     Genesis.apply();
                 } else {
-                    blockchain.forgetLastKeyBlock();
                     blockchain.setLastBlock(BlockDb.findBlockAtHeight(height - 1));
                 }
+
                 if (shutdown) {
                     Logger.logMessage("Scan will be performed at next start");
                     new Thread(() -> System.exit(0)).start();

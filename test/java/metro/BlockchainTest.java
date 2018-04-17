@@ -26,6 +26,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 
 import static metro.Consensus.HASH_FUNCTION;
@@ -41,7 +42,7 @@ public abstract class BlockchainTest extends AbstractBlockchainTest {
     protected static int baseHeight;
 
     protected static String forgerSecretPhrase = "aSykrgKGZNlSVOMDxkZZgbTvQqJPGtsBggb";
-    protected static final String forgerAccountId = "MTR-9KZM-KNYY-QBXZ-5TD8V";
+    protected static final List<String> forgerAccountIds = Arrays.asList("MTR-9KZM-KNYY-QBXZ-5TD8V","MTR-XK4R-7VJU-6EQG-7R335");
 
     public static final String aliceSecretPhrase = "hope peace happen touch easy pretend worthless talk them indeed wheel state";
     private static final String bobSecretPhrase2 = "rshw9abtpsa2";
@@ -56,7 +57,7 @@ public abstract class BlockchainTest extends AbstractBlockchainTest {
             properties.setProperty("metro.isTestnet", "true");
             properties.setProperty("metro.isOffline", "true");
             properties.setProperty("metro.enableFakeForging", "true");
-            properties.setProperty("metro.fakeForgingAccount", forgerAccountId);
+            properties.setProperty("metro.fakeForgingAccounts", "{\"rs\":[\"" + forgerAccountIds.get(0) + "\",\"" + forgerAccountIds.get(1) + "\"]}");
             properties.setProperty("metro.testnetMaxWorkTarget", "1f00ffff");
             properties.setProperty("metro.testnetGuaranteedBalanceKeyblockConfirmations", "3");
             properties.setProperty("metro.mine.secretPhrase", aliceSecretPhrase);
@@ -95,6 +96,15 @@ public abstract class BlockchainTest extends AbstractBlockchainTest {
     public static void generateBlock() {
         try {
             blockchainProcessor.generateBlock(forgerSecretPhrase, Metro.getEpochTime());
+        } catch (BlockchainProcessor.BlockNotAcceptedException e) {
+            e.printStackTrace();
+            Assert.fail();
+        }
+    }
+
+    public static void generateBlockBy(Tester forger) {
+        try {
+            blockchainProcessor.generateBlock(forger.getSecretPhrase(), Metro.getEpochTime());
         } catch (BlockchainProcessor.BlockNotAcceptedException e) {
             e.printStackTrace();
             Assert.fail();

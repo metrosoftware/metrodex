@@ -4,18 +4,19 @@ import metro.util.Convert;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import static metro.Consensus.HASH_FUNCTION;
 
 public class BlockTest extends BlockchainTest {
 
-    private static final byte[] generatorPublicKey = Convert.parseHexString("1259ec21d31a30898d7cd1609f80d9668b4778e3d97e941044b39f0c44d2e51b");
-
     @Test
-    public void testProcessHeader() {
+    public void testProcessHeader() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         generateBlock();
         Block posBlock = Metro.getBlockchain().getLastBlock();
         byte[] zero32bytes = new byte[Convert.HASH_SIZE];
@@ -23,14 +24,19 @@ public class BlockTest extends BlockchainTest {
         byte[] prevBlockHash = HASH_FUNCTION.hash(posBlock.getBytes());
         long prevBlockId = posBlock.getId();
         byte[] prevKeyBlockHash = Convert.parseHexString("2e46f6ffdf11ae63645938a59d000e08fdcb307c69727a57efa4b90b556a16ed");
+        byte[] publicKey = ALICE.getPublicKey();
+        byte[] generationSignature = Convert.generationSequence(posBlock.getGenerationSequence(), publicKey);
 
-        byte[] generationSignature = Convert.generationSequence(posBlock.getGenerationSequence(), generatorPublicKey);
+        Method coinbaseBuilder = blockchainProcessor.getClass().getDeclaredMethod("buildCoinbase", long.class, String.class, List.class, boolean.class, int.class);
+        coinbaseBuilder.setAccessible(true);
+
+        TransactionImpl coinbase = (TransactionImpl) coinbaseBuilder.invoke(blockchainProcessor, posBlock.getTimestamp() + 1, ALICE.getSecretPhrase(), Collections.EMPTY_LIST, true, 0);
 
         BlockImpl block0 = new BlockImpl(Consensus.getKeyBlockVersion(posBlock.getHeight()), Metro.getEpochTime(), 0x9299FF3, prevBlockId, 0, 1,
-                0, 0, 0, Convert.EMPTY_HASH, generatorPublicKey,
-                generationSignature, null, prevBlockHash, prevKeyBlockHash, zero32bytes, null);
+                0, 0, 0, Convert.EMPTY_HASH, publicKey,
+                generationSignature, null, prevBlockHash, prevKeyBlockHash, zero32bytes, Collections.singletonList(coinbase));
         byte[] header = block0.bytes();
-        Block block1 = Metro.getBlockchain().composeKeyBlock(header, generatorPublicKey, new ArrayList<>());
+        Block block1 = Metro.getBlockchain().composeKeyBlock(header, publicKey, Collections.singletonList(coinbase));
         Assert.assertArrayEquals(header, block1.getBytes());
         Assert.assertEquals(block0, block1);
     }

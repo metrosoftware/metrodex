@@ -273,12 +273,13 @@ final class BlockDb {
         }
     }
 
-    static List<Pair<Long,Integer>> getBlockGenerators(int startHeight) {
+    static List<Pair<Long,Integer>> getBlockGenerators(int startHeight, int endHeight) {
         List<Pair<Long,Integer>> generators = new ArrayList<>();
         try (Connection con = Db.db.getConnection();
                 PreparedStatement pstmt = con.prepareStatement(
-                        "SELECT generator_id, COUNT(generator_id) AS count FROM block WHERE height >= ? AND nonce IS NULL GROUP BY generator_id")) {
+                        "SELECT generator_id, COUNT(generator_id) AS count FROM block WHERE height >= ? AND height <= ? AND nonce IS NULL GROUP BY generator_id")) {
             pstmt.setInt(1, startHeight);
+            pstmt.setInt(2, endHeight);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
                     int count = rs.getInt("count");

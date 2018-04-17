@@ -22,6 +22,8 @@ import org.junit.Test;
 
 import java.math.BigInteger;
 
+import static metro.Consensus.GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS;
+
 public class GeneratorTest extends BlockchainTest {
 
     /**
@@ -60,4 +62,22 @@ public class GeneratorTest extends BlockchainTest {
         }
     }
 
+    @Test
+    public void testForgersMerkleDuringScan() throws MetroException {
+        // TODO #207 more complex testing of forgers Merkle
+        for (int i = 0; i < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS; i++) {
+            generateBlockBy(ALICE);
+            Assert.assertNotNull(mineBlock());
+        }
+        for (int i = 0; i < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS; i++) {
+            generateBlock();
+            Assert.assertNotNull(mineBlock());
+        }
+        for (int i = 0; i < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS; i++) {
+            generateBlockBy(ALICE);
+            Assert.assertNotNull(mineBlock());
+        }
+        blockchainProcessor.scan(blockchain.getHeight() - GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS * 3, true);
+        Assert.assertEquals("scan failed to preserve block records", 18, blockchain.getHeight());
+    }
 }

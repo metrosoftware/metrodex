@@ -1,6 +1,8 @@
 package metro;
 
 import metro.util.Convert;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -11,34 +13,66 @@ import java.nio.ByteOrder;
 import java.util.Collections;
 import java.util.List;
 
+import static metro.Consensus.GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS;
 import static metro.Consensus.HASH_FUNCTION;
 
 public class BlockTest extends BlockchainTest {
 
-    @Test
-    public void testProcessHeader() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    private BlockImpl prepareBlock(byte[] prevKeyBlockHash, Tester issuer) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         generateBlock();
         Block posBlock = Metro.getBlockchain().getLastBlock();
         byte[] zero32bytes = new byte[Convert.HASH_SIZE];
-
         byte[] prevBlockHash = HASH_FUNCTION.hash(posBlock.getBytes());
         long prevBlockId = posBlock.getId();
+        byte[] pubKey = issuer.getPublicKey();
+        byte[] generationSignature = Convert.generationSequence(posBlock.getGenerationSequence(), pubKey);
+        if (prevKeyBlockHash != null) {
+            Method coinbaseBuilder = blockchainProcessor.getClass().getDeclaredMethod("buildCoinbase", long.class, String.class, List.class, boolean.class, int.class);
+            coinbaseBuilder.setAccessible(true);
+
+            TransactionImpl coinbase = (TransactionImpl) coinbaseBuilder.invoke(blockchainProcessor, posBlock.getTimestamp() + 1, ALICE.getSecretPhrase(), Collections.EMPTY_LIST, true, 0);
+            return new BlockImpl(Consensus.getKeyBlockVersion(posBlock.getHeight()), Metro.getEpochTime(), 0x9299FF3, prevBlockId, 0, 1,
+                    0, 0, 0, Convert.EMPTY_HASH, pubKey,
+                    generationSignature, null, prevBlockHash, prevKeyBlockHash, zero32bytes, Collections.singletonList(coinbase));
+        } else {
+            return new BlockImpl(Consensus.getPosBlockVersion(posBlock.getHeight()), Metro.getEpochTime(), prevBlockId, 0, 0,
+                    0, 0, 0, Convert.EMPTY_HASH, pubKey,
+                    generationSignature, prevBlockHash, zero32bytes, zero32bytes, Collections.emptyList(), issuer.getSecretPhrase());
+        }
+    }
+
+    @Test
+    public void testProcessHeader() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         byte[] prevKeyBlockHash = Convert.parseHexString("2e46f6ffdf11ae63645938a59d000e08fdcb307c69727a57efa4b90b556a16ed");
-        byte[] publicKey = ALICE.getPublicKey();
-        byte[] generationSignature = Convert.generationSequence(posBlock.getGenerationSequence(), publicKey);
 
-        Method coinbaseBuilder = blockchainProcessor.getClass().getDeclaredMethod("buildCoinbase", long.class, String.class, List.class, boolean.class, int.class);
-        coinbaseBuilder.setAccessible(true);
-
-        TransactionImpl coinbase = (TransactionImpl) coinbaseBuilder.invoke(blockchainProcessor, posBlock.getTimestamp() + 1, ALICE.getSecretPhrase(), Collections.EMPTY_LIST, true, 0);
-
-        BlockImpl block0 = new BlockImpl(Consensus.getKeyBlockVersion(posBlock.getHeight()), Metro.getEpochTime(), 0x9299FF3, prevBlockId, 0, 1,
-                0, 0, 0, Convert.EMPTY_HASH, publicKey,
-                generationSignature, null, prevBlockHash, prevKeyBlockHash, zero32bytes, Collections.singletonList(coinbase));
+        BlockImpl block0 = prepareBlock(prevKeyBlockHash, ALICE);
         byte[] header = block0.bytes();
-        Block block1 = Metro.getBlockchain().composeKeyBlock(header, publicKey, Collections.singletonList(coinbase));
+        Block block1 = Metro.getBlockchain().composeKeyBlock(header, ALICE.getPublicKey(), block0.getTransactions());
         Assert.assertArrayEquals(header, block1.getBytes());
         Assert.assertEquals(block0, block1);
+    }
+
+    @Test
+    public void testConvertPosBlockToJSON_andBack() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        BlockImpl block0 = prepareBlock(null, ALICE);
+        JSONObject json = block0.getJSONObject();
+
+        Method parser = block0.getClass().getDeclaredMethod("parseBlock", json.getClass());
+        parser.setAccessible(true);
+        BlockImpl block1 = (BlockImpl) parser.invoke(block0, (JSONObject)JSONValue.parse(json.toJSONString()));
+        Assert.assertEquals(block0, block1);
+    }
+
+    @Test
+    public void testConvertKeyBlockToJSON_andBack() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        BlockImpl block0 = prepareBlock(Convert.EMPTY_HASH, ALICE);
+
+        Method parser = block0.getClass().getDeclaredMethod("parseBlock", JSONObject.class);
+        parser.setAccessible(true);
+        block0.sign(ALICE.getSecretPhrase());
+        BlockImpl block1 = (BlockImpl) parser.invoke(block0, (JSONObject)JSONValue.parse(block0.getJSONObject().toJSONString()));
+        Assert.assertEquals(block0, block1);
+        Assert.assertEquals(block0.getBaseTarget(), block1.getBaseTarget());
     }
 
     @Test
@@ -67,8 +101,14 @@ public class BlockTest extends BlockchainTest {
         Block minedBlock = mineBlock();
         Assert.assertEquals(1, minedBlock.getTransactions().size());
         Assert.assertTrue(minedBlock.getTransactions().get(0).getType().isCoinbase());
-        // TODO #188 check forgersMerkle
+        Assert.assertArrayEquals(Convert.EMPTY_HASH, minedBlock.getForgersMerkleRoot());
+        generateBlock();
+        for (int i = 0; i < Math.min(GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS, 1); i++) {
+            minedBlock = mineBlock();
+            Assert.assertNotNull(minedBlock);
+        }
 
+        Assert.assertEquals("1584abcb68b7beb00d30c4a93270d8607e596da72697bd92f0d7edac79e49fa8", Convert.toHexString(minedBlock.getForgersMerkleRoot()));
     }
 
     @Test

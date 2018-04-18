@@ -355,7 +355,7 @@ public final class BlockImpl implements Block {
 
     static BlockImpl parseBlock(JSONObject blockData) throws MetroException.NotValidException {
         try {
-            short version = ((Long) blockData.get("version")).shortValue();
+            short version = ((Number) blockData.get("version")).shortValue();
             boolean keyBlock = isKeyBlockVersion(version);
             long timestamp = ((Long) blockData.get("timestamp")).longValue();
             long previousKeyBlock = 0, nonce = 0, baseTarget = 0;
@@ -368,7 +368,7 @@ public final class BlockImpl implements Block {
                 previousKeyBlockHash = Convert.parseHexString((String) blockData.get("previousKeyBlockHash"));
                 forgersMerkleRoot = Convert.parseHexString((String) blockData.get("forgersMerkleRoot"));
             } else {
-                payloadLength = ((Long) blockData.get("payloadLength")).intValue();
+                payloadLength = ((Number) blockData.get("payloadLength")).intValue();
             }
             txMerkleRoot = Convert.parseHexString((String) blockData.get("txMerkleRoot"));
             byte[] generationSequence = Convert.parseHexString((String) blockData.get("generationSequence"));

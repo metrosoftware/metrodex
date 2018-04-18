@@ -91,6 +91,7 @@ public abstract class BlockchainTest extends AbstractBlockchainTest {
         TransactionProcessorImpl.getInstance().clearUnconfirmedTransactions();
         blockchainProcessor.popOffTo(baseHeight);
         Metro.getBlockchain().forgetLastKeyBlock();
+        Generator.resetActiveGenerators();
     }
 
     public static void generateBlock() {

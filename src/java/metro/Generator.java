@@ -431,13 +431,8 @@ public final class Generator implements Comparable<Generator> {
                 forgersMerkle = null;
             }
         }, BlockchainProcessor.Event.BLOCK_POPPED);
-        Metro.getBlockchainProcessor().addListener(block -> {
-            synchronized(activeGenerators) {
-                generatorsInitialized = false;
-                activeGenerators.clear();
-                forgersMerkle = null;
-            }
-        }, BlockchainProcessor.Event.RESCAN_BEGIN);
+
+        Metro.getBlockchainProcessor().addListener(block -> resetActiveGenerators(), BlockchainProcessor.Event.RESCAN_BEGIN);
     }
     /**
      * Return a list of generators for the next block.  The caller must hold the blockchain
@@ -495,6 +490,14 @@ public final class Generator implements Comparable<Generator> {
             }
         } finally {
             Metro.getBlockchain().readUnlock();
+        }
+    }
+
+    public static void resetActiveGenerators() {
+        synchronized(activeGenerators) {
+            generatorsInitialized = false;
+            activeGenerators.clear();
+            forgersMerkle = null;
         }
     }
     /**

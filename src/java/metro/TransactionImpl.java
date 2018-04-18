@@ -802,22 +802,22 @@ public final class TransactionImpl implements Transaction {
 
     static TransactionImpl.BuilderImpl newTransactionBuilder(JSONObject transactionData) throws MetroException.NotValidException {
         try {
-            byte type = ((Long) transactionData.get("type")).byteValue();
-            byte subtype = ((Long) transactionData.get("subtype")).byteValue();
+            byte type = ((Number) transactionData.get("type")).byteValue();
+            byte subtype = ((Number) transactionData.get("subtype")).byteValue();
             long timestamp = (Long)transactionData.get("timestamp");
-            short deadline = ((Long) transactionData.get("deadline")).shortValue();
+            short deadline = ((Number) transactionData.get("deadline")).shortValue();
             byte[] senderPublicKey = Convert.parseHexString((String) transactionData.get("senderPublicKey"));
             long amountMQT = Convert.parseLong(transactionData.get("amountMQT"));
             long feeMQT = Convert.parseLong(transactionData.get("feeMQT"));
             String referencedTransactionFullHash = (String) transactionData.get("referencedTransactionFullHash");
             byte[] signature = Convert.parseHexString((String) transactionData.get("signature"));
-            Long versionValue = (Long) transactionData.get("version");
+            Number versionValue = (Number) transactionData.get("version");
             byte version = versionValue == null ? 0 : versionValue.byteValue();
             JSONObject attachmentData = (JSONObject) transactionData.get("attachment");
             int ecBlockHeight = 0;
             long ecBlockId = 0;
             if (version > 0) {
-                ecBlockHeight = ((Long) transactionData.get("ecBlockHeight")).intValue();
+                ecBlockHeight = ((Number) transactionData.get("ecBlockHeight")).intValue();
                 ecBlockId = Convert.parseUnsignedLong((String) transactionData.get("ecBlockId"));
             }
 

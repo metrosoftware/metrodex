@@ -534,7 +534,7 @@ public final class Account {
 
         @Override
         public void checkAvailable(int height) {
-            if (height + Constants.MAX_DIVIDEND_PAYMENT_ROLLBACK < Metro.getBlockchainProcessor().getMinRollbackHeight()) {
+            if (height + Constants.MAX_DIVIDEND_PAYMENT_ROLLBACK < Metro.getBlockchainProcessor().getLowestPossibleHeightForRollback()) {
                 throw new IllegalArgumentException("Historical data as of height " + height +" not available.");
             }
             if (height > Metro.getBlockchain().getHeight()) {
@@ -1144,7 +1144,7 @@ public final class Account {
         Metro.getBlockchain().readLock();
         try {
             int height = currentHeight - numberOfConfirmations;
-            if (currentHeight < Metro.getBlockchainProcessor().getMinRollbackHeight()
+            if (currentHeight < Metro.getBlockchainProcessor().getLowestPossibleHeightForRollback()
                     || height > Metro.getBlockchain().getHeight()) {
                 throw new IllegalArgumentException("Height " + height + " not available for guaranteed balance calculation");
             }

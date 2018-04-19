@@ -18,7 +18,7 @@
  */
 package metro.util;
 
-import metro.crypto.HashFunction;
+import metro.Consensus;
 
 import java.math.BigInteger;
 import java.security.MessageDigest;
@@ -171,13 +171,8 @@ public class BitcoinJUtils {
         //    2     3    4  4
         //  / \   / \   / \
         // t1 t2 t3 t4 t5 t5
-        /*
-        ArrayList<byte[]> tree = new ArrayList<>(vtx.size());
-        // Start by adding all the hashes of the transactions as leaves of the tree.
-        for (TreasureTransaction tx : vtx) {
-            tree.add(tx.getTransactionHash().getBytes());
-        }
-        */
+
+        MessageDigest sha3 = Consensus.HASH_FUNCTION.messageDigest();
         int levelOffset = 0; // Offset in the list where the currently processed level starts.
         // Step through each level, stopping when we reach the root (levelSize == 1).
         for (int levelSize = tree.size(); levelSize > 1; levelSize = (levelSize + 1) / 2) {
@@ -188,7 +183,6 @@ public class BitcoinJUtils {
                 int right = Math.min(left + 1, levelSize - 1);
                 byte[] leftBytes = tree.get(levelOffset + left);
                 byte[] rightBytes = tree.get(levelOffset + right);
-                MessageDigest sha3 = HashFunction.SHA3.messageDigest();
                 sha3.update(leftBytes);
                 sha3.update(rightBytes);
                 tree.add(sha3.digest());

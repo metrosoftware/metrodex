@@ -306,7 +306,7 @@ public final class Poll extends AbstractPoll {
 
     private List<OptionResult> countResults(VoteWeighting voteWeighting) {
         int countHeight = Math.min(finishHeight, Metro.getBlockchain().getHeight());
-        if (countHeight < Metro.getBlockchainProcessor().getMinRollbackHeight()) {
+        if (countHeight < Metro.getBlockchainProcessor().getLowestPossibleHeightForRollback()) {
             return null;
         }
         return countResults(voteWeighting, countHeight);

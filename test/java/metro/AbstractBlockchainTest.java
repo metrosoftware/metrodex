@@ -47,6 +47,8 @@ public abstract class AbstractBlockchainTest {
         testProperties.setProperty("metro.debugLogUnconfirmed", "false");
         testProperties.setProperty("metro.debugTraceQuote", "\"");
         //testProperties.setProperty("metro.numberOfForkConfirmations", "0");
+        // TODO for some reason, this testnet property is ignored - but only in BlockchainProcessorTest
+        testProperties.setProperty("metro.isTestnet", "true");
         return testProperties;
     }
 

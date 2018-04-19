@@ -1007,7 +1007,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     }
 
     private void doTrimDerivedTables() {
-        lastTrimHeight = Math.max(blockchain.getHeight() - Constants.MAX_ROLLBACK, 0);
+        lastTrimHeight = blockchain.getGuaranteedBalanceHeight(blockchain.getHeight());
         if (lastTrimHeight > 0) {
             for (DerivedDbTable table : derivedTables) {
                 blockchain.readLock();
@@ -1056,8 +1056,8 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     }
 
     @Override
-    public int getMinRollbackHeight() {
-        return trimDerivedTables ? (lastTrimHeight > 0 ? lastTrimHeight : Math.max(blockchain.getHeight() - Constants.MAX_ROLLBACK, 0)) : 0;
+    public int getLowestPossibleHeightForRollback() {
+        return trimDerivedTables ? (lastTrimHeight > 0 ? lastTrimHeight : blockchain.getGuaranteedBalanceHeight(blockchain.getHeight())) : 0;
     }
 
     @Override
@@ -1543,7 +1543,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             List<byte[]> txids = new ArrayList<>();
             for (int i = 0; i < block.getTransactions().size(); i++) {
                 TransactionImpl transaction = block.getTransactions().get(i);
-                txids.add(Convert.parseHexString(transaction.getFullHash()));
+                txids.add(transaction.fullHash());
                 if (transaction.getType().isCoinbase() && i > 0) {
                     throw new TransactionNotAcceptedException("Coinbase should be only first transaction in block", transaction);
                 }
@@ -1722,7 +1722,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                     Db.db.endTransaction();
                 }
             }
-            if (commonBlock.getHeight() < getMinRollbackHeight()) {
+            if (commonBlock.getHeight() < getLowestPossibleHeightForRollback()) {
                 Logger.logMessage("Rollback to height " + commonBlock.getHeight() + " not supported, will do a full rescan");
                 popOffWithRescan(commonBlock.getHeight() + 1);
                 return Collections.emptyList();
@@ -1971,7 +1971,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             payloadLength += coinbase.getFullSize();
             List<byte[]> txids = new ArrayList<>();
             for (TransactionImpl transaction : blockTransactions) {
-                txids.add(Convert.parseHexString(transaction.getFullHash()));
+                txids.add(transaction.fullHash());
             }
             List<byte[]> tree = BitcoinJUtils.buildMerkleTree(txids);
             txMerkleRoot = tree.get(tree.size()-1);
@@ -2059,8 +2059,8 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 return;
             }
             scheduleScan(height, validate);
-            if (height > 0 && height < getMinRollbackHeight()) {
-                Logger.logMessage("Rollback to height less than " + getMinRollbackHeight() + " not supported, will do a full scan");
+            if (height > 0 && height < getLowestPossibleHeightForRollback()) {
+                Logger.logMessage("Rollback to height less than " + getLowestPossibleHeightForRollback() + " not supported, will do a full scan");
                 height = 0;
             }
             if (height < 0) {
@@ -2232,7 +2232,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
         List<byte[]> txids = new ArrayList<>();
         for (TransactionImpl transaction : blockTransactions) {
-            txids.add(Convert.parseHexString(transaction.getFullHash()));
+            txids.add(transaction.fullHash());
         }
         List<byte[]> tree = BitcoinJUtils.buildMerkleTree(txids);
         byte[] txMerkleRoot = tree.get(tree.size() - 1);

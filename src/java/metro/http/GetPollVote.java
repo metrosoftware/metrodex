@@ -40,7 +40,7 @@ public class GetPollVote extends APIServlet.APIRequestHandler  {
             int countHeight;
             JSONData.VoteWeighter weighter = null;
             if (includeWeights && (countHeight = Math.min(poll.getFinishHeight(), Metro.getBlockchain().getHeight()))
-                    >= Metro.getBlockchainProcessor().getMinRollbackHeight()) {
+                    >= Metro.getBlockchainProcessor().getLowestPossibleHeightForRollback()) {
                 VoteWeighting voteWeighting = poll.getVoteWeighting();
                 VoteWeighting.VotingModel votingModel = voteWeighting.getVotingModel();
                 weighter = voterId -> votingModel.calcWeight(voteWeighting, voterId, countHeight);

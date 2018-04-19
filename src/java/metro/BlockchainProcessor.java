@@ -42,7 +42,7 @@ public interface BlockchainProcessor extends Observable<Block,BlockchainProcesso
 
     boolean isProcessingBlock();
 
-    int getMinRollbackHeight();
+    int getLowestPossibleHeightForRollback();
 
     int getInitialScanHeight();
 

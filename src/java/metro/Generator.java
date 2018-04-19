@@ -473,12 +473,12 @@ public final class Generator implements Comparable<Generator> {
                 if (forgersMerkle != null) {
                     return forgersMerkle;
                 }
+                MessageDigest mdg = HASH_FUNCTION.messageDigest();
                 forgersMerkle = Generator.getNextGenerators().stream().filter(gen -> gen.getEffectiveBalance() >= MIN_FORKVOTING_AMOUNT_MTR).
                         sorted(Comparator.comparingLong(Generator.ActiveGenerator::getEffectiveBalance)).
                         map(Generator.ActiveGenerator::getMerkleNode).reduce(
                         new byte[0],
                         (acc, val) -> {
-                            MessageDigest mdg = HASH_FUNCTION.messageDigest();
                             mdg.update(acc);
                             return mdg.digest(val);
                         }

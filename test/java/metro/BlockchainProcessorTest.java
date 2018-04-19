@@ -141,10 +141,11 @@ public class BlockchainProcessorTest extends AbstractBlockchainTest {
     }
 
     private static void rescan(final int numBlocks) {
-        if (numBlocks > Constants.MAX_ROLLBACK) {
+        int endHeight = blockchain.getHeight();
+        if (numBlocks > blockchain.getGuaranteedBalanceHeight(endHeight)) {
             return;
         }
-        int endHeight = blockchain.getHeight();
+
         int rescanHeight = endHeight - numBlocks;
         blockchainProcessor.scan(rescanHeight, true);
         Assert.assertEquals(endHeight, blockchain.getHeight());
@@ -154,10 +155,11 @@ public class BlockchainProcessorTest extends AbstractBlockchainTest {
     }
 
     private static void redownload(final int numBlocks, boolean preserveTransactions) {
-        if (numBlocks > Constants.MAX_ROLLBACK) {
+        int endHeight = blockchain.getHeight();
+        if (numBlocks > blockchain.getGuaranteedBalanceHeight(endHeight)) {
             return;
         }
-        int endHeight = blockchain.getHeight();
+
         List<List<Long>> allLessorsBefore = new ArrayList<>();
         List<List<Long>> allLessorBalancesBefore = new ArrayList<>();
         for (long accountId : testLesseeAccounts) {

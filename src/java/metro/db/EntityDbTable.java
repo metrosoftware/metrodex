@@ -62,10 +62,10 @@ public abstract class EntityDbTable<T> extends DerivedDbTable {
 
     public void checkAvailable(int height) {
         if (multiversion) {
-            int minRollBackHeight = isPersistent() && Metro.getBlockchainProcessor().isScanning() ?
-                    Math.max(Metro.getBlockchainProcessor().getInitialScanHeight() - Constants.MAX_ROLLBACK, 0)
-                    : Metro.getBlockchainProcessor().getMinRollbackHeight();
-            if (height < minRollBackHeight) {
+            int rollBackHeight = isPersistent() && Metro.getBlockchainProcessor().isScanning() ?
+                    Metro.getBlockchain().getGuaranteedBalanceHeight(Metro.getBlockchainProcessor().getInitialScanHeight())
+                    : Metro.getBlockchainProcessor().getLowestPossibleHeightForRollback();
+            if (height < rollBackHeight) {
                 throw new IllegalArgumentException("Historical data as of height " + height + " not available.");
             }
         }

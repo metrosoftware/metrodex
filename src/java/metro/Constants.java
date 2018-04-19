@@ -46,8 +46,6 @@ public final class Constants {
     public static final int MIN_BLOCKTIME_LIMIT = BLOCK_TIME - 350;
     public static final int MAX_BLOCKTIME_LIMIT = BLOCK_TIME + 350;
     public static final int BASE_TARGET_GAMMA = 64;
-    public static final int AVERAGE_CLUSTER_SIZE = 200;
-    public static final int MAX_ROLLBACK = Math.max(Metro.getIntProperty("metro.maxRollback"), 20 * AVERAGE_CLUSTER_SIZE);
     public static final int LEASING_DELAY = isTestnet ? Metro.getIntProperty("metro.testnetLeasingDelay", 1440) : 1440;
     public static final long MIN_FORGING_BALANCE_MQT = 1000 * ONE_MTR;
 

@@ -16,6 +16,7 @@
 
 package metro.tools;
 
+import metro.Consensus;
 import metro.Constants;
 import metro.util.Convert;
 import metro.util.Logger;
@@ -31,10 +32,10 @@ import java.util.List;
 public final class BaseTargetTest {
 
     private static final long MIN_BASE_TARGET = Constants.INITIAL_BASE_TARGET * 9 / 10;
-    private static final long MAX_BASE_TARGET = Constants.INITIAL_BASE_TARGET * (Constants.isTestnet ? Constants.MAX_BALANCE_MTR : 50);
+    private static final long MAX_BASE_TARGET = Constants.INITIAL_BASE_TARGET * (Constants.isTestnet ? Consensus.MAX_BALANCE_MTR : 50);
 
-    private static final int MIN_BLOCKTIME_LIMIT = Constants.BLOCK_TIME - 7;
-    private static final int MAX_BLOCKTIME_LIMIT = Constants.BLOCK_TIME + 7;
+    private static final int MIN_BLOCKTIME_LIMIT = Consensus.BLOCK_TIME - 7;
+    private static final int MAX_BLOCKTIME_LIMIT = Consensus.BLOCK_TIME + 7;
 
     private static final int GAMMA = 64;
 
@@ -47,10 +48,10 @@ public final class BaseTargetTest {
 
     private static long calculateBaseTarget(long previousBaseTarget, long blocktimeEMA) {
         long baseTarget;
-        if (blocktimeEMA > Constants.BLOCK_TIME) {
-            baseTarget = (previousBaseTarget * Math.min(blocktimeEMA, MAX_BLOCKTIME_LIMIT)) / Constants.BLOCK_TIME;
+        if (blocktimeEMA > Consensus.BLOCK_TIME) {
+            baseTarget = (previousBaseTarget * Math.min(blocktimeEMA, MAX_BLOCKTIME_LIMIT)) / Consensus.BLOCK_TIME;
         } else {
-            baseTarget = previousBaseTarget - previousBaseTarget * GAMMA * (Constants.BLOCK_TIME - Math.max(blocktimeEMA, MIN_BLOCKTIME_LIMIT)) / (100 * Constants.BLOCK_TIME);
+            baseTarget = previousBaseTarget - previousBaseTarget * GAMMA * (Consensus.BLOCK_TIME - Math.max(blocktimeEMA, MIN_BLOCKTIME_LIMIT)) / (100 * Consensus.BLOCK_TIME);
         }
         if (baseTarget < 0 || baseTarget > MAX_BASE_TARGET) {
             baseTarget = MAX_BASE_TARGET;

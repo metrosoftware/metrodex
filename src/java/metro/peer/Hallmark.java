@@ -17,7 +17,7 @@
 package metro.peer;
 
 import metro.Account;
-import metro.Constants;
+import metro.Consensus;
 import metro.crypto.Crypto;
 import metro.util.Convert;
 
@@ -47,8 +47,8 @@ public final class Hallmark {
         if (host.length() == 0 || host.length() > 100) {
             throw new IllegalArgumentException("Hostname length should be between 1 and 100");
         }
-        if (weight <= 0 || weight > Constants.MAX_BALANCE_MTR) {
-            throw new IllegalArgumentException("Weight should be between 1 and " + Constants.MAX_BALANCE_MTR);
+        if (weight <= 0 || weight > Consensus.MAX_BALANCE_MTR) {
+            throw new IllegalArgumentException("Weight should be between 1 and " + Consensus.MAX_BALANCE_MTR);
         }
 
         byte[] publicKey = Crypto.getPublicKey(secretPhrase);
@@ -100,7 +100,7 @@ public final class Hallmark {
         byte[] data = new byte[hallmarkBytes.length - 64];
         System.arraycopy(hallmarkBytes, 0, data, 0, data.length);
 
-        boolean isValid = host.length() < 100 && weight > 0 && weight <= Constants.MAX_BALANCE_MTR
+        boolean isValid = host.length() < 100 && weight > 0 && weight <= Consensus.MAX_BALANCE_MTR
                 && Crypto.verify(signature, data, publicKey);
         try {
             return new Hallmark(hallmarkString, publicKey, signature, host, weight, date, isValid);

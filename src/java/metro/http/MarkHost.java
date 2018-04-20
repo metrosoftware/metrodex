@@ -16,7 +16,7 @@
 
 package metro.http;
 
-import metro.Constants;
+import metro.Consensus;
 import metro.peer.Hallmark;
 import metro.util.Convert;
 import org.json.simple.JSONObject;
@@ -62,7 +62,7 @@ public final class MarkHost extends APIServlet.APIRequestHandler {
         int weight;
         try {
             weight = Integer.parseInt(weightValue);
-            if (weight <= 0 || weight > Constants.MAX_BALANCE_MTR) {
+            if (weight <= 0 || weight > Consensus.MAX_BALANCE_MTR) {
                 return INCORRECT_WEIGHT;
             }
         } catch (NumberFormatException e) {

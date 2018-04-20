@@ -16,6 +16,7 @@
 
 package metro.util;
 
+import metro.Consensus;
 import metro.Constants;
 import metro.Genesis;
 import metro.MetroException;
@@ -279,7 +280,7 @@ public final class Convert {
     }
 
     public static long parseMTR(String mtr) {
-        return parseStringFraction(mtr, 8, Constants.MAX_BALANCE_MTR);
+        return parseStringFraction(mtr, 8, Consensus.MAX_BALANCE_MTR);
     }
 
     private static long parseStringFraction(String value, int decimals, long maxValue) {

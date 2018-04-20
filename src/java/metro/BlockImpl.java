@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static metro.Consensus.HASH_FUNCTION;
 import static metro.util.Convert.HASH_SIZE;
 import static org.bouncycastle.pqc.math.linearalgebra.IntegerFunctions.squareRoot;
 
@@ -287,7 +288,7 @@ public final class BlockImpl implements Block {
             if (!isKeyBlock() && blockSignature == null) {
                 throw new IllegalStateException("Block is not signed yet");
             }
-            byte[] hash = Consensus.HASH_FUNCTION.hash(bytes());
+            byte[] hash = HASH_FUNCTION.hash(bytes());
             BigInteger bigInteger = Convert.fullHashToBigInteger(hash);
             id = bigInteger.longValue();
             stringId = bigInteger.toString();
@@ -429,7 +430,8 @@ public final class BlockImpl implements Block {
             if (isKeyBlock) {
                 // Key blocks (starting from the 2nd) have non-null previousKeyBlock reference
                 buffer.putLong(previousKeyBlockId);
-                buffer.put(forgersMerkleRoot);
+                // hash the two branches together
+                buffer.put(HASH_FUNCTION.hash(forgersMerkleRoot));
                 // only 4 bytes of target are needed for PoW
                 buffer.putInt((int) (baseTarget & 0xffffffffL));
                 // 8 rather than 4 bytes, so no "extranonce" needed

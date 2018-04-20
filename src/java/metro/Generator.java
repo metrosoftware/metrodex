@@ -46,6 +46,7 @@ import java.util.concurrent.TimeUnit;
 
 import static metro.Consensus.HASH_FUNCTION;
 import static metro.Consensus.MIN_FORKVOTING_AMOUNT_MTR;
+import static metro.util.Convert.HASH_SIZE;
 
 public final class Generator implements Comparable<Generator> {
 
@@ -466,7 +467,7 @@ public final class Generator implements Comparable<Generator> {
      * On-demand calculation of forgersMerkle, called from GetWork and validateKeyBlock
      * @return root of the hash tree
      */
-    public static byte[] getCurrentForgersMerkle() {
+    public static byte[] getCurrentForgersMerkleBranches() {
         Metro.getBlockchain().readLock();
         try {
             synchronized(activeGenerators) {
@@ -474,7 +475,7 @@ public final class Generator implements Comparable<Generator> {
                     return forgersMerkle;
                 }
                 MessageDigest mdg = HASH_FUNCTION.messageDigest();
-                forgersMerkle = Generator.getNextGenerators().stream().filter(gen -> gen.getEffectiveBalance() >= MIN_FORKVOTING_AMOUNT_MTR).
+                byte[] forgersMerkleVotersBranch = Generator.getNextGenerators().stream().filter(gen -> gen.getEffectiveBalance() >= MIN_FORKVOTING_AMOUNT_MTR).
                         sorted(Comparator.comparingLong(Generator.ActiveGenerator::getEffectiveBalance)).
                         map(Generator.ActiveGenerator::getMerkleNode).reduce(
                         new byte[0],
@@ -483,8 +484,12 @@ public final class Generator implements Comparable<Generator> {
                             return mdg.digest(val);
                         }
                 );
-                if (forgersMerkle.length == 0) {
-                    forgersMerkle = new byte[Convert.HASH_SIZE];
+                // TODO #211
+                byte[] forgersMerkleOutfeedersBranch = Convert.EMPTY_HASH;
+                forgersMerkle = new byte[HASH_SIZE * 2];
+                if (forgersMerkleVotersBranch.length > 0) {
+                    System.arraycopy(forgersMerkleVotersBranch, 0, forgersMerkle, 0, HASH_SIZE);
+                    System.arraycopy(forgersMerkleOutfeedersBranch, 0, forgersMerkle, HASH_SIZE, HASH_SIZE);
                 }
                 return forgersMerkle;
             }

@@ -22,6 +22,8 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -144,5 +146,10 @@ public abstract class BlockchainTest extends AbstractBlockchainTest {
             }
         }
         return null;
+    }
+
+    public byte[] txHashPrivateAccess(Transaction tx) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        Method fullHash = tx.getClass().getDeclaredMethod("fullHash");
+        return (byte[])fullHash.invoke(tx);
     }
 }

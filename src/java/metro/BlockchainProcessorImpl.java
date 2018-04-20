@@ -1449,11 +1449,6 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                     throw new BlockNotAcceptedException("Previous keyBlock hash doesn't match", block);
                 }
             }
-        } else if (block.getNonce() != 0) {
-            throw new BlockNotAcceptedException("Non-zero nonce is incompatible with POS block", block);
-        }
-
-        if (block.isKeyBlock()) {
             Block.ValidationResult status = validateKeyBlock(block);
             if (status != Block.ValidationResult.OK) {
                 throw new BlockNotAcceptedException("Special keyBlock validation failed: " + status, block);
@@ -1495,7 +1490,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             return Block.ValidationResult.INCORRECT_VERSION;
         }
         // TODO #188
-        if (Convert.byteArrayComparator.compare(keyBlock.getForgersMerkleRoot(), Generator.getCurrentForgersMerkle()) != 0) {
+        if (!Arrays.equals(keyBlock.getForgersMerkleRoot(), Generator.getCurrentForgersMerkleBranches())) {
             return Block.ValidationResult.FORGERS_MERKLE_ROOT_DISCREPANCY;
         }
 
@@ -2227,7 +2222,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         long previousKeyBlockId = previousKeyBlock == null ? 0 : previousKeyBlock.getId();
         long baseTarget = BitcoinJUtils.encodeCompactBits(Metro.getBlockchain().getNextTarget());
         long blockTimestamp = Metro.getEpochTime();
-        byte[] forgersMerkle = Generator.getCurrentForgersMerkle();
+        byte[] forgersMerkle = Generator.getCurrentForgersMerkleBranches();
         List<TransactionImpl> blockTransactions = new ArrayList<>();
 
         int keyHeight = previousKeyBlock != null ? previousKeyBlock.getLocalHeight() + 1 : 0;

@@ -22,6 +22,7 @@ public class BlockTest extends BlockchainTest {
         generateBlock();
         Block posBlock = Metro.getBlockchain().getLastBlock();
         byte[] zero32bytes = new byte[Convert.HASH_SIZE];
+        byte[] forgersBranches = Convert.parseHexString("1584abcb68b7beb00d30c4a93270d8607e596da72697bd92f0d7edac79e49fa80000000000000000000000000000000000000000000000000000000000000000");
         byte[] prevBlockHash = HASH_FUNCTION.hash(posBlock.getBytes());
         long prevBlockId = posBlock.getId();
         byte[] pubKey = issuer.getPublicKey();
@@ -33,11 +34,11 @@ public class BlockTest extends BlockchainTest {
             TransactionImpl coinbase = (TransactionImpl) coinbaseBuilder.invoke(blockchainProcessor, posBlock.getTimestamp() + 1, ALICE.getSecretPhrase(), Collections.EMPTY_LIST, true, 0);
             return new BlockImpl(Consensus.getKeyBlockVersion(posBlock.getHeight()), Metro.getEpochTime(), 0x9299FF3, prevBlockId, 0, 1,
                     0, 0, 0, Convert.EMPTY_HASH, pubKey,
-                    generationSignature, null, prevBlockHash, prevKeyBlockHash, zero32bytes, Collections.singletonList(coinbase));
+                    generationSignature, null, prevBlockHash, prevKeyBlockHash, forgersBranches, Collections.singletonList(coinbase));
         } else {
             return new BlockImpl(Consensus.getPosBlockVersion(posBlock.getHeight()), Metro.getEpochTime(), prevBlockId, 0, 0,
                     0, 0, 0, Convert.EMPTY_HASH, pubKey,
-                    generationSignature, prevBlockHash, zero32bytes, zero32bytes, Collections.emptyList(), issuer.getSecretPhrase());
+                    generationSignature, prevBlockHash, zero32bytes, forgersBranches, Collections.emptyList(), issuer.getSecretPhrase());
         }
     }
 
@@ -76,7 +77,7 @@ public class BlockTest extends BlockchainTest {
     }
 
     @Test
-    public void testPrepareAndValidateKeyBlockWithoutSolving() throws MetroException {
+    public void testPrepareAndValidateKeyBlockWithoutSolving() throws MetroException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         BlockImpl preparedBlock = Metro.getBlockchainProcessor().prepareKeyBlock();
         Assert.assertEquals(0x8000, Short.toUnsignedInt(preparedBlock.getVersion()) & 0x8000);
 
@@ -85,10 +86,9 @@ public class BlockTest extends BlockchainTest {
         Assert.assertEquals(genesis.getId(), preparedBlock.getPreviousBlockId());
         Assert.assertArrayEquals(Consensus.HASH_FUNCTION.hash(genesis.bytes()), preparedBlock.getPreviousBlockHash());
         Assert.assertArrayEquals(Convert.EMPTY_HASH, preparedBlock.getPreviousKeyBlockHash());
-        Assert.assertNotEquals("non-zero txMerkleRoot expected", Convert.toHexString(Convert.EMPTY_HASH), Convert.toHexString(preparedBlock.getTxMerkleRoot()));
         Assert.assertEquals(1, preparedBlock.getTransactions().size());
         Assert.assertTrue(preparedBlock.getTransactions().get(0).getType().isCoinbase());
-        // TODO #188 check forgersMerkle
+        Assert.assertArrayEquals(txHashPrivateAccess(preparedBlock.getTransactions().get(0)), preparedBlock.getTxMerkleRoot());
         try {
             Metro.getBlockchainProcessor().processMinerBlock(preparedBlock);
         } catch (BlockchainProcessor.BlockNotAcceptedException e) {
@@ -97,18 +97,20 @@ public class BlockTest extends BlockchainTest {
     }
 
     @Test
-    public void testPrepareAndValidateSolvedKeyBlock() throws MetroException {
+    public void testPrepareAndValidateSolvedKeyBlock() throws MetroException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         Block minedBlock = mineBlock();
+        Assert.assertNotNull("mined block not accepted", minedBlock);
         Assert.assertEquals(1, minedBlock.getTransactions().size());
         Assert.assertTrue(minedBlock.getTransactions().get(0).getType().isCoinbase());
-        Assert.assertArrayEquals(Convert.EMPTY_HASH, minedBlock.getForgersMerkleRoot());
+        Assert.assertArrayEquals(new byte[Convert.HASH_SIZE * 2], minedBlock.getForgersMerkleRoot());
+        Assert.assertArrayEquals(txHashPrivateAccess(minedBlock.getTransactions().get(0)), minedBlock.getTxMerkleRoot());
         generateBlock();
         for (int i = 0; i < Math.min(GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS, 1); i++) {
             minedBlock = mineBlock();
             Assert.assertNotNull(minedBlock);
         }
 
-        Assert.assertEquals("1584abcb68b7beb00d30c4a93270d8607e596da72697bd92f0d7edac79e49fa8", Convert.toHexString(minedBlock.getForgersMerkleRoot()));
+        Assert.assertEquals("1584abcb68b7beb00d30c4a93270d8607e596da72697bd92f0d7edac79e49fa80000000000000000000000000000000000000000000000000000000000000000", Convert.toHexString(minedBlock.getForgersMerkleRoot()));
     }
 
     @Test

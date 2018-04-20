@@ -32,6 +32,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -435,6 +436,10 @@ final class BlockchainImpl implements Blockchain {
 
         byte[] forgersMerkleRoot = new byte[hashSize];
         header.get(forgersMerkleRoot);
+        byte[] forgersMerkleBranches = Generator.getCurrentForgersMerkleBranches();
+        if (!Arrays.equals(forgersMerkleRoot, HASH_FUNCTION.hash(forgersMerkleBranches))) {
+            throw new IllegalArgumentException("Forgers root: " + Convert.toHexString(forgersMerkleRoot) + ", not matching branches: " + Convert.toHexString(forgersMerkleBranches));
+        }
 
         long baseTarget = header.getInt();
         long nonce = header.getLong();
@@ -448,7 +453,7 @@ final class BlockchainImpl implements Blockchain {
 
         return new BlockImpl(version, timestamp, baseTarget, previousBlockId, previousKeyBlockId, nonce,
                 0, rewardMQT, 0, txMerkleRoot, generatorPublicKey,
-                generationSignature, null, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, transactions);
+                generationSignature, null, previousBlockHash, previousKeyBlockHash, forgersMerkleBranches, transactions);
     }
 
     @Override

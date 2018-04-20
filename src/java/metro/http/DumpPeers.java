@@ -16,7 +16,7 @@
 
 package metro.http;
 
-import metro.Constants;
+import metro.Consensus;
 import metro.peer.Peer;
 import metro.peer.Peers;
 import metro.util.Convert;
@@ -45,7 +45,7 @@ public final class DumpPeers extends APIServlet.APIRequestHandler {
     protected JSONStreamAware processRequest(HttpServletRequest req) throws ParameterException {
 
         String version = Convert.nullToEmpty(req.getParameter("version"));
-        int weight = ParameterParser.getInt(req, "weight", 0, (int)Constants.MAX_BALANCE_MTR, false);
+        int weight = ParameterParser.getInt(req, "weight", 0, (int) Consensus.MAX_BALANCE_MTR, false);
         boolean connect = "true".equalsIgnoreCase(req.getParameter("connect")) && API.checkPassword(req);
         if (connect) {
             List<Callable<Object>> connects = new ArrayList<>();

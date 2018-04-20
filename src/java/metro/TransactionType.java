@@ -40,8 +40,9 @@ public abstract class TransactionType {
     static final byte TYPE_SHUFFLING = 3;
     private static final byte TYPE_ACCOUNT_CONTROL = 4;
     private static final byte TYPE_COINBASE = 5;
+    private static final byte TYPE_ENVELOPE = 6;
 
-    private static final int[] KEYBLOCK_TRANSACTION_TYPES = {};
+    private static final int[] KEYBLOCK_TRANSACTION_TYPES = {TYPE_ENVELOPE};
     private static final int[] POSBLOCK_TRANSACTION_TYPES = {TYPE_PAYMENT, TYPE_MESSAGING, TYPE_COLORED_COINS, TYPE_SHUFFLING,
             TYPE_ACCOUNT_CONTROL, TYPE_COINBASE};
 
@@ -151,6 +152,8 @@ public abstract class TransactionType {
                     default:
                         return null;
                 }
+            case TYPE_ENVELOPE:
+                return Envelope.ARBITRARY_ENVELOPE;
             default:
                 return null;
         }
@@ -456,12 +459,86 @@ public abstract class TransactionType {
             @Override
             void validateAttachment(Transaction transaction) throws MetroException.ValidationException {
                 if (transaction.getAmountMQT() != 0) {
-                    throw new MetroException.NotValidException("Invalid ordinary coinbase ammount");
+                    throw new MetroException.NotValidException("Invalid ordinary coinbase amount");
                 }
             }
 
         };
 
+    }
+
+    public static abstract class Envelope extends TransactionType {
+        @Override
+        public byte getType() {
+            return TransactionType.TYPE_ENVELOPE;
+        }
+
+        @Override
+        public byte getSubtype() {
+            return 0;
+        }
+
+        @Override
+        AbstractAttachment parseAttachment(ByteBuffer buffer) throws MetroException.NotValidException {
+            return Attachment.ARBITRARY_ENVELOPE;
+        }
+
+        @Override
+        AbstractAttachment parseAttachment(JSONObject attachmentData) throws MetroException.NotValidException {
+            return Attachment.ARBITRARY_ENVELOPE;
+        }
+
+        @Override
+        void validateAttachment(Transaction transaction) throws ValidationException {
+
+        }
+
+        @Override
+        boolean applyAttachmentUnconfirmed(Transaction transaction, Account senderAccount) {
+            return true;
+        }
+
+        @Override
+        void applyAttachment(Transaction transaction, Account senderAccount, Account recipientAccount) {
+
+        }
+
+        @Override
+        void undoAttachmentUnconfirmed(Transaction transaction, Account senderAccount) {
+
+        }
+
+        @Override
+        public boolean canHaveRecipient() {
+            return false;
+        }
+
+        @Override
+        public boolean isPhasingSafe() {
+            return false;
+        }
+
+        public final static TransactionType ARBITRARY_ENVELOPE = new Envelope() {
+            @Override
+            Attachment.EmptyAttachment parseAttachment(ByteBuffer buffer) {
+                return Attachment.ARBITRARY_ENVELOPE;
+            }
+
+            @Override
+            Attachment.EmptyAttachment parseAttachment(JSONObject attachmentData) {
+                return Attachment.ARBITRARY_ENVELOPE;
+            }
+
+            @Override
+            public LedgerEvent getLedgerEvent() {
+                return LedgerEvent.ARBITRARY_MESSAGE;
+            }
+
+            @Override
+            public String getName() {
+                return "ArbitraryEnvelope";
+            }
+        };
     }
 
     public static abstract class Messaging extends TransactionType {

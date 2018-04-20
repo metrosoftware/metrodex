@@ -555,11 +555,11 @@ public final class BlockImpl implements Block {
         if (blockchainHeight > 2 && blockchainHeight % 2 == 0) {
             BlockImpl block = BlockDb.findBlockAtLocalHeight(blockchainHeight - 2, false);
             long blocktimeAverage = (this.timestamp - block.timestamp) / 3;
-            if (blocktimeAverage > Constants.BLOCK_TIME) {
-                baseTarget = (prevBaseTarget * Math.min(blocktimeAverage, Constants.MAX_BLOCKTIME_LIMIT)) / Constants.BLOCK_TIME;
+            if (blocktimeAverage > Consensus.BLOCK_TIME) {
+                baseTarget = (prevBaseTarget * Math.min(blocktimeAverage, Constants.MAX_BLOCKTIME_LIMIT)) / Consensus.BLOCK_TIME;
             } else {
                 baseTarget = prevBaseTarget - prevBaseTarget * Constants.BASE_TARGET_GAMMA
-                        * (Constants.BLOCK_TIME - Math.max(blocktimeAverage, Constants.MIN_BLOCKTIME_LIMIT)) / (100 * Constants.BLOCK_TIME);
+                        * (Consensus.BLOCK_TIME - Math.max(blocktimeAverage, Constants.MIN_BLOCKTIME_LIMIT)) / (100 * Consensus.BLOCK_TIME);
             }
             if (baseTarget < 0 || baseTarget > Constants.MAX_BASE_TARGET) {
                 baseTarget = Constants.MAX_BASE_TARGET;

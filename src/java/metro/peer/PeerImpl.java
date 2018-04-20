@@ -324,7 +324,7 @@ final class PeerImpl implements Peer {
             hallmarkBalance = account == null ? 0 : account.getBalanceMQT();
             hallmarkBalanceHeight = Metro.getBlockchain().getHeight();
         }
-        return (int)(adjustedWeight * (hallmarkBalance / Constants.ONE_MTR) / Constants.MAX_BALANCE_MTR);
+        return (int)(adjustedWeight * (hallmarkBalance / Constants.ONE_MTR) / Consensus.MAX_BALANCE_MTR);
     }
 
     @Override
@@ -794,7 +794,7 @@ final class PeerImpl implements Peer {
             }
 
             for (PeerImpl peer : groupedPeers) {
-                peer.adjustedWeight = Constants.MAX_BALANCE_MTR * peer.getHallmarkWeight(mostRecentDate) / totalWeight;
+                peer.adjustedWeight = Consensus.MAX_BALANCE_MTR * peer.getHallmarkWeight(mostRecentDate) / totalWeight;
                 Peers.notifyListeners(peer, Peers.Event.WEIGHT);
             }
 

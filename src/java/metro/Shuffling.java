@@ -156,8 +156,8 @@ public final class Shuffling {
 
     static {
         Metro.getBlockchainProcessor().addListener(block -> {
-            if (block.getTransactions().size() == Constants.MAX_NUMBER_OF_TRANSACTIONS
-                    || block.getPayloadLength() > Constants.MAX_PAYLOAD_LENGTH - Constants.MIN_TRANSACTION_SIZE) {
+            if (block.getTransactions().size() == Consensus.POSBLOCK_MAX_NUMBER_OF_TRANSACTIONS
+                    || block.getPayloadLength() > Consensus.POSBLOCK_MAX_PAYLOAD_LENGTH - Consensus.MIN_TRANSACTION_SIZE) {
                 return;
             }
             List<Shuffling> shufflings = new ArrayList<>();
@@ -851,13 +851,13 @@ public final class Shuffling {
     }
 
     private boolean isFull(Block block) {
-        int transactionSize = Constants.MIN_TRANSACTION_SIZE; // min transaction size with no attachment
+        int transactionSize = Consensus.MIN_TRANSACTION_SIZE; // min transaction size with no attachment
         if (stage == Stage.REGISTRATION) {
             transactionSize += 1 + 32;
         } else { // must use same for PROCESSING/VERIFICATION/BLAME
             transactionSize = 16384; // max observed was 15647 for 30 participants
         }
-        return block.getPayloadLength() + transactionSize > Constants.MAX_PAYLOAD_LENGTH;
+        return block.getPayloadLength() + transactionSize > Consensus.POSBLOCK_MAX_PAYLOAD_LENGTH;
     }
 
     private static byte[] getParticipantsHash(Iterable<ShufflingParticipant> participants) {

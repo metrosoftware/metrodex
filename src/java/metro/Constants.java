@@ -28,23 +28,15 @@ public final class Constants {
     public static final String COIN_SYMBOL = "MTR";
     public static final String ACCOUNT_PREFIX = "MTR";
     public static final String PROJECT_NAME = "Metro";
-    public static final int MAX_NUMBER_OF_TRANSACTIONS = Metro.getIntProperty("metro.maxNumberOfTransactions", 255);
-    public static final int MIN_TRANSACTION_SIZE = 176;
-    public static final int MAX_PAYLOAD_LENGTH = MAX_NUMBER_OF_TRANSACTIONS * MIN_TRANSACTION_SIZE;
-    public static final int KEYBLOCK_MAX_NUMBER_OF_TRANSACTIONS = Metro.getIntProperty("metro.keyblockMaxNumberOfTransactions", 255);
-    public static final int KEYBLOCK_MIN_TRANSACTION_SIZE = 176;
-    public static final int KEYBLOCK_MAX_PAYLOAD_LENGTH = MAX_NUMBER_OF_TRANSACTIONS * KEYBLOCK_MIN_TRANSACTION_SIZE;
 
-    public static final long MAX_BALANCE_MTR = 1000000000;
     public static final long ONE_MTR = 100000000;
-    public static final long MAX_BALANCE_MQT = MAX_BALANCE_MTR * ONE_MTR;
+    public static final long MAX_BALANCE_MQT = Consensus.MAX_BALANCE_MTR * ONE_MTR;
 
-    public static final int BLOCK_TIME = 3000;
-    public static final long INITIAL_BASE_TARGET = BigInteger.valueOf(2).pow(63).divide(BigInteger.valueOf(BLOCK_TIME * MAX_BALANCE_MTR)).longValue(); //153722867;
-    public static final long MAX_BASE_TARGET = INITIAL_BASE_TARGET * (isTestnet ? MAX_BALANCE_MTR : 50);
+    public static final long INITIAL_BASE_TARGET = BigInteger.valueOf(2).pow(63).divide(BigInteger.valueOf(Consensus.BLOCK_TIME * Consensus.MAX_BALANCE_MTR)).longValue(); //153722867;
+    public static final long MAX_BASE_TARGET = INITIAL_BASE_TARGET * (isTestnet ? Consensus.MAX_BALANCE_MTR : 50);
     public static final long MIN_BASE_TARGET = INITIAL_BASE_TARGET * 9 / 10;
-    public static final int MIN_BLOCKTIME_LIMIT = BLOCK_TIME - 350;
-    public static final int MAX_BLOCKTIME_LIMIT = BLOCK_TIME + 350;
+    public static final int MIN_BLOCKTIME_LIMIT = Consensus.BLOCK_TIME - 350;
+    public static final int MAX_BLOCKTIME_LIMIT = Consensus.BLOCK_TIME + 350;
     public static final int BASE_TARGET_GAMMA = 64;
     public static final int LEASING_DELAY = isTestnet ? Metro.getIntProperty("metro.testnetLeasingDelay", 1440) : 1440;
     public static final long MIN_FORGING_BALANCE_MQT = 1000 * ONE_MTR;

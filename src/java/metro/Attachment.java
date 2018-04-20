@@ -205,6 +205,16 @@ public interface Attachment extends Appendix {
 
     };
 
+    // the Envelope payload is in the Appendix
+    EmptyAttachment ARBITRARY_ENVELOPE = new EmptyAttachment() {
+
+        @Override
+        public TransactionType getTransactionType() {
+            return TransactionType.Envelope.ARBITRARY_ENVELOPE;
+        }
+
+    };
+
     final class MessagingAliasAssignment extends AbstractAttachment {
 
         private final String aliasName;
@@ -1853,7 +1863,7 @@ public interface Attachment extends Appendix {
             this.blameData = new byte[count][];
             for (int i = 0; i < count; i++) {
                 int size = buffer.getInt();
-                if (size > Constants.MAX_PAYLOAD_LENGTH) {
+                if (size > Consensus.POSBLOCK_MAX_PAYLOAD_LENGTH) {
                     throw new MetroException.NotValidException("Invalid data size " + size);
                 }
                 this.blameData[i] = new byte[size];

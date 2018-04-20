@@ -49,6 +49,8 @@ import static metro.http.shuffling.ShufflingUtil.verify;
 
 public class TestAutomatedShuffling extends BlockchainTest {
 
+    private final static long FORGING_DELAY = 5;
+
     @Before
     public void stopAllShufflers() {
         Shuffler.stopAllShufflers();
@@ -89,7 +91,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 4; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -165,7 +167,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 2; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -175,7 +177,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 2; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -237,7 +239,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 6; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -299,7 +301,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 9; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -343,7 +345,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 9; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -387,7 +389,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 10; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -432,7 +434,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 10; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -481,7 +483,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 15; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -529,7 +531,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 5; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -538,7 +540,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 2; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -548,7 +550,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 15; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -605,7 +607,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 5; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -617,7 +619,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 2; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -630,7 +632,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 15; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -687,7 +689,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 5; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -696,7 +698,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 5; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -712,7 +714,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 15; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -770,7 +772,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 5; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
         startShuffler(BOB, BOB_RECIPIENT, shufflingFullHash);
@@ -780,7 +782,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 5; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -801,7 +803,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 5; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
         startShuffler(DAVE, DAVE_RECIPIENT, shufflingFullHash);
@@ -809,7 +811,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 15; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -866,7 +868,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 5; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -875,7 +877,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 5; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -898,7 +900,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 15; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -954,14 +956,14 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 2; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
         process(shufflingId, CHUCK, CHUCK_RECIPIENT);
         for (int i = 0; i < 5; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -985,7 +987,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 15; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
         getShufflingResponse = getShuffling(shufflingId);
@@ -1044,7 +1046,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 15; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
         getShufflingResponse = getShuffling(shufflingId);
@@ -1085,7 +1087,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 3; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -1105,7 +1107,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 5; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -1121,7 +1123,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 15; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -1163,7 +1165,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 3; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -1197,7 +1199,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 10; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -1212,7 +1214,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 15; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -1255,7 +1257,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 3; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -1276,7 +1278,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 5; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -1292,7 +1294,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 15; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -1335,7 +1337,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 5; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -1357,7 +1359,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 15; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -1402,7 +1404,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 5; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -1420,7 +1422,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 15; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -1463,7 +1465,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 3; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -1481,7 +1483,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
         for (int i = 0; i < 15; i++) {
             generateBlock();
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -1585,7 +1587,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
                 }
             }
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 
@@ -1632,7 +1634,7 @@ public class TestAutomatedShuffling extends BlockchainTest {
                 }
             }
             try {
-                Thread.sleep(1000);
+                Thread.sleep(FORGING_DELAY);
             } catch (InterruptedException ignore) {}
         }
 

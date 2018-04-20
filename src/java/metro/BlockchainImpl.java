@@ -439,9 +439,15 @@ final class BlockchainImpl implements Blockchain {
         long baseTarget = header.getInt();
         long nonce = header.getLong();
         long rewardMQT = 0L;
+        /*
+        THESE fees are already in coinbaseRewards, for key block
         for (Transaction tx: transactions) {
-            rewardMQT += tx.getFeeMQT();
+            // TODO should coinbase have non-zero fee?
+            if (!tx.getType().isCoinbase()) {
+                rewardMQT += tx.getFeeMQT();
+            }
         }
+        */
         TransactionImpl coinbase = transactions.get(0);
         Attachment.CoinbaseRecipientsAttachment attachment = (Attachment.CoinbaseRecipientsAttachment)coinbase.getAttachment();
         Map<Long, Long> coinbaseRewards = attachment.getRecipients();

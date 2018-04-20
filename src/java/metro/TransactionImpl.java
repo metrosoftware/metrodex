@@ -989,7 +989,7 @@ public final class TransactionImpl implements Transaction {
             }
         }
 
-        if (getFullSize() > Constants.MAX_PAYLOAD_LENGTH) {
+        if (type.isKeyBlockTransaction() && getFullSize() > Consensus.KEYBLOCK_MAX_PAYLOAD_LENGTH || getFullSize() > Consensus.POSBLOCK_MAX_PAYLOAD_LENGTH) {
             throw new MetroException.NotValidException("Transaction size " + getFullSize() + " exceeds maximum payload size");
         }
         int blockchainHeight = Metro.getBlockchain().getHeight();

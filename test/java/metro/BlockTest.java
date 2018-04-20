@@ -13,7 +13,6 @@ import java.nio.ByteOrder;
 import java.util.Collections;
 import java.util.List;
 
-import static metro.Consensus.GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS;
 import static metro.Consensus.HASH_FUNCTION;
 
 public class BlockTest extends BlockchainTest {
@@ -76,7 +75,7 @@ public class BlockTest extends BlockchainTest {
     }
 
     @Test
-    public void testPrepareAndValidateKeyBlockWithoutSolving() throws MetroException {
+    public void testPrepareAndValidateKeyBlockWithoutSolving() throws MetroException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         BlockImpl preparedBlock = Metro.getBlockchainProcessor().prepareKeyBlock();
         Assert.assertEquals(0x8000, Short.toUnsignedInt(preparedBlock.getVersion()) & 0x8000);
 
@@ -85,10 +84,9 @@ public class BlockTest extends BlockchainTest {
         Assert.assertEquals(genesis.getId(), preparedBlock.getPreviousBlockId());
         Assert.assertArrayEquals(Consensus.HASH_FUNCTION.hash(genesis.bytes()), preparedBlock.getPreviousBlockHash());
         Assert.assertArrayEquals(Convert.EMPTY_HASH, preparedBlock.getPreviousKeyBlockHash());
-        Assert.assertNotEquals("non-zero txMerkleRoot expected", Convert.toHexString(Convert.EMPTY_HASH), Convert.toHexString(preparedBlock.getTxMerkleRoot()));
         Assert.assertEquals(1, preparedBlock.getTransactions().size());
         Assert.assertTrue(preparedBlock.getTransactions().get(0).getType().isCoinbase());
-        // TODO #188 check forgersMerkle
+        Assert.assertArrayEquals(txHashPrivateAccess(preparedBlock.getTransactions().get(0)), preparedBlock.getTxMerkleRoot());
         try {
             Metro.getBlockchainProcessor().processMinerBlock(preparedBlock);
         } catch (BlockchainProcessor.BlockNotAcceptedException e) {
@@ -97,18 +95,11 @@ public class BlockTest extends BlockchainTest {
     }
 
     @Test
-    public void testPrepareAndValidateSolvedKeyBlock() throws MetroException {
+    public void testPrepareAndValidateSolvedKeyBlock() throws MetroException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         Block minedBlock = mineBlock();
         Assert.assertEquals(1, minedBlock.getTransactions().size());
         Assert.assertTrue(minedBlock.getTransactions().get(0).getType().isCoinbase());
-        Assert.assertArrayEquals(Convert.EMPTY_HASH, minedBlock.getForgersMerkleRoot());
-        generateBlock();
-        for (int i = 0; i < Math.min(GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS, 1); i++) {
-            minedBlock = mineBlock();
-            Assert.assertNotNull(minedBlock);
-        }
-
-        Assert.assertEquals("1584abcb68b7beb00d30c4a93270d8607e596da72697bd92f0d7edac79e49fa8", Convert.toHexString(minedBlock.getForgersMerkleRoot()));
+        Assert.assertArrayEquals(txHashPrivateAccess(minedBlock.getTransactions().get(0)), minedBlock.getTxMerkleRoot());
     }
 
     @Test

@@ -1419,6 +1419,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     }
 
     private void validate(BlockImpl block, BlockImpl previousLastBlock, BlockImpl previousLastKeyBlock, long curTime) throws BlockNotAcceptedException {
+        boolean keyBlock = block.isKeyBlock();
         if (previousLastBlock.getId() != block.getPreviousBlockId()) {
             throw new BlockOutOfOrderException("Previous block id doesn't match", block);
         }
@@ -1438,7 +1439,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         if (!Arrays.equals(HASH_FUNCTION.hash(previousLastBlock.bytes()), block.getPreviousBlockHash())) {
             throw new BlockNotAcceptedException("Previous block hash doesn't match", block);
         }
-        if (block.isKeyBlock()) {
+        if (keyBlock) {
             if (previousLastKeyBlock == null) {
                 if (!Arrays.equals(Convert.EMPTY_HASH, block.getPreviousKeyBlockHash())) {
                     throw new BlockNotAcceptedException("Previous keyBlock hash for the 1st ever keyBlock needs to have 32 zeros", block);
@@ -1448,25 +1449,31 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                     throw new BlockNotAcceptedException("Previous keyBlock hash doesn't match", block);
                 }
             }
-        } else if (block.getNonce() != 0) {
-            throw new BlockNotAcceptedException("Non-zero nonce is incompatible with POS block", block);
-        }
-
-        if (block.isKeyBlock()) {
             Block.ValidationResult status = validateKeyBlock(block);
             if (status != Block.ValidationResult.OK) {
                 throw new BlockNotAcceptedException("Special keyBlock validation failed: " + status, block);
             }
+        } else if (block.getNonce() != 0) {
+            throw new BlockNotAcceptedException("Non-zero nonce is incompatible with POS block", block);
         }
 
         if (block.getId() == 0L || BlockDb.hasBlock(block.getId(), previousLastBlock.getHeight())) {
             throw new BlockNotAcceptedException("Duplicate block or invalid id", block);
         }
-        if (block.getTransactions().size() > Constants.MAX_NUMBER_OF_TRANSACTIONS) {
+        if (!keyBlock && block.getTransactions().size() > Consensus.POSBLOCK_MAX_NUMBER_OF_TRANSACTIONS) {
             throw new BlockNotAcceptedException("Invalid block transaction count " + block.getTransactions().size(), block);
         }
-        if (block.getPayloadLength() > Constants.MAX_PAYLOAD_LENGTH || block.getPayloadLength() < 0) {
+        if (block.getPayloadLength() < 0) {
             throw new BlockNotAcceptedException("Invalid block payload length " + block.getPayloadLength(), block);
+        }
+        if (keyBlock) {
+            if (block.getPayloadLength() > Consensus.KEYBLOCK_MAX_PAYLOAD_LENGTH) {
+                throw new BlockNotAcceptedException("Invalid block payload length " + block.getPayloadLength(), block);
+            }
+        } else {
+            if (block.getPayloadLength() > Consensus.POSBLOCK_MAX_PAYLOAD_LENGTH) {
+                throw new BlockNotAcceptedException("Invalid block payload length " + block.getPayloadLength(), block);
+            }
         }
         if (!block.verifyGenerationSequence() && !Generator.allowsFakeForging(block.getGeneratorPublicKey())) {
             Account generatorAccount = Account.getAccount(block.getGeneratorId());
@@ -1828,11 +1835,11 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         }
         SortedSet<UnconfirmedTransaction> sortedTransactions = new TreeSet<>(transactionArrivalComparator);
         int payloadLength = 0;
-        while (payloadLength <= Constants.MAX_PAYLOAD_LENGTH && sortedTransactions.size() <= Constants.MAX_NUMBER_OF_TRANSACTIONS) {
+        while (payloadLength <= Consensus.POSBLOCK_MAX_PAYLOAD_LENGTH && sortedTransactions.size() <= Consensus.POSBLOCK_MAX_NUMBER_OF_TRANSACTIONS) {
             int prevNumberOfNewTransactions = sortedTransactions.size();
             for (UnconfirmedTransaction unconfirmedTransaction : orderedUnconfirmedTransactions) {
                 int transactionLength = unconfirmedTransaction.getTransaction().getFullSize();
-                if (sortedTransactions.contains(unconfirmedTransaction) || payloadLength + transactionLength > Constants.MAX_PAYLOAD_LENGTH) {
+                if (sortedTransactions.contains(unconfirmedTransaction) || payloadLength + transactionLength > Consensus.POSBLOCK_MAX_PAYLOAD_LENGTH) {
                     continue;
                 }
                 if (unconfirmedTransaction.getVersion() != getTransactionVersion(previousBlock.getHeight())) {
@@ -2252,11 +2259,11 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         }
         SortedSet<UnconfirmedTransaction> sortedTransactions = new TreeSet<>(transactionArrivalComparator);
         int payloadLength = 0;
-        while (payloadLength <= Constants.KEYBLOCK_MAX_PAYLOAD_LENGTH && sortedTransactions.size() <= Constants.KEYBLOCK_MAX_NUMBER_OF_TRANSACTIONS) {
+        while (payloadLength <= Consensus.KEYBLOCK_MAX_PAYLOAD_LENGTH) {
             int prevNumberOfNewTransactions = sortedTransactions.size();
             for (UnconfirmedTransaction unconfirmedTransaction : orderedUnconfirmedTransactions) {
                 int transactionLength = unconfirmedTransaction.getTransaction().getFullSize();
-                if (sortedTransactions.contains(unconfirmedTransaction) || payloadLength + transactionLength > Constants.KEYBLOCK_MAX_PAYLOAD_LENGTH) {
+                if (sortedTransactions.contains(unconfirmedTransaction) || payloadLength + transactionLength > Consensus.KEYBLOCK_MAX_PAYLOAD_LENGTH) {
                     continue;
                 }
                 if (unconfirmedTransaction.getVersion() != getTransactionVersion(previousBlock.getHeight())) {

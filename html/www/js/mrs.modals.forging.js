@@ -188,6 +188,16 @@ var MRS = (function(MRS, $) {
                     status = MRS.constants.UNKNOWN;
                     tooltip = MRS.escapeRespStr(response.errorDescription);
                 }
+                MRS.setMiningStatusFromResponse(response);
+                MRS.setMiningIndicatorStatus(MRS.miningStatus);
+                if (MRS.miningStatus == MRS.constants.NOT_MINING) {
+                    MRS.isSecretEntered = false;
+                }
+                var miningIndicator = $("#mining_indicator");
+                miningIndicator.find("span").html($.t(MRS.miningStatus)).attr("data-i18n", MRS.miningStatus);
+                miningIndicator.show();
+                var miningTooltip = MRS.getMiningTooltip(response);
+                MRS.updateMiningTooltip(miningTooltip);
             }, { isAsync: false });
         }
         setForgingIndicatorStatus(status);

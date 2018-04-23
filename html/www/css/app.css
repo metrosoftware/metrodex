@@ -654,6 +654,9 @@ body > .header .logo .icon {
 #forging_indicator {
 	font-size: 14px;
 }
+#mining_indicator {
+  font-size: 14px;
+}
 .user-panel > .info > p {
   margin-bottom: 9px;
 }
@@ -3081,26 +3084,30 @@ input:invalid {
 }
 
 /* Red (not forging) */
-#forging_indicator i, #connected_indicator i {
+#forging_indicator i, #connected_indicator i, #mining_indicator i {
   color:#a94442;
 }
 
 /* Red (not forging) */
-#forging_indicator.not_forging i {
+#forging_indicator.not_forging i, #mining_indicator.not_mining i {
   color:#a94442;
 }
 
 /* Green (forging) */
-#forging_indicator.forging i, #connected_indicator.connected i {
+#forging_indicator.forging i, #connected_indicator.connected i, #mining_indicator.mining i {
   color:#3c763d;
 }
 
 /* Gray (Unknown forging status) */
-#forging_indicator.unknown i {
+#forging_indicator.unknown i, #mining_indicator.unknown i {
   color:#cccccc;
 }
 
-#forging_indicator.forging.animated i {
+#mining_indicator.mining_allowed i {
+    color: #EDD50B
+}
+
+#forging_indicator.forging.animated i, #mining_indicator.mining.animated i {
   -webkit-animation-name: pulse;
   -webkit-animation-duration: 2s;
   -webkit-animation-iteration-count: infinite;

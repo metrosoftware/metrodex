@@ -69,6 +69,9 @@ var MRS = (function (MRS, $) {
         'FORGING': 'forging',
         'NOT_FORGING': 'not_forging',
         'UNKNOWN': 'unknown',
+        'MINING_ALLOWED': 'mining_allowed',
+        'MINING' : 'mining',
+        'NOT_MINING' : 'not_mining',
         'LAST_KNOWN_BLOCK': { id: "0", height: "0" },
         'LAST_KNOWN_TESTNET_BLOCK': { id: "0", height: "0" },
         'INITIAL_BASE_TARGET': 153722867,
@@ -247,6 +250,7 @@ var MRS = (function (MRS, $) {
     MRS.isSubmitPassphrase = function (requestType) {
         return requestType == "startForging" ||
             requestType == "stopForging" ||
+            requestType == "startMining" ||
             requestType == "startShuffler" ||
             requestType == "getForging" ||
             requestType == "markHost" ||

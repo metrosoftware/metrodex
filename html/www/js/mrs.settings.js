@@ -21,6 +21,7 @@ var MRS = (function(MRS, $) {
 	MRS.defaultSettings = {
 		"submit_on_enter": "0",
 		"animate_forging": "1",
+        "animate_mining": "1",
         "console_log": "0",
 		"fee_warning": "100000000000",
 		"amount_warning": "10000000000000",
@@ -561,6 +562,15 @@ var MRS = (function(MRS, $) {
 			}
 		}
 
+        if (!key || key == "animate_mining") {
+            var miningIndicator = $("#mining_indicator");
+            if (MRS.settings["animate_mining"] == "1") {
+                miningIndicator.addClass("animated");
+            } else {
+                miningIndicator.removeClass("animated");
+            }
+        }
+
 		if (!key || key == "items_page") {
 			MRS.itemsPerPage = parseInt(MRS.settings["items_page"], 10);
 		}
@@ -587,6 +597,12 @@ var MRS = (function(MRS, $) {
 				MRS.updateForgingStatus();
 			}
 		}
+
+        if (!key || key == "admin_password") {
+            if (MRS.settings["admin_password"] != "") {
+                MRS.updateMiningStatus();
+            }
+        }
 	};
 
 	MRS.updateSettings = function(key, value) {

@@ -43,6 +43,8 @@ public final class GetForging extends APIServlet.APIRequestHandler {
 
         String secretPhrase = ParameterParser.getSecretPhrase(req, false);
         long elapsedTime = Metro.getEpochTime() - Metro.getBlockchain().getLastBlock().getTimestamp();
+        JSONObject response = new JSONObject();
+        GetMining.instance.fillMiningResponse(response);
         if (secretPhrase != null) {
             Account account = Account.getAccount(Crypto.getPublicKey(secretPhrase));
             if (account == null) {
@@ -55,7 +57,7 @@ public final class GetForging extends APIServlet.APIRequestHandler {
             return JSONData.generator(generator, elapsedTime);
         } else {
             API.verifyPassword(req);
-            JSONObject response = new JSONObject();
+
             JSONArray generators = new JSONArray();
             Generator.getSortedForgers().forEach(generator -> generators.add(JSONData.generator(generator, elapsedTime)));
             response.put("generators", generators);

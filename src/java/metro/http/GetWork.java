@@ -3,6 +3,7 @@ package metro.http;
 import metro.Block;
 import metro.Metro;
 import metro.MetroException;
+import metro.Miner;
 import metro.TransactionImpl;
 import metro.crypto.Crypto;
 import metro.util.Convert;
@@ -21,6 +22,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -28,7 +30,8 @@ public final class GetWork extends APIServlet.APIRequestHandler {
 
     static final GetWork instance = new GetWork();
 
-    private final static String secretPhrase = Convert.emptyToNull(Metro.getStringProperty("metro.mine.secretPhrase"));
+    private long lastGetWorkTime;
+
     private AtomicReference<List<TransactionImpl>> transactions = new AtomicReference<>();
 
     private long lastTimestamp;
@@ -38,9 +41,13 @@ public final class GetWork extends APIServlet.APIRequestHandler {
         super(new APITag[]{APITag.MINING});
     }
 
+    public long getLastGetWorkTime() {
+        return lastGetWorkTime;
+    }
+
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest request) throws MetroException {
-
+        lastGetWorkTime = System.currentTimeMillis();
         //TODO ticket #180
         if (Metro.getBlockchainProcessor().isDownloading()) {
             JSONObject response = new JSONObject();
@@ -68,7 +75,7 @@ public final class GetWork extends APIServlet.APIRequestHandler {
                         String blockHeader = (String) params.get(0);
                         byte[] blockHeaderBytes = Convert.parseHexString(blockHeader.toLowerCase());
                         //TODO ticket #177 read secretPhrase as forging do
-                        byte[] generatorPublicKey = Crypto.getPublicKey(secretPhrase);
+                        byte[] generatorPublicKey = Crypto.getPublicKey(Miner.getSecretPhrase());
                         Block extra = Metro.getBlockchain().composeKeyBlock(blockHeaderBytes, generatorPublicKey, transactions.get());
                         boolean blockAccepted = Metro.getBlockchainProcessor().processMinerBlock(extra);
                         Logger.logDebugMessage("Solution found. Block Accepted:" + blockAccepted);

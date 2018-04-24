@@ -30,6 +30,7 @@ import metro.util.Listener;
 import metro.util.Listeners;
 import metro.util.Logger;
 import metro.util.ThreadPool;
+import org.apache.commons.lang3.ArrayUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONStreamAware;
@@ -1498,7 +1499,9 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         if (target.signum() <= 0 || target.compareTo(Consensus.MAX_WORK_TARGET) > 0) {
             return Block.ValidationResult.DIFFICULTY_TARGET_OUT_OF_RANGE;
         }
-        BigInteger hash = new BigInteger(1, HASH_FUNCTION.hash(keyBlock.getBytes()));
+        byte[] hashBytes = HASH_FUNCTION.hash(keyBlock.getBytes());
+        ArrayUtils.reverse(hashBytes);
+        BigInteger hash = new BigInteger(1, hashBytes);
         if (hash.compareTo(target) > 0) {
             return Block.ValidationResult.INSUFFICIENT_WORK;
         }
@@ -1987,7 +1990,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         final byte[] generationSequence = Convert.generationSequence(previousBlock.getGenerationSequence(), publicKey);
         final byte[] previousBlockHash = HASH_FUNCTION.hash(previousBlock.bytes());
 
-        BlockImpl block = new BlockImpl(getPosBlockVersion(previousBlock.getHeight()), blockTimestamp, previousBlock.getId(), 0l, 0l, totalAmountMQT, rewardMQT, payloadLength,
+        BlockImpl block = new BlockImpl(getPosBlockVersion(previousBlock.getHeight()), blockTimestamp, previousBlock.getId(), 0l, 0, totalAmountMQT, rewardMQT, payloadLength,
                 txMerkleRoot, publicKey, generationSequence, previousBlockHash, null, null, blockTransactions, secretPhrase);
 
         try {

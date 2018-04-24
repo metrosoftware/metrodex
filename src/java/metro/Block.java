@@ -50,13 +50,13 @@ public interface Block {
 
     long getPreviousKeyBlockId();
 
-    long getNonce();
+    int getNonce();
 
     byte[] getPreviousBlockHash();
 
     byte[] getPreviousKeyBlockHash();
 
-    public byte[] getTxMerkleRoot();
+    byte[] getTxMerkleRoot();
 
     byte[] getForgersMerkleRoot();
 

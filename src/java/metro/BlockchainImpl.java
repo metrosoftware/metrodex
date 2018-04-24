@@ -442,7 +442,7 @@ final class BlockchainImpl implements Blockchain {
         }
 
         long baseTarget = header.getInt();
-        long nonce = header.getLong();
+        int nonce = header.getInt();
         long rewardMQT = 0L;
         TransactionImpl coinbase = transactions.get(0);
         Attachment.CoinbaseRecipientsAttachment attachment = (Attachment.CoinbaseRecipientsAttachment)coinbase.getAttachment();

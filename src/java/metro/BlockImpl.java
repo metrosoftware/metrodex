@@ -41,7 +41,7 @@ public final class BlockImpl implements Block {
     private final long timestamp;
     private final long previousBlockId;
     private final long previousKeyBlockId;
-    private final long nonce;
+    private final int nonce;
     private volatile byte[] generatorPublicKey;
     private final byte[] previousBlockHash;
     private final byte[] previousKeyBlockHash;
@@ -84,7 +84,7 @@ public final class BlockImpl implements Block {
      * Constructs and signs a new block, by passing a secretPhrase
      *
      */
-    BlockImpl(short version, long timestamp, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountMQT, long rewardMQT, int payloadLength, byte[] txMerkleRoot,
+    BlockImpl(short version, long timestamp, long previousBlockId, long previousKeyBlockId, int nonce, long totalAmountMQT, long rewardMQT, int payloadLength, byte[] txMerkleRoot,
               byte[] generatorPublicKey, byte[] generationSequence, byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] forgersMerkleRoot, List<TransactionImpl> transactions, String secretPhrase) {
         this(version, timestamp, 0, previousBlockId, previousKeyBlockId, nonce, totalAmountMQT, rewardMQT, payloadLength, txMerkleRoot,
                 generatorPublicKey, generationSequence, null, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, transactions);
@@ -96,7 +96,7 @@ public final class BlockImpl implements Block {
      * Typical constructor called for a block not yet in DB
      *
      */
-    BlockImpl(short version, long timestamp, long baseTarget, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountMQT, long rewardMQT, int payloadLength, byte[] txMerkleRoot,
+    BlockImpl(short version, long timestamp, long baseTarget, long previousBlockId, long previousKeyBlockId, int nonce, long totalAmountMQT, long rewardMQT, int payloadLength, byte[] txMerkleRoot,
               byte[] generatorPublicKey, byte[] generationSequence, byte[] blockSignature, byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] forgersMerkleRoot, List<TransactionImpl> transactions) {
         this.version = version;
         this.timestamp = timestamp;
@@ -123,7 +123,7 @@ public final class BlockImpl implements Block {
      * Constructor used after existing block is loaded from DB
      *
      */
-    BlockImpl(short version, long timestamp, long previousBlockId, long previousKeyBlockId, long nonce, long totalAmountMQT, long rewardMQT, int payloadLength,
+    BlockImpl(short version, long timestamp, long previousBlockId, long previousKeyBlockId, int nonce, long totalAmountMQT, long rewardMQT, int payloadLength,
               byte[] txMerkleRoot, long generatorId, byte[] generationSequence, byte[] blockSignature,
               byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] forgersMerkleRoot,
               BigInteger cumulativeDifficulty, BigInteger stakeBatchDifficulty, long baseTarget, long nextBlockId, int height, int localHeight, long id,
@@ -170,7 +170,7 @@ public final class BlockImpl implements Block {
     }
 
     @Override
-    public long getNonce() {
+    public int getNonce() {
         return nonce;
     }
 
@@ -359,12 +359,12 @@ public final class BlockImpl implements Block {
             short version = ((Number) blockData.get("version")).shortValue();
             boolean keyBlock = isKeyBlockVersion(version);
             long timestamp = ((Long) blockData.get("timestamp")).longValue();
-            long previousKeyBlock = 0, nonce = 0, baseTarget = 0;
-            int payloadLength = 0;
+            long previousKeyBlock = 0, baseTarget = 0;
+            int payloadLength = 0, nonce = 0;
             byte[] previousKeyBlockHash = null, forgersMerkleRoot = null, txMerkleRoot;
             if (keyBlock) {
                 previousKeyBlock = Convert.parseUnsignedLong((String) blockData.get("previousKeyBlock"));
-                nonce = Convert.parseLong(blockData.get("nonce"));
+                nonce = ((Number) blockData.get("nonce")).intValue();
                 baseTarget = Convert.parseLong(blockData.get("baseTarget"));
                 previousKeyBlockHash = Convert.parseHexString((String) blockData.get("previousKeyBlockHash"));
                 forgersMerkleRoot = Convert.parseHexString((String) blockData.get("forgersMerkleRoot"));
@@ -401,7 +401,7 @@ public final class BlockImpl implements Block {
     }
 
     public static int getHeaderSize(boolean keyBlock, boolean signed) {
-        return 2 + 8 + 32 + 8 + (keyBlock ? (8 + 32 + 4 + 8) : 8 + 32 + 4 + 8 + 4 + 32) + (signed ? 64 : 0);
+        return 2 + 8 + 32 + 8 + (keyBlock ? (8 + 32 + 4 + 4) : 8 + 32 + 4 + 8 + 4 + 32) + (signed ? 64 : 0);
     }
 
     /**
@@ -434,8 +434,7 @@ public final class BlockImpl implements Block {
                 buffer.put(HASH_FUNCTION.hash(forgersMerkleRoot));
                 // only 4 bytes of target are needed for PoW
                 buffer.putInt((int) (baseTarget & 0xffffffffL));
-                // 8 rather than 4 bytes, so no "extranonce" needed
-                buffer.putLong(nonce);
+                buffer.putInt(nonce);
             } else {
                 buffer.putLong(rewardMQT);
                 buffer.put(previousBlockHash);

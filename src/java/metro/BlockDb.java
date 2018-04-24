@@ -305,7 +305,7 @@ final class BlockDb {
             long timestamp = rs.getLong("timestamp");
             long previousBlockId = rs.getLong("previous_block_id");
             long previousKeyBlockId = rs.getLong("previous_key_block_id");
-            long nonce = rs.getLong("nonce");
+            int nonce = rs.getInt("nonce");
             long totalAmountMQT = rs.getLong("total_amount");
             long rewardMQT = rs.getLong("reward");
             int payloadLength = rs.getInt("payload_length");

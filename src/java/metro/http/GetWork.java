@@ -1,7 +1,6 @@
 package metro.http;
 
 import metro.Block;
-import metro.BlockImpl;
 import metro.Metro;
 import metro.MetroException;
 import metro.TransactionImpl;
@@ -32,6 +31,9 @@ public final class GetWork extends APIServlet.APIRequestHandler {
     private final static String secretPhrase = Convert.emptyToNull(Metro.getStringProperty("metro.mine.secretPhrase"));
     private AtomicReference<List<TransactionImpl>> transactions = new AtomicReference<>();
 
+    private long lastTimestamp;
+    byte[] cache;
+
     private GetWork() {
         super(new APITag[]{APITag.MINING});
     }
@@ -57,7 +59,6 @@ public final class GetWork extends APIServlet.APIRequestHandler {
             response.put("error", e.getMessage());
             return JSON.prepare(response);
         }
-
         try {
             if (content.length() > 0) {
                 JSONObject requestJSON = (JSONObject) (new JSONParser()).parse(content);
@@ -66,10 +67,6 @@ public final class GetWork extends APIServlet.APIRequestHandler {
                     if (!params.isEmpty()) {
                         String blockHeader = (String) params.get(0);
                         byte[] blockHeaderBytes = Convert.parseHexString(blockHeader.toLowerCase());
-                        int keyBlockHeaderSize = BlockImpl.getHeaderSize(true, false);
-                        if (keyBlockHeaderSize != blockHeaderBytes.length) {
-                            throw new IllegalStateException("Invalid block header length:" + blockHeader);
-                        }
                         //TODO ticket #177 read secretPhrase as forging do
                         byte[] generatorPublicKey = Crypto.getPublicKey(secretPhrase);
                         Block extra = Metro.getBlockchain().composeKeyBlock(blockHeaderBytes, generatorPublicKey, transactions.get());
@@ -87,8 +84,12 @@ public final class GetWork extends APIServlet.APIRequestHandler {
 
         Block block = Metro.getBlockchainProcessor().prepareKeyBlock();
         transactions.set((List<TransactionImpl>)block.getTransactions());
-
-        byte[] blockBytes = reverseEvery4Bytes(padZeroValuesSpecialAndSize(block.getBytes()));
+        //FIXME need to update cache on txlist or prev block change
+        if (block.getTimestamp() - lastTimestamp > 1000) {
+            cache = block.getBytes();
+            lastTimestamp = block.getTimestamp();
+        }
+        byte[] blockBytes = padZeroValuesSpecialAndSize(cache);
         JSONObject response = new JSONObject();
         JSONObject result = new JSONObject();
         response.put("result", result);
@@ -99,7 +100,7 @@ public final class GetWork extends APIServlet.APIRequestHandler {
     }
 
     private byte[] padZeroValuesSpecialAndSize(byte[] blockBytes) {
-        byte[] result = Arrays.copyOf(blockBytes, 256);
+        byte[] result = Arrays.copyOf(blockBytes, 128);
         int blockBitsSize =  blockBytes.length*8;
         byte[] blockBitsSizeBytes = ByteBuffer.allocate(8).putLong(blockBitsSize).array();
         for (int i = 0; i< blockBitsSizeBytes.length; i++) {
@@ -108,22 +109,10 @@ public final class GetWork extends APIServlet.APIRequestHandler {
         return result;
     }
 
-    public static byte[] reverseEvery4Bytes(byte[] b) {
-        for(int i=0; i < b.length/4; i++) {
-            byte temp = b[i*4];
-            b[i*4] = b[i*4+3];
-            b[i*4+3] = temp;
-            temp = b[i*4+1];
-            b[i*4+1] = b[i*4+2];
-            b[i*4+2] = temp;
-        }
-        return b;
-    }
-
     private String targetToLittleEndianString(BigInteger value) {
         byte[] bytes = value.toByteArray();
         ArrayUtils.reverse(bytes);
-        return Convert.toHexString(bytes);
+        byte[] target = Arrays.copyOf(bytes, 32);
+        return Convert.toHexString(target);
     }
-
 }

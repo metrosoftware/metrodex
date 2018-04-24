@@ -18,10 +18,10 @@ package metro.mint;
 import metro.Constants;
 import metro.Metro;
 import metro.http.API;
-import metro.http.GetWork;
 import metro.util.Convert;
 import metro.util.Logger;
 import metro.util.TrustAllSSLProvider;
+import org.apache.commons.lang3.ArrayUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
@@ -63,7 +63,7 @@ import static metro.Consensus.HASH_FUNCTION;
 
 public class CpuMiner {
 
-    public static final int NONCE_BYTE_SIZE = 8;
+    public static final int NONCE_BYTE_SIZE = 4;
 
     public static void main(String[] args) {
         CpuMiner cpuMiner = new CpuMiner();
@@ -80,10 +80,9 @@ public class CpuMiner {
         byte[] target = revertByteArray(targetReverted);
 
         byte[] data = Convert.parseHexString((String) resultObject.get("data"));
-        GetWork.reverseEvery4Bytes(data);
         int size = (int) readDataSize(data);
         data = Arrays.copyOf(data,size);
-        long initialNonce = Metro.getIntProperty("metro.mine.initialNonce");
+        int initialNonce = Metro.getIntProperty("metro.mine.initialNonce");
 
         int threadPoolSize = Metro.getIntProperty("metro.mine.threadPoolSize");
         if (threadPoolSize == 0) {
@@ -112,7 +111,6 @@ public class CpuMiner {
             targetReverted = Convert.parseHexString((String) resultObject.get("target"));
             target = revertByteArray(targetReverted);
             data = Convert.parseHexString((String) resultObject.get("data"));
-            GetWork.reverseEvery4Bytes(data);
             size = (int) readDataSize(data);
             data = Arrays.copyOf(data,size);
         }
@@ -126,7 +124,7 @@ public class CpuMiner {
         return buffer.getLong()/8;
     }
 
-    private JSONObject mineImpl(long counter, byte[] data, byte[] target, long initialNonce, int threadPoolSize,
+    private JSONObject mineImpl(long counter, byte[] data, byte[] target, int initialNonce, int threadPoolSize,
                                 ExecutorService executorService, boolean isSubmitted) {
         long startTime = System.currentTimeMillis();
         byte[] dataWithoutNonce = Arrays.copyOf(data,data.length - NONCE_BYTE_SIZE);
@@ -187,7 +185,7 @@ public class CpuMiner {
         ByteBuffer buffer = ByteBuffer.allocate(NONCE_BYTE_SIZE + data.length);
         buffer.order(ByteOrder.LITTLE_ENDIAN);
         buffer.put(data);
-        buffer.putLong(nonce);
+        buffer.putInt(nonce);
         String solution = Convert.toHexString(buffer.array());
         paramsArray.add(solution);
         requestBody.put("params", paramsArray);
@@ -293,12 +291,12 @@ public class CpuMiner {
 
     private static class HashSolver implements Callable<Integer> {
 
-        private final long nonce;
+        private final int nonce;
         private final byte[] target;
         private final int poolSize;
         private final byte[] data;
 
-        private HashSolver(byte[] data, long nonce,
+        private HashSolver(byte[] data, int nonce,
                            byte[] target, int poolSize) {
             this.data = data;
             this.nonce = nonce;
@@ -314,9 +312,10 @@ public class CpuMiner {
                 ByteBuffer buffer = ByteBuffer.allocate(data.length + NONCE_BYTE_SIZE);
                 buffer.order(ByteOrder.LITTLE_ENDIAN);
                 buffer.put(data);
-                buffer.putLong(n);
+                buffer.putInt(n);
 
                 byte[] hash = HASH_FUNCTION.hash(buffer.array());
+                ArrayUtils.reverse(hash);
                 if (new BigInteger(1, hash).compareTo(new BigInteger(1, target)) < 0) {
                     Logger.logDebugMessage("%s found solution hash %s nonce %d" +
                                     " hash %s meets target %d",

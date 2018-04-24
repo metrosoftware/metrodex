@@ -724,6 +724,30 @@ var MRS = (function (MRS, $, undefined) {
                         incorrect = true;
                         break;
                 }
+            } else if (transactionDetails.type == 5) {
+                data = {
+
+                };
+                if (transaction.attachment && transaction.attachment.recipients && Object.keys(transaction.attachment.recipients).length > 0) {
+                    var rows = "<table class='table table-striped'><thead><tr>" +
+                        "<th>" + $.t("account") + "</th>" +
+                        "<th>" + $.t("amount") + "</th>" +
+                        "<tr></thead><tbody>";
+                    for (var accountId in transaction.attachment.recipients) {
+                        // rows += "<tr>" +
+                        //     "<td>" + MRS.getAccountLink({entity: accountId}) + "<td>" +
+                        //     "<td>" + $.t(transaction.attachment.recipients[accountId]) + "</td>" +
+                        //     "</tr>";
+                        rows += "<tr><td><a href='#' data-user='" + MRS.escapeRespStr(accountId) + "' class='show_account_modal_action'>"
+                            + MRS.getAccountTitle(accountId) + "</a></td><td>" + MRS.formatAmount(new BigInteger(String(transaction.attachment.recipients[accountId]))) + " " + MRS.constants.COIN_SYMBOL + "</td></tr>";
+                    }
+                    //var account = MRS.convertNumericToRSAccountFormat(phasingParams.phasingWhitelist[i]);
+                    data["reward_recipients_formatted_html"] = rows;
+                } else {
+                    data["reward_recipients"] = $.t("no_matching_recipients");
+                }
+                infoTable.find("tbody").append(MRS.createInfoTable(data));
+                infoTable.show();
             } else if (MRS.isOfType(transaction, "ShufflingCreation")) {
                 data = {
                     "type": $.t("shuffling_creation"),

@@ -744,7 +744,8 @@ var MRS = (function(MRS, $, undefined) {
         var params = {
             "account": MRS.account,
             "firstIndex": 0,
-            "lastIndex": 9
+            "lastIndex": 9,
+			"excludeCoinbase": true
         };
         var unconfirmedTransactions = MRS.unconfirmedTransactions;
 		var decimals = MRS.getTransactionsAmountDecimals(unconfirmedTransactions);

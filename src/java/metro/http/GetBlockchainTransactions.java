@@ -48,6 +48,7 @@ public final class GetBlockchainTransactions extends APIServlet.APIRequestHandle
         boolean includeExpiredPrunable = "true".equalsIgnoreCase(req.getParameter("includeExpiredPrunable"));
         boolean includePhasingResult = "true".equalsIgnoreCase(req.getParameter("includePhasingResult"));
         boolean executedOnly = "true".equalsIgnoreCase(req.getParameter("executedOnly"));
+        boolean excludeCoinbase = "true".equalsIgnoreCase(req.getParameter("excludeCoinbase"));
 
         byte type;
         byte subtype;
@@ -68,7 +69,7 @@ public final class GetBlockchainTransactions extends APIServlet.APIRequestHandle
         JSONArray transactions = new JSONArray();
         try (DbIterator<? extends Transaction> iterator = Metro.getBlockchain().getTransactions(accountId, numberOfConfirmations,
                 type, subtype, timestamp, withMessage, phasedOnly, nonPhasedOnly, firstIndex, lastIndex,
-                includeExpiredPrunable, executedOnly)) {
+                includeExpiredPrunable, executedOnly, excludeCoinbase)) {
             while (iterator.hasNext()) {
                 Transaction transaction = iterator.next();
                 transactions.add(JSONData.transaction(transaction, includePhasingResult));

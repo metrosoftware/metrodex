@@ -97,7 +97,7 @@ public interface Blockchain {
 
     DbIterator<? extends Transaction> getTransactions(long accountId, int numberOfConfirmations, byte type, byte subtype,
                                                       long blockTimestamp, boolean withMessage, boolean phasedOnly, boolean nonPhasedOnly,
-                                                      int from, int to, boolean includeExpiredPrunable, boolean executedOnly);
+                                                      int from, int to, boolean includeExpiredPrunable, boolean executedOnly, boolean excludeCoinbase);
 
     DbIterator<? extends Transaction> getTransactions(Connection con, PreparedStatement pstmt);
 

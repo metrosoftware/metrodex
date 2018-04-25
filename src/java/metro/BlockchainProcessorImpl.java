@@ -1913,7 +1913,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             }
         }
         Long generator = Account.getId(publicKey);
-        recipients.put(generator, totalReward - totalBackFees);
+        recipients.put(generator, totalReward + (recipients.containsKey(generator) ? recipients.get(generator) : 0) - totalBackFees);
         return recipients;
     }
 

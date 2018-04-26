@@ -1,6 +1,7 @@
 /*
  * Copyright © 2013-2016 The Nxt Core Developers.
  * Copyright © 2016-2017 Jelurida IP B.V.
+ * Copyright © 2018 metro.software
  *
  * See the LICENSE.txt file at the top-level directory of this distribution
  * for licensing information.
@@ -16,8 +17,17 @@
 
 package metro.http;
 
-import metro.*;
+import metro.Account;
+import metro.Alias;
+import metro.Appendix;
+import metro.Asset;
+import metro.Constants;
+import metro.HoldingType;
 import metro.Metro;
+import metro.MetroException;
+import metro.Poll;
+import metro.Shuffling;
+import metro.Transaction;
 import metro.crypto.Crypto;
 import metro.crypto.EncryptedData;
 import metro.util.Convert;

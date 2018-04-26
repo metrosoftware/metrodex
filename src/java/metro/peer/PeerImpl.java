@@ -1,6 +1,7 @@
 /*
  * Copyright © 2013-2016 The Nxt Core Developers.
  * Copyright © 2016-2017 Jelurida IP B.V.
+ * Copyright © 2018 metro.software
  *
  * See the LICENSE.txt file at the top-level directory of this distribution
  * for licensing information.
@@ -16,8 +17,12 @@
 
 package metro.peer;
 
-import metro.*;
+import metro.Account;
+import metro.BlockchainProcessor;
+import metro.Consensus;
+import metro.Constants;
 import metro.Metro;
+import metro.MetroException;
 import metro.http.API;
 import metro.http.APIEnum;
 import metro.util.Convert;
@@ -50,7 +55,11 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
 import java.util.zip.GZIPInputStream;
 
 final class PeerImpl implements Peer {

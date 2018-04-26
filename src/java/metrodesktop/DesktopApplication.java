@@ -1,6 +1,7 @@
 /*
  * Copyright © 2013-2016 The Nxt Core Developers.
  * Copyright © 2016-2017 Jelurida IP B.V.
+ * Copyright © 2018 metro.software
  *
  * See the LICENSE.txt file at the top-level directory of this distribution
  * for licensing information.
@@ -28,13 +29,18 @@ import javafx.scene.web.WebView;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
-import metro.*;
-import netscape.javascript.JSObject;
+import metro.Block;
+import metro.BlockchainProcessor;
+import metro.Constants;
 import metro.Metro;
+import metro.PrunableMessage;
+import metro.Transaction;
+import metro.TransactionProcessor;
 import metro.http.API;
 import metro.util.Convert;
 import metro.util.Logger;
 import metro.util.TrustAllSSLProvider;
+import netscape.javascript.JSObject;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.awt.*;

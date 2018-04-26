@@ -54,12 +54,17 @@ license, with exceptions listed in the NOTICE file:
 http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/plain/NOTICE.txt
 
 
+Apache Commons Lang:
+
+Apache Commons Lang https://commons.apache.org/proper/commons-lang/ is licensed
+under the Apache License 2.0:
+http://www.apache.org/licenses/LICENSE-2.0
+
 Json-simple:
 
 Json-simple https://code.google.com/p/json-simple/ is licensed
 under the Apache License 2.0:
 http://www.apache.org/licenses/LICENSE-2.0
-
 
 Bouncy Castle:
 

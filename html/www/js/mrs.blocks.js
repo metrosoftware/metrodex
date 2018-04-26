@@ -218,6 +218,8 @@ var MRS = (function(MRS, $) {
 		if (MRS.blocksPageType == "forged_blocks") {
 			$("#forged_fees_total_box, #forged_blocks_total_box").show();
 			$("#blocks_transactions_per_hour_box, #blocks_generation_time_box").hide();
+			$("#forged_blocks_total_box").show();
+            $("#mined_blocks_total_box").hide();
 
 			MRS.sendRequest("getAccountBlocks+", {
 				"account": MRS.account,
@@ -234,10 +236,27 @@ var MRS = (function(MRS, $) {
 					MRS.blocksPageLoaded([]);
 				}
 			});
+		} else if (MRS.blocksPageType == "mined_blocks") {
+            $("#forged_fees_total_box, #mined_blocks_total_box").show();
+            $("#blocks_transactions_per_hour_box, #blocks_generation_time_box, #forged_blocks_total_box").hide();
+            MRS.sendRequest("getAccountMinedBlocks+", {
+                "account": MRS.account,
+                "firstIndex": MRS.pageNumber * MRS.itemsPerPage - MRS.itemsPerPage,
+                "lastIndex": MRS.pageNumber * MRS.itemsPerPage
+            }, function(response) {
+                if (response.blocks && response.blocks.length) {
+                    if (response.blocks.length > MRS.itemsPerPage) {
+                        MRS.hasMorePages = true;
+                        response.blocks.pop();
+                    }
+                    MRS.blocksPageLoaded(response.blocks);
+                } else {
+                    MRS.blocksPageLoaded([]);
+                }
+            });
 		} else {
-			$("#forged_fees_total_box, #forged_blocks_total_box").hide();
+			$("#forged_fees_total_box, #forged_blocks_total_box, #mined_blocks_total_box").hide();
 			$("#blocks_transactions_per_hour_box, #blocks_generation_time_box").show();
-
 			MRS.sendRequest("getBlocks+", {
 				"firstIndex": MRS.pageNumber * MRS.itemsPerPage - MRS.itemsPerPage,
 				"lastIndex": MRS.pageNumber * MRS.itemsPerPage
@@ -283,9 +302,13 @@ var MRS = (function(MRS, $) {
 		}
 
         var blocksAverageAmount = $("#blocks_average_amount");
+        var blockAvgFee = $("#blocks_average_fee");
+        var blockForgedBlocks = $("#forged_blocks_total");
+        var blockForgedFees = $("#forged_fees_total");
         if (MRS.blocksPageType == "forged_blocks") {
 			MRS.sendRequest("getAccountBlockCount+", {
-				"account": MRS.account
+				"account": MRS.account,
+				"isKeyBlock": false
 			}, function(response) {
 				if (response.numberOfBlocks && response.numberOfBlocks > 0) {
 					$("#forged_blocks_total").html(response.numberOfBlocks).removeClass("loading_dots");
@@ -299,7 +322,44 @@ var MRS = (function(MRS, $) {
 			$("#forged_fees_total").html(MRS.formatStyledAmount(MRS.accountInfo.forgedBalanceMQT)).removeClass("loading_dots");
 			blocksAverageAmount.removeClass("loading_dots");
 			blocksAverageAmount.parent().parent().css('visibility', 'hidden');
-			$("#blocks_page").find(".ion-stats-bars").parent().css('visibility', 'hidden');
+
+            blocksAverageAmount.removeClass("loading_dots");
+            blocksAverageAmount.parent().parent().css('visibility', 'hidden');
+
+            blockAvgFee.removeClass("loading_dots");
+            blockAvgFee.parent().parent().css('visibility', 'visible');
+
+            blockForgedBlocks.removeClass("loading_dots");
+            blockForgedBlocks.parent().parent().css('visibility', 'visible');
+
+            blockForgedFees.removeClass("loading_dots");
+            blockForgedFees.parent().parent().css('visibility', 'visible');
+            $("#blocks_page").find(".ion-stats-bars").parent().css('visibility', 'hidden');
+            $("#blocks_page").find(".ion-paperclip").parent().css('visibility', 'visible');
+            $("#blocks_page").find(".fa-bars").parent().css('visibility', 'visible');
+            $("#blocks_page").find(".fa-briefcase").parent().css('visibility', 'visible');
+		} else if (MRS.blocksPageType == "mined_blocks") {
+            MRS.sendRequest("getAccountBlockCount+", {
+                "account": MRS.account,
+				"isKeyBlock": true
+            }, function(response) {
+                if (response.numberOfBlocks && response.numberOfBlocks > 0) {
+                    $("#mined_blocks_total").html(response.numberOfBlocks).removeClass("loading_dots");
+                } else {
+                    $("#mined_blocks_total").html(0).removeClass("loading_dots");
+                }
+            });
+            $("#blocks_page").find(".ion-stats-bars").parent().css('visibility', 'hidden');
+            $("#blocks_page").find(".ion-paperclip").parent().css('visibility', 'hidden');
+            $("#blocks_page").find(".fa-bars").parent().css('visibility', 'visible');
+            $("#blocks_page").find(".fa-briefcase").parent().css('visibility', 'hidden');
+            blocksAverageAmount.removeClass("loading_dots");
+            blocksAverageAmount.parent().parent().css('visibility', 'hidden');
+            blockAvgFee.removeClass("loading_dots");
+            blockAvgFee.parent().parent().css('visibility', 'hidden');
+            blockForgedBlocks.parent().parent().css('visibility', 'visible');
+            blockForgedFees.removeClass("loading_dots");
+            blockForgedFees.parent().parent().css('visibility', 'hidden');
 		} else {
 			var time;
             if (blocks.length) {
@@ -327,6 +387,9 @@ var MRS = (function(MRS, $) {
 			blocksAverageAmount.parent().parent().css('visibility', 'visible');
 			$("#blocks_page").find(".ion-stats-bars").parent().css('visibility', 'visible');
 			blocksAverageAmount.html(MRS.formatStyledAmount(averageAmount)).removeClass("loading_dots");
+            blockAvgFee.removeClass("loading_dots");
+            blockAvgFee.parent().parent().css('visibility', 'visible');
+            $("#blocks_page").find(".ion-paperclip").parent().css('visibility', 'visible');
 		}
 		MRS.dataLoaded(rows);
 	};

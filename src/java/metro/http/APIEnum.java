@@ -49,6 +49,7 @@ public enum APIEnum {
     GET_ACCOUNT_BLOCK_COUNT("getAccountBlockCount", GetAccountBlockCount.instance),
     GET_ACCOUNT_BLOCK_IDS("getAccountBlockIds", GetAccountBlockIds.instance),
     GET_ACCOUNT_BLOCKS("getAccountBlocks", GetAccountBlocks.instance),
+    GET_ACCOUNT_MINED_BLOCKS("getAccountMinedBlocks", GetAccountMinedBlocks.instance),
     GET_ACCOUNT_ID("getAccountId", GetAccountId.instance),
     GET_ACCOUNT_LEDGER("getAccountLedger", GetAccountLedger.instance),
     GET_ACCOUNT_LEDGER_ENTRY("getAccountLedgerEntry", GetAccountLedgerEntry.instance),

@@ -205,16 +205,16 @@ final class BlockchainImpl implements Blockchain {
 
     @Override
     public DbIterator<BlockImpl> getBlocks(long accountId, long timestamp) {
-        return getBlocks(accountId, timestamp, 0, -1);
+        return getBlocks(accountId, timestamp, 0, -1, false);
     }
 
     @Override
-    public DbIterator<BlockImpl> getBlocks(long accountId, long timestamp, int from, int to) {
+    public DbIterator<BlockImpl> getBlocks(long accountId, long timestamp, int from, int to, boolean isKeyBlock) {
         Connection con = null;
         try {
             con = Db.db.getConnection();
             PreparedStatement pstmt = con.prepareStatement("SELECT * FROM block WHERE generator_id = ? "
-                    + (timestamp > 0 ? " AND timestamp >= ? " : " ") + "ORDER BY height DESC"
+                    + (timestamp > 0 ? " AND timestamp >= ? " : " ") + "AND nonce IS " + (isKeyBlock ? "NOT NULL " : "NULL ") + "ORDER BY height DESC"
                     + DbUtils.limitsClause(from, to));
             int i = 0;
             pstmt.setLong(++i, accountId);
@@ -230,9 +230,10 @@ final class BlockchainImpl implements Blockchain {
     }
 
     @Override
-    public int getBlockCount(long accountId) {
+    public int getBlockCount(long accountId, boolean isKeyBlock) {
         try (Connection con = Db.db.getConnection();
-            PreparedStatement pstmt = con.prepareStatement("SELECT COUNT(*) FROM block WHERE generator_id = ?")) {
+            PreparedStatement pstmt = con.prepareStatement("SELECT COUNT(*) FROM block WHERE generator_id = ? AND nonce IS "
+                    + (isKeyBlock ? "NOT NULL " : "NULL ") )) {
             pstmt.setLong(1, accountId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 rs.next();

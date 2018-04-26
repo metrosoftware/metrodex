@@ -726,6 +726,7 @@
   "nr_assets": "# Assets",
   "nr_blocks": "# Blocks",
   "nr_forged_blocks": "# Forged Blocks",
+  "nr_mined_blocks":"# Mined Blocks",
   "nr_orders": "# Orders",
   "nr_peers": "# Peers",
   "nr_polls": "# Polls",

@@ -43,7 +43,7 @@ public final class GetAccountBlockIds extends APIServlet.APIRequestHandler {
         int lastIndex = ParameterParser.getLastIndex(req);
 
         JSONArray blockIds = new JSONArray();
-        try (DbIterator<? extends Block> iterator = Metro.getBlockchain().getBlocks(accountId, timestamp, firstIndex, lastIndex)) {
+        try (DbIterator<? extends Block> iterator = Metro.getBlockchain().getBlocks(accountId, timestamp, firstIndex, lastIndex, false)) {
             while (iterator.hasNext()) {
                 Block block = iterator.next();
                 blockIds.add(block.getStringId());

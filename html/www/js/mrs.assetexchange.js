@@ -2049,7 +2049,7 @@ var MRS = (function (MRS, $, undefined) {
             assetDecimals.val("0");
         }
     });
-
+/*
     MRS.setup.asset_exchange = function () {
         var sidebarId = 'sidebar_asset_exchange';
         var options = {
@@ -2109,6 +2109,6 @@ var MRS = (function (MRS, $, undefined) {
         };
         MRS.appendMenuItemToTSMenuItem(sidebarId, options);
     };
-
+*/
     return MRS;
 }(MRS || {}, jQuery));

@@ -107,6 +107,7 @@ var MRS = (function(MRS, $, undefined) {
                 }
             }
         },
+        /*
         2: {
             'title': "Asset Exchange",
             'i18nKeyTitle': 'asset_exchange',
@@ -161,6 +162,7 @@ var MRS = (function(MRS, $, undefined) {
                 }
             }
         },
+        */
         3: {
             'title': "Shuffling",
             'i18nKeyTitle': 'shuffling',

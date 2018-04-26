@@ -381,9 +381,11 @@ var MRS = (function(MRS, $, undefined) {
 						if (vm == 1) {
 							icon = '<i class="fa fa-money"></i>';
 						}
+						/*
 						if (vm == 2) {
 							icon = '<i class="fa fa-signal"></i>';
 						}
+						*/
 						if (vm == 3) {
 							icon = '<i class="fa fa-bank"></i>';
 						}
@@ -588,6 +590,7 @@ var MRS = (function(MRS, $, undefined) {
             change = String(change).substring(1);
         }
         if (/ASSET_BALANCE/i.test(entry.holdingType)) {
+			/*
             MRS.sendRequest("getAsset", {"asset": entry.holding}, function (response) {
                 balanceType = "asset";
                 balanceEntity = response.name;
@@ -595,6 +598,7 @@ var MRS = (function(MRS, $, undefined) {
                 balance = MRS.formatQuantity(balance, response.decimals, false, decimalParams.holdingBalanceDecimals);
                 holdingIcon = "<i class='fa fa-signal'></i> ";
             }, { isAsync: false });
+            */
         } else {
             change = MRS.formatAmount(change, false, false, decimalParams.changeDecimals);
             balance = MRS.formatAmount(balance, false, false, decimalParams.balanceDecimals);

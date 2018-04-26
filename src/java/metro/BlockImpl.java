@@ -496,61 +496,7 @@ public final class BlockImpl implements Block {
         generatorAccount.apply(getGeneratorPublicKey());
     }
 
-    void setPrevious(BlockImpl posBlock, BlockImpl keyBlock) {
-        BlockImpl prevBlock;
-        if (posBlock == null) {
-            throw new IllegalArgumentException("Previous pos block is null");
-        }
-
-        boolean prevBlockIsKeyBlock = keyBlock != null && keyBlock.getHeight() > posBlock.getHeight();
-        prevBlock = prevBlockIsKeyBlock ? keyBlock : posBlock;
-
-        this.height = prevBlock.getHeight() + 1;
-
-        if (prevBlock.getId() != getPreviousBlockId()) {
-            // shouldn't happen as previous id is already verified, but just in case
-            throw new IllegalStateException("Previous block id doesn't match");
-        }
-
-        if (isKeyBlock()) {
-            this.localHeight = keyBlock == null ? 0 : keyBlock.getLocalHeight() + 1;
-            this.stakeBatchDifficulty = Convert.two64.divide(BigInteger.valueOf(posBlock.baseTarget));
-        } else {
-            this.localHeight = posBlock.getLocalHeight() + 1;
-            this.calculateBaseTarget(prevBlockIsKeyBlock, posBlock);
-        }
-        // N is height of previous key block; K is size of stakeBatch (number of POS blocks since N)
-        // CD[N + K] = CD[N] + sqrt(WD[N]*sum(SD[i])i=N..N+K)
-        // CD = cumulative hybrid; WD = work difficulty of one block; SD = stake difficulty of one block
-        BigInteger currentBatch = isKeyBlock() ? prevBlock.stakeBatchDifficulty : stakeBatchDifficulty;
-        BigInteger keyBlockWork;
-        if (isKeyBlock()) {
-            keyBlockWork = getWork();
-        } else {
-            keyBlockWork = keyBlock != null ? keyBlock.getWork() : BigInteger.ONE;
-        }
-        BigInteger prevCumulativeDifficulty = keyBlock != null ? keyBlock.cumulativeDifficulty : BigInteger.ZERO;
-
-        this.cumulativeDifficulty = prevCumulativeDifficulty.add(squareRoot(keyBlockWork.multiply(currentBatch)));
-
-    }
-
-    void setPreceding() {
-        short index = 0;
-        for (TransactionImpl transaction : getTransactions()) {
-            transaction.setBlock(this);
-            transaction.setIndex(index++);
-        }
-    }
-
-    void loadTransactions() {
-        for (TransactionImpl transaction : getTransactions()) {
-            transaction.bytes();
-            transaction.getAppendages();
-        }
-    }
-
-    private void calculateBaseTarget(boolean prevIsKeyBlock, BlockImpl posBlock) {
+    private void calculateBaseTarget(BlockImpl posBlock) {
         long prevBaseTarget = posBlock.baseTarget;
         int blockchainHeight = posBlock.localHeight;
         if (blockchainHeight > 2 && blockchainHeight % 2 == 0) {
@@ -572,12 +518,71 @@ public final class BlockImpl implements Block {
             baseTarget = prevBaseTarget;
         }
 
-        stakeBatchDifficulty = Convert.two64.divide(BigInteger.valueOf(baseTarget));
-        // after each key block, stakeBatchDifficulty restarts from zero
-        if (!prevIsKeyBlock) {
-            stakeBatchDifficulty = stakeBatchDifficulty.add(posBlock.stakeBatchDifficulty);
+    }
+
+    private BigInteger getNormalizedStakeTarget() {
+        return Convert.two64.divide(BigInteger.valueOf(baseTarget));
+    }
+
+    private BigInteger getWorkFactor(BlockImpl prevKeyBlock) {
+        if (isKeyBlock()) {
+            return getWork();
+        }
+        if (prevKeyBlock == null) {
+            //if no ke block yet, then initial work factor
+            return Convert.LARGEST_HASH.divide(Consensus.MAX_WORK_TARGET);
+        }
+        return prevKeyBlock.getWork();
+    }
+
+    void setPrevious(BlockImpl posBlock, BlockImpl keyBlock) {
+        if (posBlock == null) {
+            throw new IllegalArgumentException("Previous pos block is null");
+        }
+
+        BlockImpl prevBlock = keyBlock != null && keyBlock.getHeight() > posBlock.getHeight() ? keyBlock : posBlock;
+        this.height = prevBlock.getHeight() + 1;
+
+        if (prevBlock.getId() != getPreviousBlockId()) {
+            // shouldn't happen as previous id is already verified, but just in case
+            throw new IllegalStateException("Previous block id doesn't match");
+        }
+
+        if (isKeyBlock()) {
+            this.localHeight = keyBlock == null ? 0 : keyBlock.getLocalHeight() + 1;
+            // every key block we initialize stakeBatchDifficulty by last pos block target
+            this.stakeBatchDifficulty  = posBlock.getNormalizedStakeTarget();
+        } else {
+            this.localHeight = posBlock.getLocalHeight() + 1;
+            calculateBaseTarget(posBlock);
+            this.stakeBatchDifficulty  = prevBlock.stakeBatchDifficulty.add(getNormalizedStakeTarget());
+        }
+
+        // N is height of previous key block; K is size of stakeBatch (number of POS blocks since N)
+        // CD[N + K] = CD[N] + sqrt(WD[N]*sum(SD[i])i=N-1..N+K)
+        // CD = cumulative hybrid; WD = work difficulty of one block; SD = stake difficulty of one block
+
+        BigInteger prevCumulativeDifficulty = keyBlock != null ? keyBlock.cumulativeDifficulty : BigInteger.ZERO;
+        BigInteger workFactor = getWorkFactor(keyBlock);
+        this.cumulativeDifficulty = prevCumulativeDifficulty.add(squareRoot(workFactor.multiply(stakeBatchDifficulty)));
+
+    }
+
+    void setPreceding() {
+        short index = 0;
+        for (TransactionImpl transaction : getTransactions()) {
+            transaction.setBlock(this);
+            transaction.setIndex(index++);
         }
     }
+
+    void loadTransactions() {
+        for (TransactionImpl transaction : getTransactions()) {
+            transaction.bytes();
+            transaction.getAppendages();
+        }
+    }
+
 
     /**
      * Returns the difficulty target as a 256 bit value that can be compared to a SHA-256 hash. Inside a block the

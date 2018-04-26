@@ -22,7 +22,6 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -48,10 +47,9 @@ public final class GetWork extends APIServlet.APIRequestHandler {
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest request) throws MetroException {
         lastGetWorkTime = System.currentTimeMillis();
-        //TODO ticket #180
-        if (Metro.getBlockchainProcessor().isDownloading()) {
+        if (Metro.getBlockchainProcessor().isDownloading() || Metro.getBlockchainProcessor().isScanning()) {
             JSONObject response = new JSONObject();
-            response.put("error", "Blockchain download in progress");
+            response.put("error", "Blockchain scan or download in progress");
             return JSON.prepare(response);
         }
 

@@ -37,8 +37,8 @@ public class BitcoinJUtils {
         out[offset + 3] = (byte)((int)(255L & val));
     }
 
-    public static BigInteger decodeCompactBits(long compact) {
-        int size = (int)(compact >> 24) & 255;
+    public static BigInteger decodeCompactBits(int compact) {
+        int size = compact >> 24 & 255;
         byte[] bytes = new byte[4 + size];
         bytes[3] = (byte)size;
         if (size >= 1) {
@@ -56,7 +56,7 @@ public class BitcoinJUtils {
         return decodeMPI(bytes, true);
     }
 
-    public static long encodeCompactBits(BigInteger value) {
+    public static int encodeCompactBits(BigInteger value) {
         int size = value.toByteArray().length;
         long result;
         if (size <= 3) {
@@ -72,7 +72,7 @@ public class BitcoinJUtils {
 
         result |= (long)(size << 24);
         result |= value.signum() == -1 ? 8388608L : 0L;
-        return result;
+        return (int)result;
     }
 
     public static BigInteger decodeMPI(byte[] mpi, boolean hasLength) {

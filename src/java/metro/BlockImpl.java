@@ -594,7 +594,7 @@ public final class BlockImpl implements Block {
      */
     @Override
     public BigInteger getDifficultyTargetAsInteger() {
-        BigInteger target = BitcoinJUtils.decodeCompactBits(baseTarget);
+        BigInteger target = BitcoinJUtils.decodeCompactBits((int)baseTarget);
         if (target.signum() <= 0 || target.compareTo(Consensus.MAX_WORK_TARGET) > 0)
             throw new IllegalStateException("Difficulty target is bad: " + target.toString());
         return target;

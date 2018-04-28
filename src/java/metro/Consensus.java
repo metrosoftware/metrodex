@@ -12,9 +12,14 @@ public class Consensus {
 
     public static final int DIFFICULTY_TRANSITION_INTERVAL = 2016;
     public static final int DIFFICULTY_CALCULATION_INTERVAL = 2016;
+
+    public static final int POW_TARGET_TIMESPAN = 24 * 60 * 60 * 1000; // Dash: 1 day;
+    public static final int POW_TARGET_SPACING = 10 * 60 * 1000; //10 min
+    public static final int POW_RETARGET_INTERVAL = 24; //10 min
+
     public static final long TARGET_TIMESPAN = 1209600000L;
 
-    public static final long MAX_WORK_BITS = Constants.isTestnet ? Long.parseUnsignedLong(Metro.getStringProperty("metro.testnetMaxWorkTarget", "1e00ffff"),16) : 0x1f00ffffL;
+    public static final int MAX_WORK_BITS = Constants.isTestnet ? Integer.parseUnsignedInt(Metro.getStringProperty("metro.testnetMaxWorkTarget", "1e00ffff"),16) : 0x1f00ffff;
     public static final BigInteger MAX_WORK_TARGET = BitcoinJUtils.decodeCompactBits(MAX_WORK_BITS);
     public static final int SUBSIDY_HALVING_INTERVAL = 200000;
     public static final long INITIAL_SUBSIDY = 2000 * Constants.ONE_MTR;

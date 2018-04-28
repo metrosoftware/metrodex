@@ -22,7 +22,6 @@ import metro.db.DbUtils;
 import metro.util.BitcoinJUtils;
 import metro.util.Convert;
 import metro.util.Filter;
-import metro.util.Logger;
 import metro.util.ReadWriteUpdateLock;
 
 import java.math.BigInteger;
@@ -697,62 +696,17 @@ final class BlockchainImpl implements Blockchain {
 
     @Override
     public BigInteger getNextTarget() {
-        return getTarget(getLastKeyBlock());
+        return BitcoinJUtils.decodeCompactBits(Target.nextTarget(getLastKeyBlock()));
     }
 
     @Override
     public BigInteger getTargetAtLocalHeight(int localHeight) throws IllegalArgumentException {
         if (localHeight == 0) {
-            return getTarget(null);
+            return Consensus.MAX_WORK_TARGET;
         }
         if (getLastKeyBlock().getLocalHeight() < localHeight - 1) {
             throw new IllegalArgumentException("Too big key local heght.");
         }
-        return getTarget(BlockDb.findBlockAtLocalHeight(localHeight - 1, true));
-    }
-
-    private BigInteger getTarget(Block lastKeyBlock) {
-
-        if (lastKeyBlock == null || lastKeyBlock.getLocalHeight() < Consensus.DIFFICULTY_CALCULATION_INTERVAL) {
-            // before first target transit point - initial target
-            return Consensus.MAX_WORK_TARGET;
-        }
-
-        int nextLocalHight = lastKeyBlock.getLocalHeight() + 1;
-
-        if ((nextLocalHight % Consensus.DIFFICULTY_TRANSITION_INTERVAL) > 0) {
-            //Not difficulty transition point
-            return lastKeyBlock.getDifficultyTargetAsInteger();
-        }
-
-        BlockImpl intervalAgoBlock = BlockDb.findBlockAtLocalHeight(nextLocalHight - Consensus.DIFFICULTY_CALCULATION_INTERVAL, true);
-
-        if (intervalAgoBlock == null) {
-            Logger.logErrorMessage("We have enough blocks for target transit - block should not be null!!!");
-            return Consensus.MAX_WORK_TARGET;
-        }
-        Logger.logDebugMessage("intervalAgoBlock found=" + Convert.toHexString(intervalAgoBlock.bytes()));
-
-        long lastTimestamp = lastKeyBlock.getTimestamp();
-        long oldTimestamp = intervalAgoBlock.getTimestamp();
-        long timeSpan = lastTimestamp - oldTimestamp;
-        // Limit the adjustment step
-        if (timeSpan < Consensus.TARGET_TIMESPAN / 4) {
-            timeSpan = Consensus.TARGET_TIMESPAN / 4;
-        }
-        if (timeSpan < Consensus.TARGET_TIMESPAN / 4L) {
-            timeSpan = Consensus.TARGET_TIMESPAN / 4L;
-        }
-
-        BigInteger newTarget = lastKeyBlock.getDifficultyTargetAsInteger();
-        newTarget = newTarget.multiply(BigInteger.valueOf(timeSpan));
-        newTarget = newTarget.divide(BigInteger.valueOf(Consensus.TARGET_TIMESPAN));
-
-        if (newTarget.compareTo(Consensus.MAX_WORK_TARGET) > 0) {
-            newTarget = Consensus.MAX_WORK_TARGET;
-        }
-
-        long newTargetCompact = BitcoinJUtils.encodeCompactBits(newTarget);
-        return BitcoinJUtils.decodeCompactBits(newTargetCompact);
+        return BitcoinJUtils.decodeCompactBits(Target.nextTarget(BlockDb.findBlockAtLocalHeight(localHeight - 1, true)));
     }
 }

@@ -123,7 +123,7 @@ public abstract class BlockchainTest extends AbstractBlockchainTest {
 
     // TODO get rid of this copy-paste from HashSolver
     public static Block mineBlock() throws MetroException {
-        BlockImpl preparedBlock = Metro.getBlockchainProcessor().prepareKeyBlock();
+        BlockImpl preparedBlock = Metro.getBlockchainProcessor().prepareKeyBlock(null);
         int currentNonce = 0, poolSize = 1, startingNonce = 0;
         ByteBuffer buffer = ByteBuffer.wrap(preparedBlock.bytes());
         buffer.order(ByteOrder.LITTLE_ENDIAN);

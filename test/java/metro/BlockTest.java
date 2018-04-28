@@ -78,7 +78,7 @@ public class BlockTest extends BlockchainTest {
 
     @Test
     public void testPrepareAndValidateKeyBlockWithoutSolving() throws MetroException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        BlockImpl preparedBlock = Metro.getBlockchainProcessor().prepareKeyBlock();
+        BlockImpl preparedBlock = Metro.getBlockchainProcessor().prepareKeyBlock(null);
         Assert.assertEquals(0x8000, Short.toUnsignedInt(preparedBlock.getVersion()) & 0x8000);
 
         // prev block hash must point to Genesis
@@ -115,7 +115,7 @@ public class BlockTest extends BlockchainTest {
 
     @Test
     public void testProcessHeaderWrongVersion() {
-        BlockImpl preparedBlock = Metro.getBlockchainProcessor().prepareKeyBlock();
+        BlockImpl preparedBlock = Metro.getBlockchainProcessor().prepareKeyBlock(null);
         ByteBuffer buffer = ByteBuffer.wrap(preparedBlock.bytes());
         buffer.order(ByteOrder.LITTLE_ENDIAN);
         buffer.putShort(0, (short)0x7001);
@@ -129,7 +129,7 @@ public class BlockTest extends BlockchainTest {
 
     @Test
     public void testComposeKeyBlockNonExistentPrevBlock() {
-        BlockImpl preparedBlock = Metro.getBlockchainProcessor().prepareKeyBlock();
+        BlockImpl preparedBlock = Metro.getBlockchainProcessor().prepareKeyBlock(null);
         ByteBuffer buffer = ByteBuffer.wrap(preparedBlock.bytes());
         buffer.order(ByteOrder.LITTLE_ENDIAN);
         buffer.putInt(53, 0);
@@ -145,7 +145,7 @@ public class BlockTest extends BlockchainTest {
     public void testKeyblockGenerationSequence() {
         generateBlocks(2);
         Block posBlock = Metro.getBlockchain().getLastBlock();
-        BlockImpl preparedBlock = Metro.getBlockchainProcessor().prepareKeyBlock();
+        BlockImpl preparedBlock = Metro.getBlockchainProcessor().prepareKeyBlock(null);
         Block blockTemplate = Metro.getBlockchain().composeKeyBlock(preparedBlock.bytes(), preparedBlock.getGeneratorPublicKey(), preparedBlock.getTransactions());
         Assert.assertArrayEquals("generation sequence does not match", Convert.generationSequence(posBlock.getGenerationSequence(), blockTemplate.getGeneratorPublicKey()), blockTemplate.getGenerationSequence());
     }

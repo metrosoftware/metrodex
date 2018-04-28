@@ -29,12 +29,18 @@ public final class GetWork extends APIServlet.APIRequestHandler {
 
     static final GetWork instance = new GetWork();
 
+    private final long transactionsCacheDuration = Metro.getIntProperty("metro.transactionsCacheDuration");
+    private final long blockCacheDuration = Metro.getIntProperty("metro.blockCacheDuration");
+
     private long lastGetWorkTime;
+    private long lastTxTime;
 
     private AtomicReference<List<TransactionImpl>> transactions = new AtomicReference<>();
 
     private long lastTimestamp;
-    byte[] cache;
+    private byte[] cache;
+    private int cachedLastBlockHeight;
+
 
     private GetWork() {
         super(new APITag[]{APITag.MINING});
@@ -87,18 +93,30 @@ public final class GetWork extends APIServlet.APIRequestHandler {
             Logger.logErrorMessage("Parse request error:", e);
         }
 
-        Block block = Metro.getBlockchainProcessor().prepareKeyBlock();
-        transactions.set((List<TransactionImpl>)block.getTransactions());
-        //FIXME need to update cache on txlist or prev block change
-        if (block.getTimestamp() - lastTimestamp > 1000) {
+        int lastBlockHeight = Metro.getBlockchain().getLastBlock().getHeight();
+        Block block = Metro.getBlockchainProcessor().prepareKeyBlock(null);
+        long currentTime = System.currentTimeMillis();
+        if (cachedLastBlockHeight < lastBlockHeight || currentTime - lastTxTime > Math.min(transactionsCacheDuration, 1000)) {
+            lastTxTime = currentTime;
             cache = block.getBytes();
-            lastTimestamp = block.getTimestamp();
+            cachedLastBlockHeight = lastBlockHeight;
+            transactions.set((List<TransactionImpl>)block.getTransactions());
+            lastTimestamp = currentTime;
+        } else {
+            if (currentTime - lastTimestamp > Math.min(blockCacheDuration, 5000)) {
+                block = Metro.getBlockchainProcessor().prepareKeyBlock(transactions.get());
+                cache = block.getBytes();
+                cachedLastBlockHeight = lastBlockHeight;
+                lastTimestamp = currentTime;
+            }
         }
+
         byte[] blockBytes = padZeroValuesSpecialAndSize(cache);
         JSONObject response = new JSONObject();
         JSONObject result = new JSONObject();
         response.put("result", result);
         result.put("data", Convert.toHexString(blockBytes));
+        //TODO is this correct block instead of cached block version?
         String targetString = targetToLittleEndianString(block.getDifficultyTargetAsInteger());
         result.put("target", targetString);
         return JSON.prepare(response);

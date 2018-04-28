@@ -71,7 +71,7 @@ public interface BlockchainProcessor extends Observable<Block,BlockchainProcesso
 
     long getGenesisBlockId();
 
-    BlockImpl prepareKeyBlock();
+    BlockImpl prepareKeyBlock(List<TransactionImpl> transactions);
 
     class BlockNotAcceptedException extends MetroException {
 

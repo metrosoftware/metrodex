@@ -2216,7 +2216,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         }
     }
 
-    public BlockImpl prepareKeyBlock() {
+    public BlockImpl prepareKeyBlock(List<TransactionImpl> transactions) {
         BlockImpl previousBlock = blockchain.getLastBlock();
         BlockImpl previousKeyBlock = blockchain.getLastKeyBlock();
         byte[] previousBlockHash = Consensus.HASH_FUNCTION.hash(previousBlock.bytes());
@@ -2230,12 +2230,17 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         List<TransactionImpl> blockTransactions = new ArrayList<>();
 
         int keyHeight = previousKeyBlock != null ? previousKeyBlock.getLocalHeight() + 1 : 0;
-        SortedSet<UnconfirmedTransaction> transactions = getTransactionsForKeyBlockGeneration(previousBlock);
         blockTransactions.add(null);
-        if (transactions.size() > 0) {
-            for (UnconfirmedTransaction unconfirmedTransaction : transactions) {
-                TransactionImpl transaction = unconfirmedTransaction.getTransaction();
-                blockTransactions.add(transaction);
+        if (transactions != null) {
+            //not include coinbase cause we make it later
+            blockTransactions.addAll(transactions.subList(1, transactions.size()-1));
+        } else {
+            SortedSet<UnconfirmedTransaction> unconfirmedTransactions = getTransactionsForKeyBlockGeneration(previousBlock);
+            if (unconfirmedTransactions.size() > 0) {
+                for (UnconfirmedTransaction unconfirmedTransaction : unconfirmedTransactions) {
+                    TransactionImpl transaction = unconfirmedTransaction.getTransaction();
+                    blockTransactions.add(transaction);
+                }
             }
         }
         TransactionImpl coinbase = buildCoinbase(blockTimestamp, secretPhrase, blockTransactions, true, keyHeight);

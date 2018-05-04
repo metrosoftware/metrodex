@@ -91,9 +91,9 @@ public final class BaseTargetTest {
             long totalBlocktime = 0;
             long totalTestBlocktime = 0;
             long maxBlocktime = 0;
-            long minBlocktime = Integer.MAX_VALUE;
+            long minBlocktime = Long.MAX_VALUE;
             long maxTestBlocktime = 0;
-            long minTestBlocktime = Integer.MAX_VALUE;
+            long minTestBlocktime = Long.MAX_VALUE;
             double M = 0.0;
             double S = 0.0;
             double testM = 0.0;

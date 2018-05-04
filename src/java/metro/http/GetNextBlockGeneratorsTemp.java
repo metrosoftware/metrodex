@@ -84,7 +84,7 @@ public final class GetNextBlockGeneratorsTemp extends APIServlet.APIRequestHandl
             response.put("activeCount", activeGenerators.size());
             JSONArray generators = new JSONArray();
             for (Generator.ActiveGenerator generator : activeGenerators) {
-                if (generator.getHitTime() > Integer.MAX_VALUE) {
+                if (generator.getHitTime() > Long.MAX_VALUE) {
                     break;
                 }
                 JSONObject resp = new JSONObject();

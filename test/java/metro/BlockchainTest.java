@@ -19,6 +19,7 @@ package metro;
 
 import metro.util.Logger;
 import metro.util.Time;
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -62,7 +63,8 @@ public abstract class BlockchainTest extends AbstractBlockchainTest {
             properties.setProperty("metro.enableFakeForging", "true");
             properties.setProperty("metro.fakeForgingAccounts", "{\"rs\":[\"" + forgerAccountIds.get(0) + "\",\"" + forgerAccountIds.get(1) + "\"]}");
             properties.setProperty("metro.testnetMaxWorkTarget", "1f00ffff");
-            properties.setProperty("metro.testnetGuaranteedBalanceKeyblockConfirmations", "3");
+            properties.setProperty("metro.testnetGuaranteedBalanceKeyblockConfirmations", "10");
+            properties.setProperty("metro.testnetCoinbaseMaturityPeriodInKeyblocks", "2");
             properties.setProperty("metro.mine.secretPhrase", aliceSecretPhrase);
             properties.setProperty("metro.timeMultiplier", "1");
             properties.setProperty("metro.testnetGuaranteedBalanceConfirmations", "1");
@@ -127,9 +129,11 @@ public abstract class BlockchainTest extends AbstractBlockchainTest {
         int currentNonce = 0, poolSize = 1, startingNonce = 0;
         ByteBuffer buffer = ByteBuffer.wrap(preparedBlock.bytes());
         buffer.order(ByteOrder.LITTLE_ENDIAN);
+        int noncePos = buffer.limit() - 4;
         while (!Thread.currentThread().isInterrupted()) {
-            buffer.putLong(buffer.limit() - 8, currentNonce);
+            buffer.putInt(noncePos, currentNonce);
             byte[] hash = HASH_FUNCTION.hash(buffer.array());
+            ArrayUtils.reverse(hash);
             if (new BigInteger(1, hash).compareTo(Consensus.MAX_WORK_TARGET) < 0) {
                 Logger.logDebugMessage("%s found solution Keccak nonce %d" +
                                 " hash %s meets target",

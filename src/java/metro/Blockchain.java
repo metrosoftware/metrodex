@@ -49,6 +49,8 @@ public interface Blockchain {
 
     int getGuaranteedBalanceHeight(int height);
 
+    int getAvailableBalanceHeight(int height, int keyBlocksNumber);
+
     long getLastBlockTimestamp();
 
     Block getBlock(long blockId);

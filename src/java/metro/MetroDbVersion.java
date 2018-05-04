@@ -138,10 +138,10 @@ class MetroDbVersion extends DbVersion {
                 apply("CREATE UNIQUE INDEX IF NOT EXISTS account_asset_id_height_idx ON account_asset (account_id, asset_id, height DESC)");
             case 35:
                 apply("CREATE TABLE IF NOT EXISTS account_guaranteed_balance (db_id IDENTITY, account_id BIGINT NOT NULL, "
-                        + "additions BIGINT NOT NULL, height INT NOT NULL)");
+                        + "additions BIGINT NOT NULL, height INT NOT NULL, coinbase BOOLEAN NOT NULL DEFAULT FALSE)");
             case 36:
-                apply("CREATE UNIQUE INDEX IF NOT EXISTS account_guaranteed_balance_id_height_idx ON account_guaranteed_balance "
-                        + "(account_id, height DESC)");
+                apply("CREATE UNIQUE INDEX IF NOT EXISTS account_guaranteed_balance_id_height_coinbase_idx ON account_guaranteed_balance "
+                        + "(account_id, height DESC, coinbase)");
             case 37:
                 apply("CREATE TABLE IF NOT EXISTS unconfirmed_transaction (db_id IDENTITY, id BIGINT NOT NULL, expiration BIGINT NOT NULL, "
                         + "transaction_height INT NOT NULL, fee_per_byte BIGINT NOT NULL, arrival_timestamp BIGINT NOT NULL, "

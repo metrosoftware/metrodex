@@ -55,6 +55,7 @@ public final class GetBlockchainStatus extends APIServlet.APIRequestHandler {
         response.put("isScanning", blockchainProcessor.isScanning());
         response.put("isDownloading", blockchainProcessor.isDownloading());
         response.put("guaranteedBalanceKeyblockConfirmations", Consensus.GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS);
+        response.put("coinbaseMaturityPeriodInKeyblocks", Consensus.COINBASE_MATURITY_PERIOD);
         response.put("lowestPossibleHeightForRollback", Metro.getBlockchainProcessor().getLowestPossibleHeightForRollback());
         response.put("isTestnet", Constants.isTestnet);
         response.put("maxPrunableLifetime", Constants.MAX_PRUNABLE_LIFETIME);

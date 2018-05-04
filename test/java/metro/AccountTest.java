@@ -11,6 +11,126 @@ import java.util.Arrays;
 import static metro.Consensus.GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS;
 
 public class AccountTest extends BlockchainTest {
+
+    @Test
+    public void testFreshlyMinedCannotBeSpent() throws MetroException {
+//        Assert.assertEquals(1000000, alice.getEffectiveBalanceMTR());
+        Assert.assertNotNull(mineBlock());
+        generateBlock();
+        JSONObject response = new APICall.Builder("sendMoney").
+                param("secretPhrase", ALICE.getSecretPhrase()).
+                param("recipient", BOB.getStrId()).
+                param("amountMQT", 1001000 * Constants.ONE_MTR).
+                param("feeMQT", Constants.ONE_MTR).
+                build().invoke();
+        Logger.logDebugMessage("sendMoney: " + response);
+        // double spending error expected
+        // TODO API should have not accepted this tx
+        try {
+            blockchainProcessor.generateBlock(forgerSecretPhrase, Metro.getEpochTime());
+        } catch (BlockchainProcessor.BlockNotAcceptedException e) {
+            e.printStackTrace();
+        }
+
+        // all balance should still be there since we lacked available balance for the transfer:
+        Account alice = Account.getAccount(ALICE.getId());
+        Assert.assertEquals(100200000000000l, alice.getBalanceMQT());
+        for (int i = 0; i < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS; i++) {
+            Assert.assertNotNull(mineBlock());
+        }
+
+        // TODO should it really appear in guaranteed balance immediately - once we have 30 clusters?
+        // since forgers' coinbases are time-locked as well, it's probably OK to forge with the freshly mined stake...
+        alice = Account.getAccount(ALICE.getId());
+        Assert.assertEquals(1022000, alice.getEffectiveBalanceMTR());
+        Assert.assertEquals(102200000000000l, alice.getBalanceMQT());
+        // 2000*(11-2) of them can be spent now (2 key blocks ago)
+        Assert.assertEquals(101799999999995l, alice.getUnconfirmedBalanceMQT());
+    }
+
+    @Test
+    public void testRollbackToKeyBlockAndResumeMining() throws MetroException {
+
+        Assert.assertNotNull(mineBlock());
+        Assert.assertNotNull(mineBlock());
+        Assert.assertNotNull(mineBlock());
+        generateBlock();
+        // Alice tries to spend a time-locked block subsidy
+        JSONObject response = new APICall.Builder("sendMoney").
+                param("secretPhrase", ALICE.getSecretPhrase()).
+                param("recipient", BOB.getStrId()).
+                param("amountMQT", 900000 * Constants.ONE_MTR).
+                param("feeMQT", Constants.ONE_MTR).
+                build().invoke();
+        System.out.println("blockId_1=" + Metro.getBlockchain().getLastBlock().getId());
+        System.out.println("blockCount_1=" + BlockDb.blockCount());
+        try {
+            blockchainProcessor.generateBlock(forgerSecretPhrase, Metro.getEpochTime());
+        } catch (BlockchainProcessor.BlockNotAcceptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("blockId_3=" + Metro.getBlockchain().getLastBlock().getId());
+        System.out.println("blockCount_3=" + BlockDb.blockCount());
+        Assert.assertNotNull(mineBlock());
+    }
+
+    @Test
+    public void testRollbackToKeyBlockAndResumeMining2() throws MetroException {
+        generateBlock();
+        Assert.assertNotNull(mineBlock());
+        // Alice tries to spend a time-locked block subsidy
+        JSONObject response = new APICall.Builder("sendMoney").
+                param("secretPhrase", ALICE.getSecretPhrase()).
+                param("recipient", BOB.getStrId()).
+                param("amountMQT", 1002000 * Constants.ONE_MTR).
+                param("feeMQT", Constants.ONE_MTR).
+                build().invoke();
+        System.out.println("blockId_1=" + Metro.getBlockchain().getLastBlock().getId());
+        System.out.println("blockCount_1=" + BlockDb.blockCount());
+        try {
+            blockchainProcessor.generateBlock(forgerSecretPhrase, Metro.getEpochTime());
+        } catch (BlockchainProcessor.BlockNotAcceptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("blockId_3=" + Metro.getBlockchain().getLastBlock().getId());
+        System.out.println("blockCount_3=" + BlockDb.blockCount());
+        Assert.assertNotNull(mineBlock());
+    }
+
+    @Test
+    public void testNonRollbackToKeyBlockAndResumeMining() throws MetroException {
+        Assert.assertNotNull(mineBlock());
+        // Alice tries to spend a time-locked block subsidy
+        JSONObject response = new APICall.Builder("sendMoney").
+                param("secretPhrase", ALICE.getSecretPhrase()).
+                param("recipient", BOB.getStrId()).
+                param("amountMQT", 1003000 * Constants.ONE_MTR).
+                param("feeMQT", Constants.ONE_MTR).
+                build().invoke();
+        try {
+            blockchainProcessor.generateBlock(forgerSecretPhrase, Metro.getEpochTime());
+        } catch (BlockchainProcessor.BlockNotAcceptedException e) {
+            e.printStackTrace();
+        }
+        Assert.assertNotNull(mineBlock());
+    }
+
+    @Test
+    public void testNonRollbackToGenesisAndStartMining() throws MetroException {
+        // Alice tries to spend too much
+        JSONObject response = new APICall.Builder("sendMoney").
+                param("secretPhrase", ALICE.getSecretPhrase()).
+                param("recipient", BOB.getStrId()).
+                param("amountMQT", 1001000 * Constants.ONE_MTR).
+                param("feeMQT", Constants.ONE_MTR).
+                build().invoke();
+        try {
+            blockchainProcessor.generateBlock(forgerSecretPhrase, Metro.getEpochTime());
+        } catch (BlockchainProcessor.BlockNotAcceptedException e) {
+            e.printStackTrace();
+        }
+    }
+
     @Test
     public void testEffectiveBalanceBeforeFirstKeyBlock() {
         generateBlocks(2);
@@ -100,6 +220,7 @@ public class AccountTest extends BlockchainTest {
             Assert.assertNotNull(mineBlock());
         }
         Account bob = Account.getAccount(BOB.getId());
+        // TODO why Actual 1000000 now?
         Assert.assertEquals(1999999, bob.getEffectiveBalanceMTR());
     }
 
@@ -129,8 +250,8 @@ public class AccountTest extends BlockchainTest {
         Account bob = Account.getAccount(BOB.getId());
         Assert.assertEquals(1000100, bob.getEffectiveBalanceMTR());
         blockchainProcessor.scan(0, true);
-        Assert.assertEquals("scan failed to preserve block records", 9, blockchain.getHeight());
-        blockchainProcessor.scan(7, true);
-        Assert.assertEquals("scan #2 failed to preserve block records", 9, blockchain.getHeight());
+        Assert.assertEquals("scan failed to preserve block records", 23, blockchain.getHeight());
+        blockchainProcessor.scan(11, true);
+        Assert.assertEquals("scan #2 failed to preserve block records", 23, blockchain.getHeight());
     }
 }

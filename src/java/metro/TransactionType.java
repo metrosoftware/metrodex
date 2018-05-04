@@ -406,7 +406,7 @@ public abstract class TransactionType {
             Attachment.CoinbaseRecipientsAttachment attachment = (Attachment.CoinbaseRecipientsAttachment) transaction.getAttachment();
             for (Long recipientId: attachment.getRecipients().keySet()) {
                 Account recipient = Account.getAccount(recipientId);
-                recipient.addToBalanceAndUnconfirmedBalanceMQT(AccountLedger.LedgerEvent.BLOCK_GENERATED, transaction.getBlockId(), attachment.getRecipients().get(recipientId));
+                recipient.addToBalanceAndUnconfirmedBalanceMQT(LedgerEvent.ORDINARY_COINBASE, transaction.getBlockId(), attachment.getRecipients().get(recipientId));
             }
         }
 

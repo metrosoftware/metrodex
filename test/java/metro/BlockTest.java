@@ -51,6 +51,7 @@ public class BlockTest extends BlockchainTest {
         Block block1 = Metro.getBlockchain().composeKeyBlock(header, ALICE.getPublicKey(), block0.getTransactions());
         Assert.assertArrayEquals(header, block1.getBytes());
         Assert.assertEquals(block0, block1);
+        Assert.assertEquals(0x9299FF3, block1.getBaseTarget());
     }
 
     @Test
@@ -62,6 +63,7 @@ public class BlockTest extends BlockchainTest {
         parser.setAccessible(true);
         BlockImpl block1 = (BlockImpl) parser.invoke(block0, (JSONObject)JSONValue.parse(json.toJSONString()));
         Assert.assertEquals(block0, block1);
+        Assert.assertEquals(0, block1.getBaseTarget());
     }
 
     @Test
@@ -74,6 +76,7 @@ public class BlockTest extends BlockchainTest {
         BlockImpl block1 = (BlockImpl) parser.invoke(block0, (JSONObject)JSONValue.parse(block0.getJSONObject().toJSONString()));
         Assert.assertEquals(block0, block1);
         Assert.assertEquals(block0.getBaseTarget(), block1.getBaseTarget());
+        Assert.assertEquals(0x9299FF3, block1.getBaseTarget());
     }
 
     @Test

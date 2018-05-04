@@ -47,13 +47,17 @@ public class SendMoneyTest extends BlockchainTest {
         generateBlock();
         // Forger
         Assert.assertEquals(Constants.ONE_MTR, FORGY.getBalanceDiff());
-        Assert.assertEquals(Constants.ONE_MTR, FORGY.getUnconfirmedBalanceDiff());
+        // Coinbase is unspendable for 6 key blocks (feat #166)
+        Assert.assertEquals(0, FORGY.getUnconfirmedBalanceDiff());
         // Sender
         Assert.assertEquals(-100 * Constants.ONE_MTR - Constants.ONE_MTR, ALICE.getBalanceDiff());
         Assert.assertEquals(-100 * Constants.ONE_MTR - Constants.ONE_MTR, ALICE.getUnconfirmedBalanceDiff());
         // Recipient
         Assert.assertEquals(100 * Constants.ONE_MTR, BOB.getBalanceDiff());
         Assert.assertEquals(100 * Constants.ONE_MTR, BOB.getUnconfirmedBalanceDiff());
+
+        // TODO check FORGY.getUnconfirmedBalanceDiff() after 6 (2 for this testnet) key blocks:
+//        Assert.assertEquals(Constants.ONE_MTR, FORGY.getUnconfirmedBalanceDiff());
     }
 
     @Test
@@ -96,13 +100,16 @@ public class SendMoneyTest extends BlockchainTest {
         generateBlock();
         // Forger
         Assert.assertEquals(2*Constants.ONE_MTR, FORGY.getBalanceDiff());
-        Assert.assertEquals(2*Constants.ONE_MTR, FORGY.getUnconfirmedBalanceDiff());
+        // Coinbase is unspendable for 6 key blocks (feat #166)
+        Assert.assertEquals(0, FORGY.getUnconfirmedBalanceDiff());
         // Sender
         Assert.assertEquals(-Constants.ONE_MTR, ALICE.getBalanceDiff());
         Assert.assertEquals(-Constants.ONE_MTR, ALICE.getUnconfirmedBalanceDiff());
         // Recipient
         Assert.assertEquals(-Constants.ONE_MTR, BOB.getBalanceDiff());
         Assert.assertEquals(-Constants.ONE_MTR, BOB.getUnconfirmedBalanceDiff());
+        // TODO after coinbase maturity:
+//        Assert.assertEquals(2*Constants.ONE_MTR, FORGY.getUnconfirmedBalanceDiff());
     }
 
     @Test

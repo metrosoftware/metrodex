@@ -90,7 +90,7 @@ public class Target {
     /* current difficulty formula, dash - DarkGravity v3, written by Evan Duffield - evan@dash.org */
     private static int darkGravityWave(Block lastKeyBlock) {
         // make sure we have at least (npastBlocks + 1) blocks, otherwise just return powLimit
-        if (lastKeyBlock != null || lastKeyBlock.getLocalHeight() < Consensus.POW_RETARGET_INTERVAL) {
+        if (lastKeyBlock == null || lastKeyBlock.getLocalHeight() < Consensus.POW_RETARGET_INTERVAL) {
             return BitcoinJUtils.encodeCompactBits(Consensus.MAX_WORK_TARGET);
         }
         Block block = lastKeyBlock;

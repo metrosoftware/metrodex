@@ -47,6 +47,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import static metro.Consensus.COINBASE_MATURITY_PERIOD;
+
 @SuppressWarnings({"UnusedDeclaration", "SuspiciousNameCombination"})
 public final class Account {
 
@@ -1037,8 +1039,31 @@ public final class Account {
         return balanceMQT;
     }
 
+    public long getTimeLockedGenesisBalance(int height) {
+        // TODO #226
+        // the balance that is still timelocked at the given height
+        return getGenesisAccountBalance() / 200000;
+    }
+
     public long getUnconfirmedBalanceMQT() {
-        return unconfirmedBalanceMQT;
+        int currentHeight = Metro.getBlockchain().getHeight();
+        int guaranteedBalanceHeight = Metro.getBlockchain().getAvailableBalanceHeight(currentHeight, COINBASE_MATURITY_PERIOD);
+        long rawUnlockedBalance = Math.max(Math.subtractExact(unconfirmedBalanceMQT, getTimeLockedGenesisBalance(currentHeight)), 0);
+        try (Connection con = Db.db.getConnection();
+             PreparedStatement pstmt = con.prepareStatement("SELECT SUM (additions) AS additions "
+                     + "FROM account_guaranteed_balance WHERE account_id = ? AND coinbase AND height > ? AND height <= ?")) {
+            pstmt.setLong(1, this.id);
+            pstmt.setInt(2, guaranteedBalanceHeight);
+            pstmt.setInt(3, currentHeight);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (!rs.next()) {
+                    return rawUnlockedBalance;
+                }
+                return Math.max(Math.subtractExact(rawUnlockedBalance, rs.getLong("additions")), 0);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e.toString(), e);
+        }
     }
 
     public long getForgedBalanceMQT() {
@@ -1098,7 +1123,7 @@ public final class Account {
         int blockchainHeight = Metro.getBlockchain().getHeight();
         try (Connection con = Db.db.getConnection();
              PreparedStatement pstmt = con.prepareStatement("SELECT account_id, SUM (additions) AS additions "
-                     + "FROM account_guaranteed_balance, TABLE (id BIGINT=?) T WHERE account_id = T.id AND height > ? "
+                     + "FROM account_guaranteed_balance, TABLE (id BIGINT=?) T WHERE account_id = T.id AND NOT coinbase AND height > ? "
                      + (height < blockchainHeight ? " AND height <= ? " : "")
                      + " GROUP BY account_id ORDER BY account_id")) {
             pstmt.setObject(1, lessorIds);
@@ -1151,7 +1176,7 @@ public final class Account {
             }
             try (Connection con = Db.db.getConnection();
                  PreparedStatement pstmt = con.prepareStatement("SELECT SUM (additions) AS additions "
-                         + "FROM account_guaranteed_balance WHERE account_id = ? AND height > ? AND height <= ?")) {
+                         + "FROM account_guaranteed_balance WHERE account_id = ? AND NOT coinbase AND height > ? AND height <= ?")) {
                 pstmt.setLong(1, this.id);
                 pstmt.setInt(2, height);
                 pstmt.setInt(3, currentHeight);
@@ -1406,7 +1431,7 @@ public final class Account {
         }
         long totalAmountMQT = Math.addExact(amountMQT, feeMQT);
         this.balanceMQT = Math.addExact(this.balanceMQT, totalAmountMQT);
-        addToGuaranteedBalanceMQT(totalAmountMQT);
+        addToGuaranteedBalanceMQT(totalAmountMQT, false);
         checkBalance(this.id, this.balanceMQT, this.unconfirmedBalanceMQT);
         save();
         listeners.notify(this, Event.BALANCE);
@@ -1461,7 +1486,7 @@ public final class Account {
         long totalAmountMQT = Math.addExact(amountMQT, feeMQT);
         this.balanceMQT = Math.addExact(this.balanceMQT, totalAmountMQT);
         this.unconfirmedBalanceMQT = Math.addExact(this.unconfirmedBalanceMQT, totalAmountMQT);
-        addToGuaranteedBalanceMQT(totalAmountMQT);
+        addToGuaranteedBalanceMQT(totalAmountMQT, event == LedgerEvent.ORDINARY_COINBASE);
         checkBalance(this.id, this.balanceMQT, this.unconfirmedBalanceMQT);
         save();
         listeners.notify(this, Event.BALANCE);
@@ -1514,18 +1539,20 @@ public final class Account {
         }
     }
 
-    private void addToGuaranteedBalanceMQT(long amountMQT) {
+    private void addToGuaranteedBalanceMQT(long amountMQT, boolean isCoinbase) {
         if (amountMQT <= 0) {
             return;
         }
         int blockchainHeight = Metro.getBlockchain().getHeight();
         try (Connection con = Db.db.getConnection();
+             // TODO need to know whether it was coinbase
              PreparedStatement pstmtSelect = con.prepareStatement("SELECT additions FROM account_guaranteed_balance "
-                     + "WHERE account_id = ? and height = ?");
+                     + "WHERE account_id = ? AND coinbase = ? AND height = ?");
              PreparedStatement pstmtUpdate = con.prepareStatement("MERGE INTO account_guaranteed_balance (account_id, "
-                     + " additions, height) KEY (account_id, height) VALUES(?, ?, ?)")) {
+                     + " additions, height, coinbase) KEY (account_id, height, coinbase) VALUES(?, ?, ?, ?)")) {
             pstmtSelect.setLong(1, this.id);
-            pstmtSelect.setInt(2, blockchainHeight);
+            pstmtSelect.setBoolean(2, isCoinbase);
+            pstmtSelect.setInt(3, blockchainHeight);
             try (ResultSet rs = pstmtSelect.executeQuery()) {
                 long additions = amountMQT;
                 if (rs.next()) {
@@ -1534,6 +1561,7 @@ public final class Account {
                 pstmtUpdate.setLong(1, this.id);
                 pstmtUpdate.setLong(2, additions);
                 pstmtUpdate.setInt(3, blockchainHeight);
+                pstmtUpdate.setBoolean(4, isCoinbase);
                 pstmtUpdate.executeUpdate();
             }
         } catch (SQLException e) {

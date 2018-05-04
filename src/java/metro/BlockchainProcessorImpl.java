@@ -1091,8 +1091,8 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
      * @throws MetroException
      */
     private boolean processNewBlock(BlockImpl block) throws MetroException {
+        BlockImpl lastBlock = blockchain.getLastBlock();
         if (!block.isKeyBlock()) {
-            BlockImpl lastBlock = blockchain.getLastBlock();
             // TODO correct logic when a new keyBlock arrives from peer
             if (block.getPreviousBlockId() == lastBlock.getId()) {
                 pushBlock(block);
@@ -1127,7 +1127,10 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
                 blockchain.writeLock();
                 try {
-                    List<BlockImpl> fork = popOffTo(common);
+                    List<BlockImpl> fork = Collections.EMPTY_LIST;
+                    if (!common.equals(lastBlock)) {
+                        fork = popOffTo(common);
+                    }
                     try {
                         pushBlock(block);
                         for (BlockImpl posBlock: fork) {

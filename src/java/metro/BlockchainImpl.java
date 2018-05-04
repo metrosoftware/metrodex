@@ -110,15 +110,16 @@ final class BlockchainImpl implements Blockchain {
 
     @Override
     public int getGuaranteedBalanceHeight(int height) {
-        if (height < 2) {
-            // we have only Genesis in the DB
-            return height;
-        }
+        return getAvailableBalanceHeight(height, GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS - 1);
+    }
+
+    @Override
+    public int getAvailableBalanceHeight(int height, int keyBlocksNumber) {
         BlockImpl keyHead = height == getHeight() ? getLastKeyBlock() : BlockDb.findLastKeyBlock(height);
-        if (keyHead != null) {
-            int pastLocalHeight = Math.max(keyHead.getLocalHeight() - GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS + 1, 0);
+        if (keyHead != null && keyHead.getLocalHeight() > 0) {
+            int pastLocalHeight = Math.max(keyHead.getLocalHeight() - keyBlocksNumber, 0);
             BlockImpl guaranteedMileStone = BlockDb.findBlockAtLocalHeight(pastLocalHeight, true);
-            if (guaranteedMileStone.getLocalHeight() == 0 && keyHead.getLocalHeight() < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS - 1) {
+            if (guaranteedMileStone.getLocalHeight() == 0 && keyHead.getLocalHeight() < keyBlocksNumber - 1) {
                 // ignore additions in the 1st cluster before seeing the 30th key block
                 return 0;
             }
@@ -441,7 +442,6 @@ final class BlockchainImpl implements Blockchain {
         if (!Arrays.equals(forgersMerkleRoot, HASH_FUNCTION.hash(forgersMerkleBranches))) {
             throw new IllegalArgumentException("Forgers root: " + Convert.toHexString(forgersMerkleRoot) + ", not matching branches: " + Convert.toHexString(forgersMerkleBranches));
         }
-
         long baseTarget = header.getInt();
         int nonce = header.getInt();
         long rewardMQT = 0L;
@@ -705,7 +705,7 @@ final class BlockchainImpl implements Blockchain {
             return Consensus.MAX_WORK_TARGET;
         }
         if (getLastKeyBlock().getLocalHeight() < localHeight - 1) {
-            throw new IllegalArgumentException("Too big key local heght.");
+            throw new IllegalArgumentException("Too big key local height.");
         }
         return BitcoinJUtils.decodeCompactBits(Target.nextTarget(BlockDb.findBlockAtLocalHeight(localHeight - 1, true)));
     }

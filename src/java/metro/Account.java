@@ -1039,16 +1039,19 @@ public final class Account {
         return balanceMQT;
     }
 
-    public long getTimeLockedGenesisBalance(int height) {
-        // TODO #226
-        // the balance that is still timelocked at the given height
-        return getGenesisAccountBalance() / 200000;
+    public long getTimeLockedGenesisBalance() {
+        if (!Consensus.GENESIS_BALANCES_TIME_LOCK) {
+            return 0;
+        }
+        int h = Metro.getBlockchain().getLastKeyBlock() != null ? Metro.getBlockchain().getLastKeyBlock().getLocalHeight() : -1;
+        int i = Consensus.SUBSIDY_HALVING_INTERVAL;
+        return (long) Math.ceil((i - 1 - h) * (1.0 * getGenesisAccountBalanceMQT() / i));
     }
 
     public long getUnconfirmedBalanceMQT() {
         int currentHeight = Metro.getBlockchain().getHeight();
         int guaranteedBalanceHeight = Metro.getBlockchain().getAvailableBalanceHeight(currentHeight, COINBASE_MATURITY_PERIOD);
-        long rawUnlockedBalance = Math.max(Math.subtractExact(unconfirmedBalanceMQT, getTimeLockedGenesisBalance(currentHeight)), 0);
+        long rawUnlockedBalance = Math.max(Math.subtractExact(unconfirmedBalanceMQT, getTimeLockedGenesisBalance()), 0);
         try (Connection con = Db.db.getConnection();
              PreparedStatement pstmt = con.prepareStatement("SELECT SUM (additions) AS additions "
                      + "FROM account_guaranteed_balance WHERE account_id = ? AND coinbase AND height > ? AND height <= ?")) {
@@ -1074,20 +1077,24 @@ public final class Account {
         return getEffectiveBalanceMTR(Metro.getBlockchain().getHeight());
     }
 
-    private long getGenesisAccountBalance() {
+    private long getGenesisAccountBalanceMQT() {
         try {
             Account genesisAccount = getAccount(id, 0);
-            return genesisAccount == null ? 0 : genesisAccount.getBalanceMQT() / Constants.ONE_MTR;
+            return genesisAccount == null ? 0 : genesisAccount.getBalanceMQT();
         } catch (IllegalArgumentException iae) {
             return 0;
         }
+    }
+
+    private long getGenesisAccountBalanceMTR() {
+        return getGenesisAccountBalanceMQT() / Constants.ONE_MTR;
     }
 
     public long getEffectiveBalanceMTR(int height) {
         int guaranteedBalanceHeight = Metro.getBlockchain().getGuaranteedBalanceHeight(height);
         int confirmations = height - guaranteedBalanceHeight;
         if (height <= guaranteedBalanceHeight || guaranteedBalanceHeight == 0) {
-            return getGenesisAccountBalance();
+            return getGenesisAccountBalanceMTR();
         }
         if (this.publicKey == null) {
             this.publicKey = publicKeyTable.get(accountDbKeyFactory.newKey(this));

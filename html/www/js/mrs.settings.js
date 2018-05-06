@@ -49,9 +49,9 @@ var MRS = (function(MRS, $) {
 	};
 
 	MRS.defaultColors = {
-		"header": "#084F6C",
+		"header": "#524b98",
 		"sidebar": "#F4F4F4",
-		"boxes": "#3E96BB"
+		"boxes": "#6d64cc"
 	};
 
 	MRS.languages = {

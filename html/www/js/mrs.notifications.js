@@ -54,7 +54,7 @@ var MRS = (function(MRS, $, undefined) {
 			});
 		});
 		if (totalCount > 0) {
-			$menuItem.find('.nm_inner_subtype').css('backgroundColor', '#337ab7');
+			$menuItem.find('.nm_inner_subtype').css('backgroundColor', '#a09df2');
 			$menuItem.find('.nm_inner_total').css('backgroundColor', '#e06054');
 
 			var $markReadDiv = $("<div style='text-align:center;padding:12px 12px 8px 12px;'></div>");
@@ -68,7 +68,7 @@ var MRS = (function(MRS, $, undefined) {
 			$popoverItem.append($markReadDiv);
 			document.title = $.t('app_title') + ' (' + String(totalCount) + ')';
 		} else {
-			$menuItem.find('.nm_inner_subtype').css('backgroundColor', '#337ab7');
+			$menuItem.find('.nm_inner_subtype').css('backgroundColor', '#a09df2');
 			$menuItem.find('.nm_inner_total').css('backgroundColor', '');
 			var html = "";
 			html += "<div style='text-align:center;padding:12px;'>" + $.t('no_notifications', 'No current notifications') + "</div>";

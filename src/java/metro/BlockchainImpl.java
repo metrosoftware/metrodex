@@ -153,6 +153,15 @@ final class BlockchainImpl implements Blockchain {
     }
 
     @Override
+    public BlockImpl getLastKeyBlock(long timestamp) {
+        BlockImpl keyBlock = getLastKeyBlock();
+        if (keyBlock != null && timestamp >= keyBlock.getTimestamp()) {
+            return keyBlock;
+        }
+        return BlockDb.findLastKeyBlock(timestamp);
+    }
+
+    @Override
     public BlockImpl getLastPosBlock() {
         BlockImpl lastBlock = getLastBlock();
         while (lastBlock != null && lastBlock.isKeyBlock()) {
@@ -393,11 +402,19 @@ final class BlockchainImpl implements Blockchain {
 
     @Override
     public BlockImpl getECBlock(long timestamp) {
-        Block block = getLastBlock(timestamp);
-        if (block == null) {
+        Block block = getLastKeyBlock(timestamp);
+        // for our Hybrid consensus, ECBlock is:
+        // in first 30 clusters, it's Genesis;
+        // in key block with localHeight=29 (30th from the first as localHeight is zero-based) it's still Genesis;
+        // starting from the 1st POS block of cluster 31, it's key block with localHeight=0
+        // for tx in kb with lH=30 it's kb with lH=0
+        // starting from the 1st POS block of cluster 32, it's key block with localHeight=1
+        // et cetera..
+        int pastLocalHeight;
+        if (block == null || (pastLocalHeight = block.getLocalHeight() - GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS + 1) < 0) {
             return getBlockAtHeight(0);
         }
-        return BlockDb.findBlockAtHeight(Math.max(block.getHeight() - 720, 0));
+        return BlockDb.findBlockAtLocalHeight(pastLocalHeight, true);
     }
 
     @Override

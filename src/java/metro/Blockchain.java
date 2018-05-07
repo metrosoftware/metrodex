@@ -41,6 +41,8 @@ public interface Blockchain {
 
     Block getLastKeyBlock();
 
+    Block getLastKeyBlock(long timestamp);
+
     void forgetLastKeyBlock();
 
     Block getLastPosBlock();

@@ -1,6 +1,8 @@
 package metro;
 
+import metro.http.APICall;
 import metro.util.Convert;
+import metro.util.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.junit.Assert;
@@ -151,5 +153,68 @@ public class BlockTest extends BlockchainTest {
         BlockImpl preparedBlock = Metro.getBlockchainProcessor().prepareKeyBlock(null);
         Block blockTemplate = Metro.getBlockchain().composeKeyBlock(preparedBlock.bytes(), preparedBlock.getGeneratorPublicKey(), preparedBlock.getTransactions());
         Assert.assertArrayEquals("generation sequence does not match", Convert.generationSequence(posBlock.getGenerationSequence(), blockTemplate.getGeneratorPublicKey()), blockTemplate.getGenerationSequence());
+    }
+
+    @Test
+    public void testECBlocks() throws MetroException {
+        JSONObject response = new APICall.Builder("sendMoney").
+                param("secretPhrase", ALICE.getSecretPhrase()).
+                param("recipient", BOB.getStrId()).
+                param("amountMQT", 1000 * Constants.ONE_MTR).
+                param("feeMQT", Constants.ONE_MTR).
+                build().invoke();
+        Logger.logDebugMessage("sendMoney: " + response);
+        generateBlock();
+        Block posBlock = Metro.getBlockchain().getLastBlock();
+        Block genesis = BlockDb.findBlock(posBlock.getPreviousBlockId());
+        Assert.assertEquals((short)0, genesis.getVersion());
+        Assert.assertEquals(0, posBlock.getTransactions().get(0).getECBlockHeight());
+        Assert.assertEquals(genesis.getId(), posBlock.getTransactions().get(0).getECBlockId());
+        Assert.assertEquals(0, posBlock.getTransactions().get(1).getECBlockHeight());
+        Assert.assertEquals(genesis.getId(), posBlock.getTransactions().get(1).getECBlockId());
+        Block minedBlock = mineBlock(), minedBlock2 = null;
+        Assert.assertNotNull("mined block not accepted", minedBlock);
+        Assert.assertEquals(1, minedBlock.getTransactions().size());
+        Assert.assertTrue(minedBlock.getTransactions().get(0).getType().isCoinbase());
+        Assert.assertEquals(0, minedBlock.getTransactions().get(0).getECBlockHeight());
+        Assert.assertEquals(genesis.getId(), minedBlock.getTransactions().get(0).getECBlockId());
+        response = new APICall.Builder("sendMoney").
+                param("secretPhrase", ALICE.getSecretPhrase()).
+                param("recipient", BOB.getStrId()).
+                param("amountMQT", 1000 * Constants.ONE_MTR).
+                param("feeMQT", Constants.ONE_MTR).
+                build().invoke();
+        Logger.logDebugMessage("sendMoney: " + response);
+        generateBlock();
+        posBlock = Metro.getBlockchain().getLastBlock();
+        Assert.assertEquals(0, posBlock.getTransactions().get(0).getECBlockHeight());
+        Assert.assertEquals(genesis.getId(), posBlock.getTransactions().get(0).getECBlockId());
+        Assert.assertEquals(0, posBlock.getTransactions().get(1).getECBlockHeight());
+        Assert.assertEquals(genesis.getId(), posBlock.getTransactions().get(1).getECBlockId());
+        Block minedBlock1 = mineBlock();
+        Assert.assertEquals(0, minedBlock1.getTransactions().get(0).getECBlockHeight());
+        Assert.assertEquals(genesis.getId(), minedBlock1.getTransactions().get(0).getECBlockId());
+        for (int i = 0; i < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS - 2; i++) {
+            minedBlock2 = mineBlock();
+            Assert.assertNotNull(minedBlock);
+        }
+        Assert.assertEquals(0, minedBlock2.getTransactions().get(0).getECBlockHeight());
+        Assert.assertEquals(genesis.getId(), minedBlock2.getTransactions().get(0).getECBlockId());
+        response = new APICall.Builder("sendMoney").
+                param("secretPhrase", ALICE.getSecretPhrase()).
+                param("recipient", BOB.getStrId()).
+                param("amountMQT", 1000 * Constants.ONE_MTR).
+                param("feeMQT", Constants.ONE_MTR).
+                build().invoke();
+        Logger.logDebugMessage("sendMoney: " + response);
+        generateBlock();
+        posBlock = Metro.getBlockchain().getLastBlock();
+        Assert.assertEquals(2, posBlock.getTransactions().get(0).getECBlockHeight());
+        Assert.assertEquals(minedBlock.getId(), posBlock.getTransactions().get(0).getECBlockId());
+        Assert.assertEquals(2, posBlock.getTransactions().get(1).getECBlockHeight());
+        Assert.assertEquals(minedBlock.getId(), posBlock.getTransactions().get(1).getECBlockId());
+        minedBlock2 = mineBlock();
+        Assert.assertEquals(2, minedBlock2.getTransactions().get(0).getECBlockHeight());
+        Assert.assertEquals(minedBlock.getId(), minedBlock2.getTransactions().get(0).getECBlockId());
     }
 }

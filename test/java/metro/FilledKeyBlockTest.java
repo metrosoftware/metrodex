@@ -22,4 +22,28 @@ public class FilledKeyBlockTest extends BlockchainTest {
         mdg.update(txHashPrivateAccess(minedBlock.getTransactions().get(0)));
         Assert.assertArrayEquals(mdg.digest(txHashPrivateAccess(minedBlock.getTransactions().get(1))), minedBlock.getTxMerkleRoot());
     }
+
+    @Test
+    public void testLargeKeyblockSize() throws MetroException {
+        Transaction.Builder builder;
+        for (int i = 1; i <= 5554; i++) {
+            builder = Metro.newTransactionBuilder(ALICE.getPublicKey(), 0, i, (short) 10, Attachment.ARBITRARY_ENVELOPE);
+            Metro.getTransactionProcessor().broadcast(builder.build(ALICE.getSecretPhrase()));
+        }
+        Block minedBlock = mineBlock();
+        Assert.assertEquals(5555, minedBlock.getTransactions().size());
+        System.out.println("payloadLength=" + minedBlock.getPayloadLength());
+        System.out.println("jsonLength=" + minedBlock.getJSONObject().toString().length());
+    }
+
+    @Test
+    public void testTooLargeKeyblock() throws MetroException {
+        Transaction.Builder builder;
+        for (int i = 1; i <= 5600; i++) {
+            builder = Metro.newTransactionBuilder(ALICE.getPublicKey(), 0, i, (short) 10, Attachment.ARBITRARY_ENVELOPE);
+            Metro.getTransactionProcessor().broadcast(builder.build(ALICE.getSecretPhrase()));
+        }
+        Block minedBlock = mineBlock();
+        Assert.assertNull(minedBlock);
+    }
 }

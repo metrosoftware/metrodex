@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 final class TransactionProcessorImpl implements TransactionProcessor {
 
+    org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TransactionProcessor.class);
     private static final boolean enableTransactionRebroadcasting = Metro.getBooleanProperty("metro.enableTransactionRebroadcasting");
     private static final boolean testUnconfirmedTransactions = Metro.getBooleanProperty("metro.testUnconfirmedTransactions");
     private static final int maxUnconfirmedTransactions;
@@ -430,7 +431,8 @@ final class TransactionProcessorImpl implements TransactionProcessor {
                 Logger.logDebugMessage("Will broadcast new transaction later " + transaction.getStringId());
             } else {
                 processTransaction(unconfirmedTransaction);
-                Logger.logDebugMessage("Accepted new transaction " + transaction.getStringId());
+                // #208 special debug output that will be filtered out in the default logging properties
+                log.debug("Accepted new transaction " + transaction.getStringId());
                 List<Transaction> acceptedTransactions = Collections.singletonList(transaction);
                 Peers.sendToSomePeers(acceptedTransactions);
                 transactionListeners.notify(acceptedTransactions, Event.ADDED_UNCONFIRMED_TRANSACTIONS);

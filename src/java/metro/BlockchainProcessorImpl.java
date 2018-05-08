@@ -1134,7 +1134,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                         }
                         return true;
                     } catch (BlockNotAcceptedException e) {
-                        Logger.logDebugMessage("Replacement block failed to be accepted, pushing back our last block");
+                        Logger.logWarningMessage("Replacement block failed to be accepted, pushing back our last block");
                         for (BlockImpl posBlock: fork) {
                             pushBlock(posBlock);
                         }

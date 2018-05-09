@@ -445,6 +445,10 @@ final class BlockchainImpl implements Blockchain {
         long baseTarget = header.getInt();
         int nonce = header.getInt();
         long rewardMQT = 0L;
+        int payloadLength = 0;
+        for (Transaction tx: transactions) {
+            payloadLength += tx.getFullSize();
+        }
         TransactionImpl coinbase = transactions.get(0);
         Attachment.CoinbaseRecipientsAttachment attachment = (Attachment.CoinbaseRecipientsAttachment)coinbase.getAttachment();
         Map<Long, Long> coinbaseRewards = attachment.getRecipients();
@@ -453,8 +457,8 @@ final class BlockchainImpl implements Blockchain {
         }
 
         return new BlockImpl(version, timestamp, baseTarget, previousBlockId, previousKeyBlockId, nonce,
-                0, rewardMQT, 0, txMerkleRoot, generatorPublicKey,
-                generationSignature, null, previousBlockHash, previousKeyBlockHash, forgersMerkleBranches, transactions);
+                0, rewardMQT, payloadLength, txMerkleRoot, generatorPublicKey,
+                generationSignature, null, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, transactions);
     }
 
     @Override

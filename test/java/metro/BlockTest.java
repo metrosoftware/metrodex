@@ -217,4 +217,17 @@ public class BlockTest extends BlockchainTest {
         Assert.assertEquals(2, minedBlock2.getTransactions().get(0).getECBlockHeight());
         Assert.assertEquals(minedBlock.getId(), minedBlock2.getTransactions().get(0).getECBlockId());
     }
+    @Test
+    public void testTimeCapsuleEncoding() {
+        String timeCapsule = Genesis.TIME_CAPSULE;
+        BlockImpl genesis = BlockDb.findBlockAtHeight(0);
+        Assert.assertEquals("f88f6af1bd1042152fb70446114813505400948fd441c133a00537c108308c4433a00f5094dc0200000000000000000000000000000000000000000000000000", Convert.toHexString(genesis.getBlockSignature()));
+        ByteBuffer buffer = ByteBuffer.wrap(genesis.getBlockSignature());
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+        Assert.assertEquals(1531805231244546040l, buffer.getLong());
+        byte[] encodedCapsule = new byte[64 - 8];
+        buffer.get(encodedCapsule);
+        Assert.assertEquals(timeCapsule.length(), encodedCapsule[0]);
+        Assert.assertTrue(timeCapsule.equalsIgnoreCase(Convert.decodeTimeCapsule(encodedCapsule)));
+    }
 }

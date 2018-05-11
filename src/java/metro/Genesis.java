@@ -28,6 +28,8 @@ import org.json.simple.parser.ParseException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.text.DateFormat;
@@ -39,6 +41,8 @@ public final class Genesis {
     private static final byte[] CREATOR_PUBLIC_KEY;
     public static final long CREATOR_ID;
     public static final long EPOCH_BEGINNING;
+    public static final byte[] SPECIAL_SIGNATURE;
+    public static final String TIME_CAPSULE;
     static {
         try (InputStream is = ClassLoader.getSystemResourceAsStream("data/genesisParameters.json")) {
             JSONObject genesisParameters = (JSONObject)JSONValue.parseWithException(new InputStreamReader(is));
@@ -46,6 +50,14 @@ public final class Genesis {
             CREATOR_ID = Account.getId(CREATOR_PUBLIC_KEY);
             DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");
             EPOCH_BEGINNING = dateFormat.parse((String) genesisParameters.get("epochBeginning")).getTime();
+            ByteBuffer buffer = ByteBuffer.allocate(64);
+            buffer.order(ByteOrder.LITTLE_ENDIAN);
+            JSONObject epochProof = (JSONObject)genesisParameters.get("epochProof");
+            buffer.putLong((Long)epochProof.get("nxtBlockId"));
+            TIME_CAPSULE = (String)epochProof.get("timeCapsule");
+            buffer.put((byte)TIME_CAPSULE.length());
+            buffer.put(Convert.encodeTimeCapsuleWithoutLength(TIME_CAPSULE));
+            SPECIAL_SIGNATURE = buffer.array();
         } catch (IOException|ParseException|java.text.ParseException e) {
             throw new RuntimeException("Failed to load genesis parameters", e);
         }

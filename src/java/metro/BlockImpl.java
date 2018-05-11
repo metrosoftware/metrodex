@@ -79,6 +79,7 @@ public final class BlockImpl implements Block {
         this.height = 0;
         this.localHeight = 0;
         this.stakeBatchDifficulty = Convert.two64.divide(BigInteger.valueOf(Constants.INITIAL_BASE_TARGET));
+        this.blockSignature = Genesis.SPECIAL_SIGNATURE;
     }
 
     /**

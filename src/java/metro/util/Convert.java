@@ -32,6 +32,7 @@ import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -344,4 +345,45 @@ public final class Convert {
         }
         return o1.length - o2.length;
     };
+
+    public static byte[] encodeTimeCapsuleWithoutLength(String text) {
+        BitSet bits = new BitSet(text.length() * 5);
+        int pos = 0;
+        for (char ch : text.toUpperCase().toCharArray()) {
+            int i = (int)ch;
+            // 0 means space, 1 means A, 26 means Z
+            if (i < 65)
+                i = 0;
+            else
+                i-= 64;
+//            Logger.logDebugMessage(ch + "=" + i);
+            bits.set(pos++, (i & 1) > 0);
+            bits.set(pos++, (i & 2) > 0);
+            bits.set(pos++, (i & 4) > 0);
+            bits.set(pos++, (i & 8) > 0);
+            bits.set(pos++, (i & 16) > 0);
+        }
+        return bits.toByteArray();
+    }
+
+    /**
+     * Note: To allow longer messages, first byte(s) would need to be interpreted as a VarInt
+     * @param message
+     * @return
+     */
+    public static String decodeTimeCapsule(byte[] message) {
+        final BitSet set = BitSet.valueOf(Arrays.copyOfRange(message, 1, message.length));
+        StringBuffer sb = new StringBuffer();
+        for (byte i = 0; i < message[0]; i++) {
+            long[] value = set.get(i*5, i*5 + 5).toLongArray();
+            if (value.length > 0) {
+//                System.out.println(value[0]);
+                sb.append((char)(int)(64 + value[0]));
+            } else {
+//                System.out.println("0(space)");
+                sb.append(" ");
+            }
+        }
+        return sb.toString();
+    }
 }

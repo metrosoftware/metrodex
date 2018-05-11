@@ -1108,10 +1108,10 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                     try {
                         pushBlock(block);
                         TransactionProcessorImpl.getInstance().processLater(lastBlock.getTransactions());
-                        Logger.logDebugMessage("Last block " + lastBlock.getStringId() + " was replaced by " + block.getStringId());
+                        Logger.logWarningMessage("Last block " + lastBlock.getStringId() + " was replaced by " + block.getStringId());
                         return true;
                     } catch (BlockNotAcceptedException e) {
-                        Logger.logDebugMessage("Replacement block failed to be accepted, pushing back our last block");
+                        Logger.logWarningMessage("Replacement block failed to be accepted, pushing back our last block");
                         pushBlock(lastBlock);
                         TransactionProcessorImpl.getInstance().processLater(block.getTransactions());
                     }
@@ -1135,11 +1135,11 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                         pushBlock(block);
                         for (BlockImpl posBlock: fork) {
                             TransactionProcessorImpl.getInstance().processLater(posBlock.getTransactions());
-                            Logger.logDebugMessage("Pos block " + posBlock.getStringId() + " was replaced by key block " + block.getStringId());
+                            Logger.logWarningMessage("Pos block " + posBlock.getStringId() + " was replaced by key block " + block.getStringId());
                         }
                         return true;
                     } catch (BlockNotAcceptedException e) {
-                        Logger.logDebugMessage("Replacement block failed to be accepted, pushing back our last block");
+                        Logger.logWarningMessage("Replacement block failed to be accepted, pushing back our last block");
                         for (BlockImpl posBlock: fork) {
                             pushBlock(posBlock);
                         }
@@ -1749,7 +1749,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             try {
                 BlockImpl block = blockchain.getLastBlock();
                 block.loadTransactions();
-                Logger.logDebugMessage("Rollback from block " + block.getStringId() + " at height " + block.getHeight()
+                Logger.logWarningMessage("Rollback from block " + block.getStringId() + " at height " + block.getHeight()
                         + " to " + commonBlock.getStringId() + " at " + commonBlock.getHeight());
                 while (block.getId() != commonBlock.getId() && block.getHeight() > 0) {
                     poppedOffBlocks.add(block);

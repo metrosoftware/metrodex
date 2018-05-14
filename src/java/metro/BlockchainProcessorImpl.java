@@ -1391,7 +1391,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             blockchain.writeUnlock();
         }
 
-        if (block.getTimestamp() >= curTime - 600) {
+        if (block.getTimestamp() >= curTime - 600000) {
             Peers.sendToSomePeers(block);
         }
 

@@ -25,10 +25,11 @@ public class Target {
 
         for (int nCountBlocks = 1; nCountBlocks <= Consensus.POW_RETARGET_INTERVAL; nCountBlocks++) {
             BigInteger bnTarget = BitcoinJUtils.decodeCompactBits((int)block.getBaseTarget());
-            bnPastTargetAvg = bnTarget;
+
             if (nCountBlocks > 1) {
-                // NOTE: that's not an average really...
                 bnPastTargetAvg = ((bnTarget.subtract(bnPastTargetAvg)).divide(BigInteger.valueOf(nCountBlocks + 1))).add(bnPastTargetAvg);
+            } else {
+                bnPastTargetAvg = bnTarget;
             }
 
             if (nCountBlocks != Consensus.POW_RETARGET_INTERVAL) {

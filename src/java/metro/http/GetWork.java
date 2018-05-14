@@ -39,7 +39,8 @@ public final class GetWork extends APIServlet.APIRequestHandler {
 
     private long lastTimestamp;
     private byte[] cache;
-    private int cachedLastBlockHeight;
+    private long cachedLastBlockId;
+    private BigInteger cachedTarget;
 
 
     private GetWork() {
@@ -93,22 +94,22 @@ public final class GetWork extends APIServlet.APIRequestHandler {
             Logger.logErrorMessage("Parse request error:", e);
         }
 
-        int lastBlockHeight = Metro.getBlockchain().getLastBlock().getHeight();
-        Block block = Metro.getBlockchainProcessor().prepareKeyBlock(null);
+        long lastBlockId = Metro.getBlockchain().getLastBlock().getId();
         long currentTime = System.currentTimeMillis();
-        if (cachedLastBlockHeight < lastBlockHeight || currentTime - lastTxTime > Math.min(transactionsCacheDuration, 1000)) {
+        if (cachedLastBlockId != lastBlockId || currentTime - lastTxTime > Math.min(transactionsCacheDuration, 5000)) {
             lastTxTime = currentTime;
+            Block block = Metro.getBlockchainProcessor().prepareKeyBlock(null);
             cache = block.getBytes();
-            cachedLastBlockHeight = lastBlockHeight;
+            cachedLastBlockId = lastBlockId;
+            cachedTarget = block.getDifficultyTargetAsInteger();
             transactions.set((List<TransactionImpl>)block.getTransactions());
             lastTimestamp = currentTime;
+        } else if (currentTime - lastTimestamp > Math.min(blockCacheDuration, 1000)) {
+            Block block = Metro.getBlockchainProcessor().prepareKeyBlock(transactions.get());
+            cache = block.getBytes();
+            lastTimestamp = currentTime;
         } else {
-            if (currentTime - lastTimestamp > Math.min(blockCacheDuration, 5000)) {
-                block = Metro.getBlockchainProcessor().prepareKeyBlock(transactions.get());
-                cache = block.getBytes();
-                cachedLastBlockHeight = lastBlockHeight;
-                lastTimestamp = currentTime;
-            }
+            System.out.println("Return cached work");
         }
 
         byte[] blockBytes = padZeroValuesSpecialAndSize(cache);
@@ -117,7 +118,7 @@ public final class GetWork extends APIServlet.APIRequestHandler {
         response.put("result", result);
         result.put("data", Convert.toHexString(blockBytes));
         //TODO is this correct block instead of cached block version?
-        String targetString = targetToLittleEndianString(block.getDifficultyTargetAsInteger());
+        String targetString = targetToLittleEndianString(cachedTarget);
         result.put("target", targetString);
         return JSON.prepare(response);
     }

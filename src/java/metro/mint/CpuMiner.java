@@ -75,8 +75,8 @@ public class CpuMiner {
         boolean isSubmitted = Metro.getBooleanProperty("metro.mine.isSubmitted");
         boolean isStopOnError = Metro.getBooleanProperty("metro.mine.stopOnError");
 
-        JSONObject miningTarget = getMiningTarget();
-        JSONObject resultObject = (JSONObject) miningTarget.get("result");
+        JSONObject work = getWork();
+        JSONObject resultObject = (JSONObject) work.get("result");
         byte[] targetReverted = Convert.parseHexString((String) resultObject.get("target"));
         byte[] target = revertByteArray(targetReverted);
 
@@ -107,8 +107,18 @@ public class CpuMiner {
                     Logger.logInfoMessage("continue");
                 }
             }
-            miningTarget = getMiningTarget();
-            resultObject = (JSONObject) miningTarget.get("result");
+            try {
+                work = getWork();
+            } catch (Exception e) {
+                Logger.logInfoMessage("mine error", e);
+                if (isStopOnError) {
+                    Logger.logInfoMessage("stopping on error");
+                    break;
+                } else {
+                    Logger.logInfoMessage("continue");
+                }
+            }
+            resultObject = (JSONObject) work.get("result");
             targetReverted = Convert.parseHexString((String) resultObject.get("target"));
             target = revertByteArray(targetReverted);
             data = Convert.parseHexString((String) resultObject.get("data"));
@@ -193,7 +203,7 @@ public class CpuMiner {
         return getJsonResponse(urlParams, requestBody);
     }
 
-    private JSONObject getMiningTarget() {
+    private JSONObject getWork() {
         Map<String, String> params = new HashMap<>();
         params.put("requestType", "getWork");
         return getJsonResponse(params, null);

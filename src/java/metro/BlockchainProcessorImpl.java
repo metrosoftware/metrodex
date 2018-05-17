@@ -1086,20 +1086,21 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
     /**
      * The common method to process a new block submitted by a peer or by a miner
+     *
      * @param block
      * @return true if this block was accepted, false if ignored
      * @throws MetroException
      */
     private boolean processNewBlock(BlockImpl block) throws MetroException {
-        BlockImpl lastBlock = blockchain.getLastBlock();
-        if (!block.isKeyBlock()) {
-            // TODO correct logic when a new keyBlock arrives from peer
-            if (block.getPreviousBlockId() == lastBlock.getId()) {
-                pushBlock(block);
-                return true;
-            } else if (block.getPreviousBlockId() == lastBlock.getPreviousBlockId() && block.getTimestamp() < lastBlock.getTimestamp()) {
-                blockchain.writeLock();
-                try {
+        blockchain.writeLock();
+        try {
+            BlockImpl lastBlock = blockchain.getLastBlock();
+            if (!block.isKeyBlock()) {
+                // TODO correct logic when a new keyBlock arrives from peer
+                if (block.getPreviousBlockId() == lastBlock.getId()) {
+                    pushBlock(block);
+                    return true;
+                } else if (block.getPreviousBlockId() == lastBlock.getPreviousBlockId() && block.getTimestamp() < lastBlock.getTimestamp()) {
                     if (lastBlock.getId() != blockchain.getLastBlock().getId()) {
                         return false; // blockchain changed, ignore the block
                     }
@@ -1115,42 +1116,38 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                         pushBlock(lastBlock);
                         TransactionProcessorImpl.getInstance().processLater(block.getTransactions());
                     }
-                } finally {
-                    blockchain.writeUnlock();
-                }
-            } // else ignore the block
-            return false;
-        } else {
-            BlockImpl lastKeyBlock = blockchain.getLastKeyBlock();
-            BlockImpl common = blockchain.getBlock(block.getPreviousBlockId());
-            if (common != null && (lastKeyBlock == null || lastKeyBlock.getHeight() < common.getHeight() +1)) {
+                } // else ignore the block
+                return false;
+            } else {
+                BlockImpl lastKeyBlock = blockchain.getLastKeyBlock();
+                BlockImpl common = blockchain.getBlock(block.getPreviousBlockId());
+                if (common != null && (lastKeyBlock == null || lastKeyBlock.getHeight() < common.getHeight() + 1)) {
 
-                blockchain.writeLock();
-                try {
                     List<BlockImpl> fork = Collections.EMPTY_LIST;
                     if (!common.equals(lastBlock)) {
                         fork = popOffTo(common);
                     }
                     try {
                         pushBlock(block);
-                        for (BlockImpl posBlock: fork) {
+                        for (BlockImpl posBlock : fork) {
                             TransactionProcessorImpl.getInstance().processLater(posBlock.getTransactions());
                             Logger.logWarningMessage("Pos block " + posBlock.getStringId() + " was replaced by key block " + block.getStringId());
                         }
                         return true;
                     } catch (BlockNotAcceptedException e) {
                         Logger.logWarningMessage("Replacement block failed to be accepted, pushing back our last block");
-                        for (BlockImpl posBlock: fork) {
+                        for (BlockImpl posBlock : fork) {
                             pushBlock(posBlock);
                         }
                         TransactionProcessorImpl.getInstance().processLater(block.getTransactions());
                     }
-                } finally {
-                    blockchain.writeUnlock();
-                }
-            } // else ignore the block
-            return false;
+                } // else ignore the block
+                return false;
+            }
+        } finally {
+            blockchain.writeUnlock();
         }
+
     }
 
     @Override

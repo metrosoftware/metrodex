@@ -113,8 +113,10 @@ public abstract class TransactionType {
                     default:
                         return null;
                 }
-                /*
             case TYPE_COLORED_COINS:
+                if (!Constants.isTestnet) {
+                    return null;
+                }
                 switch (subtype) {
                     case SUBTYPE_COLORED_COINS_ASSET_ISSUANCE:
                         return ColoredCoins.ASSET_ISSUANCE;
@@ -135,7 +137,6 @@ public abstract class TransactionType {
                     default:
                         return null;
                 }
-                */
             case TYPE_ACCOUNT_CONTROL:
                 switch (subtype) {
                     case SUBTYPE_ACCOUNT_CONTROL_EFFECTIVE_BALANCE_LEASING:

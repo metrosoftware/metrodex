@@ -2236,7 +2236,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         blockTransactions.add(null);
         if (transactions != null) {
             //not include coinbase cause we make it later
-            blockTransactions.addAll(transactions.subList(1, transactions.size()-1));
+            blockTransactions.addAll(transactions.subList(1, transactions.size()));
         } else {
             SortedSet<UnconfirmedTransaction> unconfirmedTransactions = getTransactionsForKeyBlockGeneration(previousBlock);
             if (unconfirmedTransactions.size() > 0) {

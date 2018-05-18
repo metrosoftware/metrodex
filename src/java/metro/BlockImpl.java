@@ -453,7 +453,7 @@ public final class BlockImpl implements Block {
         return bytes;
     }
 
-    boolean verifyBlockSignature() {
+    public boolean verifyBlockSignature() {
         return checkSignature() && Account.setOrVerify(getGeneratorId(), getGeneratorPublicKey());
     }
 
@@ -564,7 +564,7 @@ public final class BlockImpl implements Block {
         // CD[N + K] = CD[N] + sqrt(WD[N]*sum(SD[i])i=N-1..N+K)
         // CD = cumulative hybrid; WD = work difficulty of one block; SD = stake difficulty of one block
 
-        BigInteger prevCumulativeDifficulty = prevBlock.cumulativeDifficulty;
+        BigInteger prevCumulativeDifficulty = isKeyBlock() ? prevBlock.cumulativeDifficulty : (keyBlock != null ? keyBlock.cumulativeDifficulty : BigInteger.ZERO);
         BigInteger workFactor = getWorkFactor(keyBlock);
         this.cumulativeDifficulty = prevCumulativeDifficulty.add(squareRoot(workFactor.multiply(stakeBatchDifficulty)));
 

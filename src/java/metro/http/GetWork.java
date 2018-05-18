@@ -1,6 +1,8 @@
 package metro.http;
 
 import metro.Block;
+import metro.BlockImpl;
+import metro.BlockchainProcessor;
 import metro.Metro;
 import metro.MetroException;
 import metro.Miner;

@@ -29,13 +29,13 @@ public class FakeForgingTest extends AbstractForgingTest {
     @Before
     public void init() {
         Properties properties = AbstractForgingTest.newTestProperties();
-        properties.setProperty("nxt.disableGenerateBlocksThread", "false");
-        properties.setProperty("nxt.enableFakeForging", "true");
-        properties.setProperty("nxt.timeMultiplier", "1");
-        properties.setProperty("nxt.fakeForgingAccount", "NXT-9KZM-KNYY-QBXZ-5TD8V");
+        properties.setProperty("metro.disableGenerateBlocksThread", "false");
+        properties.setProperty("metro.enableFakeForging", "true");
+        properties.setProperty("metro.timeMultiplier", "1");
+        properties.setProperty("metro.fakeForgingAccounts", "{\"rs\":[\"MTR-9KZM-KNYY-QBXZ-5TD8V\",\"MTR-XK4R-7VJU-6EQG-7R335\"]}");
 
         AbstractForgingTest.init(properties);
-        Assert.assertTrue("nxt.fakeForgingAccount must be defined in metro.properties", Metro.getStringProperty("nxt.fakeForgingAccount") != null);
+        Assert.assertTrue("metro.fakeForgingAccounts must be defined in metro.properties", Metro.getStringProperty("metro.fakeForgingAccounts") != null);
     }
 
     @Test

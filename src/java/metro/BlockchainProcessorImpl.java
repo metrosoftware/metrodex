@@ -326,7 +326,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 }
                 // prevent overloading with blockIds
                 if (milestoneBlockIds.size() > 20) {
-                    Logger.logDebugMessage("Obsolete or rogue peer " + peer.getHost() + " sends too many milestoneBlockIds, blacklisting");
+                    Logger.logWarningMessage("Obsolete or rogue peer " + peer.getHost() + " sends too many milestoneBlockIds, blacklisting");
                     peer.blacklist("Too many milestoneBlockIds");
                     return 0;
                 }
@@ -367,7 +367,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 }
                 // prevent overloading with blockIds
                 if (nextBlockIds.size() > limit) {
-                    Logger.logDebugMessage("Obsolete or rogue peer " + peer.getHost() + " sends too many nextBlockIds, blacklisting");
+                    Logger.logWarningMessage("Obsolete or rogue peer " + peer.getHost() + " sends too many nextBlockIds, blacklisting");
                     peer.blacklist("Too many nextBlockIds");
                     return Collections.emptyList();
                 }
@@ -531,7 +531,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 //
                 int myForkSize = blockchain.getHeight() - startHeight;
                 if (!forkBlocks.isEmpty() && myForkSize < 720) {
-                    Logger.logDebugMessage("Will process a fork of " + forkBlocks.size() + " blocks, mine is " + myForkSize);
+                    Logger.logWarningMessage("Will process a fork of " + forkBlocks.size() + " blocks, mine is " + myForkSize);
                     processFork(feederPeer, forkBlocks, commonBlock);
                 }
             } finally {
@@ -672,7 +672,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             if (nextBlocks == null)
                 return null;
             if (nextBlocks.size() > 36) {
-                Logger.logDebugMessage("Obsolete or rogue peer " + peer.getHost() + " sends too many nextBlocks, blacklisting");
+                Logger.logWarningMessage("Obsolete or rogue peer " + peer.getHost() + " sends too many nextBlocks, blacklisting");
                 peer.blacklist("Too many nextBlocks");
                 return null;
             }
@@ -1335,7 +1335,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 BlockImpl previousKeyBlock = blockchain.getLastKeyBlock();
                 BlockImpl previousPosBlock = blockchain.getLastPosBlock();
                 if (previousKeyBlock != null) {
-                    Logger.logDebugMessage("previousLastKeyBlock=" + Convert.toHexString(previousKeyBlock.getBytes()));
+                    Logger.logInfoMessage("previousLastKeyBlock=" + Convert.toHexString(previousKeyBlock.getBytes()));
                 }
 
                 if (previousPosBlock.getId() != previousBlock.getId() &&
@@ -1353,7 +1353,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                     String msg = "Rejecting block " + block.getStringId() + " at height " + previousBlock.getHeight()
                             + " block timestamp " + block.getTimestamp() + " next hit time " + nextHitTime
                             + " current time " + curTime;
-                    Logger.logDebugMessage(msg);
+                    Logger.logWarningMessage(msg);
                     Generator.setDelay(-Constants.FORGING_SPEEDUP);
                     throw new BlockOutOfOrderException(msg, block);
                 }
@@ -1367,7 +1367,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 block.setPreceding();
                 blockListeners.notify(block, Event.BEFORE_BLOCK_ACCEPT);
                 TransactionProcessorImpl.getInstance().requeueAllUnconfirmedTransactions();
-                Logger.logDebugMessage("adding/storing/accepting new block=" + Convert.toHexString(block.getBytes()));
+                Logger.logInfoMessage("adding/storing/accepting new block=" + Convert.toHexString(block.getBytes()));
                 addBlock(block);
                 accept(block, validPhasedTransactions, invalidPhasedTransactions, duplicates);
                 BlockDb.commit(block);
@@ -2007,7 +2007,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             }
             throw e;
         } catch (BlockNotAcceptedException e) {
-            Logger.logDebugMessage("Generate block failed: " + e.getMessage());
+            Logger.logWarningMessage("Generate block failed: " + e.getMessage());
             throw e;
         }
     }

@@ -44,7 +44,7 @@ public class ACTestUtils {
             param("quantityQNT", 10000);
             param("decimals", 4);
             secretPhrase(secretPhrase);
-            feeMQT(Constants.ONE_MTR);
+            feeMQT(Constants.ONE_MTR*1000);
         }
 
     }

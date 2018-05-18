@@ -17,6 +17,7 @@
 
 package metro;
 
+import metro.util.BitcoinJUtils;
 import metro.crypto.Crypto;
 import metro.util.BitcoinJUtils;
 import metro.util.Convert;

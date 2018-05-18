@@ -79,6 +79,6 @@ public class GeneratorTest extends BlockchainTest {
             Assert.assertNotNull(mineBlock());
         }
         blockchainProcessor.scan(blockchain.getHeight() - GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS * 3, true);
-        Assert.assertEquals("scan failed to preserve block records", 18, blockchain.getHeight());
+        Assert.assertEquals("scan failed to preserve block records", 60, blockchain.getHeight());
     }
 }

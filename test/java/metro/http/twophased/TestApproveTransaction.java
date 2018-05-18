@@ -104,9 +104,9 @@ public class TestApproveTransaction extends BlockchainTest {
 
         generateBlock();
         // Transaction is not applied yet, fee is paid
-        // Forger
+        // Forger: unconfirmed balance 0 until coinbase maturity in COINBASE_MATURITY_PERIOD key blocks
         Assert.assertEquals(fee, FORGY.getBalanceDiff());
-        Assert.assertEquals(fee, FORGY.getUnconfirmedBalanceDiff());
+        Assert.assertEquals(0, FORGY.getUnconfirmedBalanceDiff());
         // Sender
         Assert.assertEquals(-fee, ALICE.getBalanceDiff());
         Assert.assertEquals(-100 * Constants.ONE_MTR - fee, ALICE.getUnconfirmedBalanceDiff());

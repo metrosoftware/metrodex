@@ -355,9 +355,9 @@ final class PeerImpl implements Peer {
         }
         if (! isBlacklisted()) {
             if (cause instanceof IOException || cause instanceof ParseException || cause instanceof IllegalArgumentException) {
-                Logger.logDebugMessage("Blacklisting " + host + " because of: " + cause.toString());
+                Logger.logWarningMessage("Blacklisting " + host + " because of: " + cause.toString());
             } else {
-                Logger.logDebugMessage("Blacklisting " + host + " because of: " + cause.toString(), cause);
+                Logger.logWarningMessage("Blacklisting " + host + " because of: " + cause.toString(), cause);
             }
         }
         blacklist(cause.toString() == null || Peers.hideErrorDetails ? cause.getClass().getName() : cause.toString());

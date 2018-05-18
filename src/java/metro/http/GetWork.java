@@ -20,6 +20,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -35,6 +36,7 @@ public final class GetWork extends APIServlet.APIRequestHandler {
     private long lastGetWorkTime;
     private long lastTxTime;
 
+    private AtomicReference<TransactionImpl> coinbase = new AtomicReference<>();
     private AtomicReference<List<TransactionImpl>> transactions = new AtomicReference<>();
 
     private long lastTimestamp;
@@ -81,7 +83,10 @@ public final class GetWork extends APIServlet.APIRequestHandler {
                         byte[] blockHeaderBytes = Convert.parseHexString(blockHeader.toLowerCase());
                         //TODO ticket #177 read secretPhrase as forging do
                         byte[] generatorPublicKey = Crypto.getPublicKey(Miner.getSecretPhrase());
-                        Block extra = Metro.getBlockchain().composeKeyBlock(blockHeaderBytes, generatorPublicKey, transactions.get());
+                        List<TransactionImpl> fullTxList = new ArrayList<>();
+                        fullTxList.add(coinbase.get());
+                        fullTxList.addAll(transactions.get());
+                        Block extra = Metro.getBlockchain().composeKeyBlock(blockHeaderBytes, generatorPublicKey, fullTxList);
                         boolean blockAccepted = Metro.getBlockchainProcessor().processMinerBlock(extra);
                         Logger.logDebugMessage("Solution found. Block Accepted:" + blockAccepted);
                         JSONObject response = new JSONObject();
@@ -102,10 +107,12 @@ public final class GetWork extends APIServlet.APIRequestHandler {
             cache = block.getBytes();
             cachedLastBlockId = lastBlockId;
             cachedTarget = block.getDifficultyTargetAsInteger();
-            transactions.set((List<TransactionImpl>)block.getTransactions());
+            coinbase.set((TransactionImpl) block.getTransactions().get(0));
+            transactions.set((List<TransactionImpl>)block.getTransactions().subList(1, block.getTransactions().size()));
             lastTimestamp = currentTime;
         } else if (currentTime - lastTimestamp > Math.min(blockCacheDuration, 1000)) {
             Block block = Metro.getBlockchainProcessor().prepareKeyBlock(transactions.get());
+            coinbase.set((TransactionImpl) block.getTransactions().get(0));
             cache = block.getBytes();
             lastTimestamp = currentTime;
         } else {

@@ -17,6 +17,7 @@
 
 package metro;
 
+import jdk.nashorn.internal.runtime.regexp.joni.Warnings;
 import metro.db.DbClause;
 import metro.db.DbIterator;
 import metro.db.DbKey;
@@ -595,7 +596,11 @@ final class TransactionProcessorImpl implements TransactionProcessor {
                     continue;
                 }
                 ((TransactionImpl)transaction).unsetBlock();
-                waitingTransactions.add(new UnconfirmedTransaction((TransactionImpl)transaction, Math.min(currentTime, Convert.fromEpochTime(transaction.getTimestamp()))));
+                if (!transaction.getType().isCoinbase()) {
+                    waitingTransactions.add(new UnconfirmedTransaction((TransactionImpl) transaction, Math.min(currentTime, Convert.fromEpochTime(transaction.getTimestamp()))));
+                } else {
+                    Logger.logWarningMessage("Coinbase droped.");
+                }
             }
         } finally {
             BlockchainImpl.getInstance().writeUnlock();

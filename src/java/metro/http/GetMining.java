@@ -28,11 +28,12 @@ public class GetMining extends APIServlet.APIRequestHandler {
         } else {
             response.put("getworkIsQueried", false);
         }
-        if (StringUtils.isNotEmpty(Miner.getSecretPhrase())) {
-            response.put("secretPhrase", true);
+        if (StringUtils.isNotEmpty(Miner.getPublicKey())) {
+            response.put("publicKeyAssigned", true);
         } else {
-            response.put("secretPhrase", false);
+            response.put("publicKeyAssigned", false);
         }
+        response.put("lastTime", timeDiff);
     }
 
     @Override

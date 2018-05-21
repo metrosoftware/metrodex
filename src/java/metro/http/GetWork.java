@@ -1,8 +1,6 @@
 package metro.http;
 
 import metro.Block;
-import metro.BlockImpl;
-import metro.BlockchainProcessor;
 import metro.Metro;
 import metro.MetroException;
 import metro.Miner;
@@ -84,7 +82,7 @@ public final class GetWork extends APIServlet.APIRequestHandler {
                         String blockHeader = (String) params.get(0);
                         byte[] blockHeaderBytes = Convert.parseHexString(blockHeader.toLowerCase());
                         //TODO ticket #177 read secretPhrase as forging do
-                        byte[] generatorPublicKey = Crypto.getPublicKey(Miner.getSecretPhrase());
+                        byte[] generatorPublicKey = Convert.parseHexString(Miner.getPublicKey());
                         List<TransactionImpl> fullTxList = new ArrayList<>();
                         fullTxList.add(coinbase.get());
                         fullTxList.addAll(transactions.get());

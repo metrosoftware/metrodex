@@ -442,31 +442,29 @@ var MRS = (function(MRS, $, undefined) {
 							});
 						}
                         MRS.updateMiningTooltip($.t("mining_unknown_tooltip"));
-                        MRS.updateMiningStatus(isPassphraseLogin ? id : null);
-                        if (MRS.isForgingSafe() && isPassphraseLogin) {
-                            var miningIndicator = $("#mining_indicator");
-                            MRS.sendRequest("startMining", {
-                                "secretPhrase": id
-                            }, function (response) {
-                                if ("getworkIsQueried" in response && response.getworkIsQueried && "secretPhrase" in response && response.secretPhrase) {
-                                    miningIndicator.addClass("mining");
-                                    miningIndicator.find("span").html($.t("mining")).attr("data-i18n", "mining");
-                                    MRS.miningStatus = MRS.constants.MINING;
-                                    MRS.updateMiningTooltip(MRS.getMiningTooltip);
-                                } else if ("getworkIsQueried" in response && !response.getworkIsQueried || "secretPhrase" in response && !response.secretPhrase) {
-                                    miningIndicator.find("span").html($.t("not_mining")).attr("data-i18n", "not_mining");
-                                    MRS.miningStatus = MRS.constants.NOT_MINING;
-                                    MRS.setMiningIndicatorStatus(MRS.miningStatus);
-                                    MRS.updateMiningTooltip(MRS.getMiningTooltip);
-                                } else if ("getworkIsQueried" in response && !response.getworkIsQueried && "secretPhrase" in response && response.secretPhrase) {
-                                    MRS.miningStatus = MRS.constants.MINING_ALLOWED;
-                                    miningIndicator.find("span").html($.t("mining_allowed")).attr("data-i18n", "mining_allowed");
-                                    MRS.setMiningIndicatorStatus(MRS.miningStatus);
-                                    MRS.updateMiningTooltip(MRS.getMiningTooltip);
-                                }
-                                miningIndicator.show();
-                            });
-                        }
+                        MRS.updateMiningStatus();
+                            // var miningIndicator = $("#mining_indicator");
+                            // MRS.sendRequest("getMining", {
+                            //     "secretPhrase": id
+                            // }, function (response) {
+                            //     if ("getworkIsQueried" in response && response.getworkIsQueried && "secretPhrase" in response && response.secretPhrase) {
+                            //         miningIndicator.addClass("mining");
+                            //         miningIndicator.find("span").html($.t("mining")).attr("data-i18n", "mining");
+                            //         MRS.miningStatus = MRS.constants.MINING;
+                            //         MRS.updateMiningTooltip(MRS.getMiningTooltip);
+                            //     } else if ("getworkIsQueried" in response && !response.getworkIsQueried || "secretPhrase" in response && !response.secretPhrase) {
+                            //         miningIndicator.find("span").html($.t("not_mining")).attr("data-i18n", "not_mining");
+                            //         MRS.miningStatus = MRS.constants.NOT_MINING;
+                            //         MRS.setMiningIndicatorStatus(MRS.miningStatus);
+                            //         MRS.updateMiningTooltip(MRS.getMiningTooltip);
+                            //     } else if ("getworkIsQueried" in response && !response.getworkIsQueried && "secretPhrase" in response && response.secretPhrase) {
+                            //         MRS.miningStatus = MRS.constants.MINING_ALLOWED;
+                            //         miningIndicator.find("span").html($.t("mining_allowed")).attr("data-i18n", "mining_allowed");
+                            //         MRS.setMiningIndicatorStatus(MRS.miningStatus);
+                            //         MRS.updateMiningTooltip(MRS.getMiningTooltip);
+                            //     }
+                            //     miningIndicator.show();
+                            // });
 
 					}, isAccountSwitch);
 					MRS.initSidebarMenu();

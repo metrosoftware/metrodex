@@ -91,8 +91,6 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             ? "metro.testnetNumberOfForkConfirmations" : "metro.numberOfForkConfirmations");
     private final boolean simulateEndlessDownload = Metro.getBooleanProperty("metro.simulateEndlessDownload");
 
-    private final static String secretPhrase = Convert.emptyToNull(Metro.getStringProperty("metro.mine.secretPhrase"));
-
     private int initialScanHeight;
     private volatile int lastTrimHeight;
     private volatile long lastRestoreTime = 0;
@@ -1070,8 +1068,6 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     @Override
     public boolean processMinerBlock(Block block) throws MetroException {
 
-        //TODO ticket #177 read secretPhrase as forging do
-        block.sign(secretPhrase);
         if (!(block instanceof BlockImpl)) {
             throw new BlockNotAcceptedException("Unknown block class " + block.getClass().getName() + ", should not happen", new BlockImpl(null, null));
         }
@@ -1921,9 +1917,9 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
 
 
-    private TransactionImpl buildCoinbase(long timestamp, String secretPhrase, List<TransactionImpl> blockTransactions,
+    private TransactionImpl buildCoinbase(long timestamp, List<TransactionImpl> blockTransactions,
                                           boolean isKeyBlock, int localHeight) {
-        byte[] publicKey = Crypto.getPublicKey(secretPhrase);
+        byte[] publicKey = Convert.parseHexString(Miner.getPublicKey());
         byte[] publicKeyHash = Crypto.sha256().digest(publicKey);
         long generatorId = Convert.fullHashToId(publicKeyHash);
         short COINBASE_DEADLINE = 1;
@@ -1932,7 +1928,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         builder.timestamp(timestamp);
         builder.recipientId(generatorId);
         try {
-            return (TransactionImpl)builder.build(secretPhrase);
+            return (TransactionImpl)builder.build();
         } catch (MetroException.NotValidException e) {
             throw new RuntimeException("Generated coinbase transaction not valid");
         }
@@ -1978,7 +1974,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 rewardMQT += transaction.getFeeMQT();
                 payloadLength += transaction.getFullSize();
             }
-            TransactionImpl coinbase = buildCoinbase(blockTimestamp, secretPhrase, blockTransactions, false, prevPosBlock.getLocalHeight() + 1);
+            TransactionImpl coinbase = buildCoinbase(blockTimestamp, blockTransactions, false, prevPosBlock.getLocalHeight() + 1);
             blockTransactions.set(0, coinbase);
             payloadLength += coinbase.getFullSize();
             List<byte[]> txids = new ArrayList<>();
@@ -2223,7 +2219,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         byte[] previousBlockHash = Consensus.HASH_FUNCTION.hash(previousBlock.bytes());
         byte[] previousKeyBlockHash = previousKeyBlock == null ? Convert.EMPTY_HASH : Consensus.HASH_FUNCTION.hash(previousKeyBlock.bytes());
         //TODO ticket # get generatorPublicKey from properties
-        byte[] generatorPublicKey = Crypto.getPublicKey(secretPhrase);
+        byte[] generatorPublicKey = Convert.parseHexString(Miner.getPublicKey());
         long previousKeyBlockId = previousKeyBlock == null ? 0 : previousKeyBlock.getId();
         long baseTarget = BitcoinJUtils.encodeCompactBits(Metro.getBlockchain().getNextTarget());
         long blockTimestamp = Metro.getEpochTime();
@@ -2244,7 +2240,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 }
             }
         }
-        TransactionImpl coinbase = buildCoinbase(blockTimestamp, secretPhrase, blockTransactions, true, keyHeight);
+        TransactionImpl coinbase = buildCoinbase(blockTimestamp, blockTransactions, true, keyHeight);
         blockTransactions.set(0, coinbase);
 
         List<byte[]> txids = new ArrayList<>();

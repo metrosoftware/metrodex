@@ -500,14 +500,19 @@ public final class TransactionImpl implements Transaction {
     @Override
     public long getId() {
         if (id == 0) {
-            if (signature == null) {
+            if (signature == null && !getType().isCoinbase()) {
                 throw new IllegalStateException("Transaction is not signed yet");
             }
             byte[] data = zeroSignature(getBytes());
-            byte[] signatureHash = Crypto.sha256().digest(signature);
             MessageDigest digest = Consensus.HASH_FUNCTION.messageDigest();
-            digest.update(data);
-            fullHash = digest.digest(signatureHash);
+            if (getType().isCoinbase()) {
+                fullHash = digest.digest(data);
+            } else {
+                byte[] signatureHash = Crypto.sha256().digest(signature);
+                digest.update(data);
+                fullHash = digest.digest(signatureHash);
+            }
+
             BigInteger bigInteger = Convert.fullHashToBigInteger(fullHash);
             id = bigInteger.longValue();
             stringId = bigInteger.toString();
@@ -876,7 +881,7 @@ public final class TransactionImpl implements Transaction {
     }
 
     public boolean verifySignature() {
-        return checkSignature() && Account.setOrVerify(getSenderId(), getSenderPublicKey());
+        return getType().isCoinbase() || checkSignature() && Account.setOrVerify(getSenderId(), getSenderPublicKey());
     }
 
     private volatile boolean hasValidSignature = false;

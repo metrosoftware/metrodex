@@ -251,7 +251,6 @@ var MRS = (function (MRS, $) {
     MRS.isSubmitPassphrase = function (requestType) {
         return requestType == "startForging" ||
             requestType == "stopForging" ||
-            requestType == "startMining" ||
             requestType == "startShuffler" ||
             requestType == "getForging" ||
             requestType == "markHost" ||

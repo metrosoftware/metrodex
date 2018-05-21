@@ -185,10 +185,6 @@ var MRS = (function (MRS) {
         return !MRS.isMobileApp() && !(MRS.state && MRS.state.apiProxy);
     };
 
-    MRS.isMiningSupported = function() {
-        return !MRS.isMobileApp() && !(MRS.state && MRS.state.apiProxy);
-    };
-
     MRS.isFundingMonitorSupported = function() {
         return !MRS.isMobileApp() && !(MRS.state && MRS.state.apiProxy);
     };

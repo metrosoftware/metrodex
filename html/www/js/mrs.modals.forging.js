@@ -191,9 +191,6 @@ var MRS = (function(MRS, $) {
                 }
                 MRS.setMiningStatusFromResponse(response);
                 MRS.setMiningIndicatorStatus(MRS.miningStatus);
-                if (MRS.miningStatus == MRS.constants.NOT_MINING) {
-                    MRS.isSecretEntered = false;
-                }
                 var miningIndicator = $("#mining_indicator");
                 miningIndicator.find("span").html($.t(MRS.miningStatus)).attr("data-i18n", MRS.miningStatus);
                 miningIndicator.show();

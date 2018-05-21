@@ -454,7 +454,7 @@ public final class BlockImpl implements Block {
     }
 
     public boolean verifyBlockSignature() {
-        return isKeyBlock() || checkSignature() && Account.setOrVerify(getGeneratorId(), getGeneratorPublicKey());
+        return (isKeyBlock() || checkSignature()) && Account.setOrVerify(getGeneratorId(), getGeneratorPublicKey());
     }
 
     private volatile boolean hasValidSignature = false;

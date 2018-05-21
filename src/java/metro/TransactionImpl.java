@@ -881,7 +881,7 @@ public final class TransactionImpl implements Transaction {
     }
 
     public boolean verifySignature() {
-        return getType().isCoinbase() || checkSignature() && Account.setOrVerify(getSenderId(), getSenderPublicKey());
+        return (getType().isCoinbase() || checkSignature()) && Account.setOrVerify(getSenderId(), getSenderPublicKey());
     }
 
     private volatile boolean hasValidSignature = false;

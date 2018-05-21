@@ -218,7 +218,7 @@ final class BlockDb {
                 if (rs.next()) {
                     block = loadBlock(con, rs);
                 } else {
-                    throw new RuntimeException("Block at local_height " + height + " not found in database!");
+                    throw new RuntimeException("Block at local_height " + height + " and isKeyBlock=" + isKeyBlock + " not found in database!");
                 }
                 return block;
             }

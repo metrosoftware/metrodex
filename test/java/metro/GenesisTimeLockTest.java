@@ -1,6 +1,8 @@
 package metro;
 
+import metro.crypto.Crypto;
 import metro.http.APICall;
+import metro.util.Convert;
 import metro.util.Logger;
 import metro.util.Time;
 import org.json.simple.JSONObject;
@@ -45,7 +47,7 @@ public class GenesisTimeLockTest extends AbstractBlockchainTest {
             properties.setProperty("metro.testnetMaxWorkTarget", "1f00ffff");
             properties.setProperty("metro.testnetGuaranteedBalanceKeyblockConfirmations", "10");
             properties.setProperty("metro.testnetCoinbaseMaturityPeriodInKeyblocks", "2");
-            properties.setProperty("metro.mine.secretPhrase", chuckSecretPhrase);
+            properties.setProperty("metro.mine.publicKey", Convert.toHexString(Crypto.getPublicKey(chuckSecretPhrase)));
             properties.setProperty("metro.timeMultiplier", "1");
             properties.setProperty("metro.testnetGuaranteedBalanceConfirmations", "1");
             properties.setProperty("metro.testnetLeasingDelay", "1");

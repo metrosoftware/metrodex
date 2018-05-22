@@ -10,6 +10,7 @@ import metro.util.Convert;
 import metro.util.JSON;
 import metro.util.Logger;
 import org.apache.commons.lang3.ArrayUtils;
+import org.eclipse.jetty.server.Request;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONStreamAware;
@@ -55,9 +56,13 @@ public final class GetWork extends APIServlet.APIRequestHandler {
 
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest request) throws MetroException {
+        JSONObject response = new JSONObject();
+        if (Miner.getPublicKey() == null) {
+            response.put("error", "Set metro.mine.publicKey property in conf/metro.properties on "+ ((Request) request).getMetaData().getURI().getHost());
+            return JSON.prepare(response);
+        }
         lastGetWorkTime = System.currentTimeMillis();
         if (Metro.getBlockchainProcessor().isDownloading() || Metro.getBlockchainProcessor().isScanning()) {
-            JSONObject response = new JSONObject();
             response.put("error", "Blockchain scan or download in progress");
             return JSON.prepare(response);
         }
@@ -69,7 +74,6 @@ public final class GetWork extends APIServlet.APIRequestHandler {
                 Logger.logDebugMessage("getwork:" + content);
             }
         } catch (IOException e) {
-            JSONObject response = new JSONObject();
             response.put("error", e.getMessage());
             return JSON.prepare(response);
         }
@@ -89,7 +93,6 @@ public final class GetWork extends APIServlet.APIRequestHandler {
                         Block extra = Metro.getBlockchain().composeKeyBlock(blockHeaderBytes, generatorPublicKey, fullTxList);
                         boolean blockAccepted = Metro.getBlockchainProcessor().processMinerBlock(extra);
                         Logger.logDebugMessage("Solution found. Block Accepted:" + blockAccepted);
-                        JSONObject response = new JSONObject();
                         response.put("result", blockAccepted);
                         return JSON.prepare(response);
                     }
@@ -120,7 +123,6 @@ public final class GetWork extends APIServlet.APIRequestHandler {
         }
 
         byte[] blockBytes = padZeroValuesSpecialAndSize(cache);
-        JSONObject response = new JSONObject();
         JSONObject result = new JSONObject();
         response.put("result", result);
         result.put("data", Convert.toHexString(blockBytes));

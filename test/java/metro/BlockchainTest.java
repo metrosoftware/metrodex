@@ -17,6 +17,8 @@
 
 package metro;
 
+import metro.crypto.Crypto;
+import metro.util.Convert;
 import metro.util.Logger;
 import metro.util.Time;
 import org.apache.commons.lang3.ArrayUtils;
@@ -65,7 +67,7 @@ public abstract class BlockchainTest extends AbstractBlockchainTest {
             properties.setProperty("metro.testnetMaxWorkTarget", "1f00ffff");
             properties.setProperty("metro.testnetGuaranteedBalanceKeyblockConfirmations", "10");
             properties.setProperty("metro.testnetCoinbaseMaturityPeriodInKeyblocks", "2");
-            properties.setProperty("metro.mine.secretPhrase", aliceSecretPhrase);
+            properties.setProperty("metro.mine.publicKey", Convert.toHexString(Crypto.getPublicKey(aliceSecretPhrase)));
             properties.setProperty("metro.timeMultiplier", "1");
             properties.setProperty("metro.testnetGuaranteedBalanceConfirmations", "1");
             properties.setProperty("metro.testnetLeasingDelay", "1");

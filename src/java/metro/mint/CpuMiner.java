@@ -72,7 +72,7 @@ public class CpuMiner {
     }
 
     private void mine() {
-        boolean isSubmitted = Metro.getBooleanProperty("metro.mine.isSubmitted");
+        boolean isSubmitted = Metro.getBooleanProperty("metro.mine.isSubmitted", true);
         boolean isStopOnError = Metro.getBooleanProperty("metro.mine.stopOnError");
 
         JSONObject work = getWork();
@@ -227,7 +227,7 @@ public class CpuMiner {
             HttpsURLConnection.setDefaultSSLSocketFactory(TrustAllSSLProvider.getSslSocketFactory());
             HttpsURLConnection.setDefaultHostnameVerifier(TrustAllSSLProvider.getHostNameVerifier());
         }
-        int port = Constants.isTestnet ? API.TESTNET_API_PORT : Metro.getIntProperty("metro.apiServerPort");
+        int port = Constants.isTestnet ? API.TESTNET_API_PORT : Metro.getIntProperty("metro.mine.serverPort", Metro.getIntProperty("metro.apiServerPort"));
         String urlParams = getUrlParams(params);
         Authenticator.setDefault (new Authenticator() {
             protected PasswordAuthentication getPasswordAuthentication() {

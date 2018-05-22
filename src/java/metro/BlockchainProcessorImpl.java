@@ -545,6 +545,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             BigInteger curCumulativeDifficulty = blockchain.getLastBlock().getCumulativeDifficulty();
 
             List<BlockImpl> myPoppedOffBlocks = popOffTo(commonBlock);
+            List<BlockImpl> forkedBlocksForLogging = new ArrayList<>();
 
             int pushedForkBlocks = 0;
             if (blockchain.getLastBlock().getId() == commonBlock.getId()) {
@@ -553,6 +554,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                         try {
                             pushBlock(block);
                             pushedForkBlocks += 1;
+                            forkedBlocksForLogging.add(block);
                         } catch (BlockNotAcceptedException e) {
                             peer.blacklist(e);
                             break;
@@ -584,6 +586,15 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 }
             } else {
                 Logger.logDebugMessage("Switched to peer's fork");
+                BlockImpl lastForkBlock = forkedBlocksForLogging.get(forkedBlocksForLogging.size()-1);
+                if (lastForkBlock.isKeyBlock()) {
+                    Logger.logWarningMessage("Rollback from block. CMD:" + lastForkBlock.getCumulativeDifficulty().toString(10)
+                            + " SBD:" + lastForkBlock.getStakeBatchDifficulty().toString(10) + " lastKeyBlock WRK:" + lastForkBlock.getWork().toString(10));
+                } else {
+                    BlockImpl lastKeyblock = blockchain.getLastKeyBlock();
+                    Logger.logWarningMessage("Rollback from block. CMD:" + lastForkBlock.getCumulativeDifficulty().toString(10)
+                            + " SBD:" + lastForkBlock.getStakeBatchDifficulty().toString(10) + " lastKeyBlock WRK:" + lastKeyblock.getWork().toString(10));
+                }
                 for (BlockImpl block : myPoppedOffBlocks) {
                     TransactionProcessorImpl.getInstance().processLater(block.getTransactions());
                 }
@@ -1091,7 +1102,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         blockchain.writeLock();
         try {
             BlockImpl lastBlock = blockchain.getLastBlock();
-            if (!block.isKeyBlock()) {
+            if (!block.isKeyBlock() && !lastBlock.isKeyBlock()) {
                 // TODO correct logic when a new keyBlock arrives from peer
                 if (block.getPreviousBlockId() == lastBlock.getId()) {
                     pushBlock(block);
@@ -1114,7 +1125,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                     }
                 } // else ignore the block
                 return false;
-            } else {
+            } else if (block.isKeyBlock()) {
                 BlockImpl lastKeyBlock = blockchain.getLastKeyBlock();
                 BlockImpl common = blockchain.getBlock(block.getPreviousBlockId());
                 if (common != null && (lastKeyBlock == null || lastKeyBlock.getHeight() < common.getHeight() + 1)) {
@@ -1144,7 +1155,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         } finally {
             blockchain.writeUnlock();
         }
-
+        return false;
     }
 
     @Override
@@ -1745,6 +1756,15 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 block.loadTransactions();
                 Logger.logWarningMessage("Rollback from block " + block.getStringId() + " at height " + block.getHeight()
                         + " to " + commonBlock.getStringId() + " at " + commonBlock.getHeight());
+                if (block.isKeyBlock()) {
+                    Logger.logWarningMessage("Rollback from block. CMD:" + block.getCumulativeDifficulty().toString(10)
+                            + " SBD:" + block.getStakeBatchDifficulty().toString(10) + " lastKeyBlock WRK:" + block.getWork().toString(10));
+                } else {
+                    BlockImpl lastKeyblock = blockchain.getLastKeyBlock();
+                    Logger.logWarningMessage("Rollback from block. CMD:" + block.getCumulativeDifficulty().toString(10)
+                            + " SBD:" + block.getStakeBatchDifficulty().toString(10) + " lastKeyBlock WRK:" + lastKeyblock.getWork().toString(10));
+                }
+
                 while (block.getId() != commonBlock.getId() && block.getHeight() > 0) {
                     poppedOffBlocks.add(block);
                     block = popLastBlock();

@@ -75,7 +75,8 @@ public class BlockTest extends BlockchainTest {
         Method parser = block0.getClass().getDeclaredMethod("parseBlock", JSONObject.class);
         parser.setAccessible(true);
         block0.sign(ALICE.getSecretPhrase());
-        BlockImpl block1 = (BlockImpl) parser.invoke(block0, (JSONObject)JSONValue.parse(block0.getJSONObject().toJSONString()));
+        String blockJson = block0.getJSONObject().toJSONString();
+        BlockImpl block1 = (BlockImpl) parser.invoke(block0, (JSONObject)JSONValue.parse(blockJson));
         Assert.assertEquals(block0, block1);
         Assert.assertEquals(block0.getBaseTarget(), block1.getBaseTarget());
         Assert.assertEquals(0x9299FF3, block1.getBaseTarget());

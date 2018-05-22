@@ -29,14 +29,16 @@ public final class StartForging extends APIServlet.APIRequestHandler {
     static final StartForging instance = new StartForging();
 
     private StartForging() {
-        super(new APITag[] {APITag.FORGING}, "secretPhrase");
+        super(new APITag[] {APITag.FORGING}, "secretPhrase", "blockCount");
     }
 
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws ParameterException {
 
         String secretPhrase = ParameterParser.getSecretPhrase(req, true);
-        Generator generator = Generator.startForging(secretPhrase);
+        int blocks = ParameterParser.getInt(req, "blockCount", 1, Integer.MAX_VALUE, false);
+        // -1 means unlimited number (the default)
+        Generator generator = Generator.startForging(secretPhrase, blocks > 0 ? blocks : -1);
 
         JSONObject response = new JSONObject();
         response.put("deadline", generator.getDeadline());

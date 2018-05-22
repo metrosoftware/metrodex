@@ -67,7 +67,7 @@ public final class Generator implements Comparable<Generator> {
     private static int delayTime = Constants.FORGING_DELAY;
 
     public static Set<String> getFakeForgingPublicKeys() {
-        if (Metro.getBlockchain().getHeight() > 0 && fakeForgingPublicKeys == null) {
+        if (fakeForgingPublicKeys == null) {
             fakeForgingPublicKeys = Collections.EMPTY_SET;
             if (Metro.getBooleanProperty("metro.enableFakeForging")) {
                 JSONObject fakeForgersJSON = (JSONObject) JSONValue.parse(Metro.getStringProperty("metro.fakeForgingAccounts"));
@@ -176,11 +176,11 @@ public final class Generator implements Comparable<Generator> {
         return listeners.removeListener(listener, eventType);
     }
 
-    public static Generator startForging(String secretPhrase) {
+    public static Generator startForging(String secretPhrase, int blockCount) {
         if (generators.size() >= MAX_FORGERS) {
             throw new RuntimeException("Cannot forge with more than " + MAX_FORGERS + " accounts on the same node");
         }
-        Generator generator = new Generator(secretPhrase);
+        Generator generator = new Generator(secretPhrase, blockCount);
         Generator old = generators.putIfAbsent(secretPhrase, generator);
         if (old != null) {
             Logger.logDebugMessage(old + " is already forging");
@@ -299,11 +299,13 @@ public final class Generator implements Comparable<Generator> {
     private volatile BigInteger hit;
     private volatile BigInteger effectiveBalance;
     private volatile long deadline;
+    private volatile int blockCount;
 
-    private Generator(String secretPhrase) {
+    private Generator(String secretPhrase, int blockCount) {
         this.secretPhrase = secretPhrase;
         this.publicKey = Crypto.getPublicKey(secretPhrase);
         this.accountId = Account.getId(publicKey);
+        this.blockCount = blockCount;
         Metro.getBlockchain().updateLock();
         try {
             if (Metro.getBlockchain().getHeight() >= Constants.LAST_KNOWN_BLOCK) {
@@ -365,6 +367,10 @@ public final class Generator implements Comparable<Generator> {
     }
 
     boolean forge(Block lastBlock, long generationLimit) throws BlockchainProcessor.BlockNotAcceptedException {
+        if (blockCount == 0) {
+            stopForging(secretPhrase);
+            return false;
+        }
         long timestamp = getTimestamp(generationLimit);
         if (!verifyHit(hit, effectiveBalance, lastBlock, timestamp)) {
             Logger.logDebugMessage(this.toString() + " failed to forge at " + timestamp + " height " + lastBlock.getHeight() + " last timestamp " + lastBlock.getTimestamp());
@@ -375,6 +381,7 @@ public final class Generator implements Comparable<Generator> {
             try {
                 BlockchainProcessorImpl.getInstance().generateBlock(secretPhrase, timestamp);
                 setDelay(Constants.FORGING_DELAY);
+                blockCount--;
                 return true;
             } catch (BlockchainProcessor.TransactionNotAcceptedException e) {
                 // the bad transaction has been expunged, try again

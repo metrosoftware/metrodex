@@ -1077,12 +1077,42 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     }
 
     @Override
-    public boolean processMinerBlock(Block block) throws MetroException {
-
-        if (!(block instanceof BlockImpl)) {
-            throw new BlockNotAcceptedException("Unknown block class " + block.getClass().getName() + ", should not happen", new BlockImpl(null, null));
+    public boolean processMinerBlock(Block block1) throws MetroException {
+        if (!(block1 instanceof BlockImpl)) {
+            throw new BlockNotAcceptedException("Unknown block class " + block1.getClass().getName() + ", should not happen", new BlockImpl(null, null));
         }
-        return processNewBlock((BlockImpl)block);
+        BlockImpl block = (BlockImpl)block1;
+        blockchain.writeLock();
+        try {
+            BlockImpl lastKeyBlock = blockchain.getLastKeyBlock();
+            BlockImpl lastBlock = blockchain.getLastBlock();
+            BlockImpl common = blockchain.getBlock(block.getPreviousBlockId());
+            if (common != null && (lastKeyBlock == null || lastKeyBlock.getHeight() < common.getHeight() + 1)) {
+
+                List<BlockImpl> fork = Collections.EMPTY_LIST;
+                if (!common.equals(lastBlock)) {
+                    fork = popOffTo(common);
+                }
+                try {
+                    pushBlock(block);
+                    for (BlockImpl posBlock : fork) {
+                        TransactionProcessorImpl.getInstance().processLater(posBlock.getTransactions());
+                        Logger.logWarningMessage("Pos block " + posBlock.getStringId() + " was replaced by key block " + block.getStringId());
+                    }
+                    return true;
+                } catch (BlockNotAcceptedException e) {
+                    Logger.logWarningMessage("Replacement block failed to be accepted, pushing back our last block");
+                    for (int i = fork.size() - 1; i >= 0; i--) {
+                        BlockImpl posBlock = fork.get(i);
+                        pushBlock(posBlock);
+                    }
+                    TransactionProcessorImpl.getInstance().processLater(block.getTransactions());
+                }
+            } // else ignore the block
+            return false;
+        } finally {
+            blockchain.writeUnlock();
+        }
     }
 
     @Override
@@ -1121,32 +1151,6 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                     } catch (BlockNotAcceptedException e) {
                         Logger.logWarningMessage("Replacement block failed to be accepted, pushing back our last block");
                         pushBlock(lastBlock);
-                        TransactionProcessorImpl.getInstance().processLater(block.getTransactions());
-                    }
-                } // else ignore the block
-                return false;
-            } else if (block.isKeyBlock()) {
-                BlockImpl lastKeyBlock = blockchain.getLastKeyBlock();
-                BlockImpl common = blockchain.getBlock(block.getPreviousBlockId());
-                if (common != null && (lastKeyBlock == null || lastKeyBlock.getHeight() < common.getHeight() + 1)) {
-
-                    List<BlockImpl> fork = Collections.EMPTY_LIST;
-                    if (!common.equals(lastBlock)) {
-                        fork = popOffTo(common);
-                    }
-                    try {
-                        pushBlock(block);
-                        for (BlockImpl posBlock : fork) {
-                            TransactionProcessorImpl.getInstance().processLater(posBlock.getTransactions());
-                            Logger.logWarningMessage("Pos block " + posBlock.getStringId() + " was replaced by key block " + block.getStringId());
-                        }
-                        return true;
-                    } catch (BlockNotAcceptedException e) {
-                        Logger.logWarningMessage("Replacement block failed to be accepted, pushing back our last block");
-                        for (int i = fork.size() - 1; i >= 0; i--) {
-                            BlockImpl posBlock = fork.get(i);
-                            pushBlock(posBlock);
-                        }
                         TransactionProcessorImpl.getInstance().processLater(block.getTransactions());
                     }
                 } // else ignore the block

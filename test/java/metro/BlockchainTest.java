@@ -142,7 +142,7 @@ public abstract class BlockchainTest extends AbstractBlockchainTest {
                         Thread.currentThread().getName(), currentNonce,
                         Arrays.toString(hash));
                 Block keyBlock = Metro.getBlockchain().composeKeyBlock(buffer.array(), preparedBlock.getGeneratorPublicKey(), preparedBlock.getTransactions());
-                return Metro.getBlockchainProcessor().processMinerBlock(keyBlock) ? keyBlock : null;
+                return Metro.getBlockchainProcessor().processKeyBlock(keyBlock) ? keyBlock : null;
             }
             currentNonce += poolSize;
             if (currentNonce > 256L * 256L * 256L * 256L) {

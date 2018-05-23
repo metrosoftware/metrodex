@@ -5,7 +5,6 @@ import metro.Metro;
 import metro.MetroException;
 import metro.Miner;
 import metro.TransactionImpl;
-import metro.crypto.Crypto;
 import metro.util.Convert;
 import metro.util.JSON;
 import metro.util.Logger;
@@ -91,7 +90,7 @@ public final class GetWork extends APIServlet.APIRequestHandler {
                         fullTxList.add(coinbase.get());
                         fullTxList.addAll(transactions.get());
                         Block extra = Metro.getBlockchain().composeKeyBlock(blockHeaderBytes, generatorPublicKey, fullTxList);
-                        boolean blockAccepted = Metro.getBlockchainProcessor().processMinerBlock(extra);
+                        boolean blockAccepted = Metro.getBlockchainProcessor().processKeyBlock(extra);
                         Logger.logDebugMessage("Solution found. Block Accepted:" + blockAccepted);
                         response.put("result", blockAccepted);
                         return JSON.prepare(response);

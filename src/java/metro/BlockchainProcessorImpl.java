@@ -540,58 +540,63 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
         }
 
-        private void processFork(final Peer peer, final List<BlockImpl> forkBlocks, final Block commonBlock) {
 
-            BigInteger curCumulativeDifficulty = blockchain.getLastBlock().getCumulativeDifficulty();
+    };
 
-            List<BlockImpl> myPoppedOffBlocks = popOffTo(commonBlock);
+    private boolean processFork(final Peer peer, final List<BlockImpl> forkBlocks, final Block commonBlock) {
+        BigInteger curCumulativeDifficulty = blockchain.getLastBlock().getCumulativeDifficulty();
 
-            int pushedForkBlocks = 0;
-            if (blockchain.getLastBlock().getId() == commonBlock.getId()) {
-                for (BlockImpl block : forkBlocks) {
-                    if (blockchain.getLastBlock().getId() == block.getPreviousBlockId()) {
-                        try {
-                            pushBlock(block);
-                            pushedForkBlocks += 1;
-                        } catch (BlockNotAcceptedException e) {
-                            peer.blacklist(e);
-                            break;
-                        }
-                    }
-                }
-            }
+        List<BlockImpl> myPoppedOffBlocks = popOffTo(commonBlock);
 
-            if (pushedForkBlocks > 0 && blockchain.getLastBlock().getCumulativeDifficulty().compareTo(curCumulativeDifficulty) < 0) {
-                Logger.logDebugMessage("Pop off caused by peer " + peer.getHost() + ", blacklisting");
-                peer.blacklist("Pop off");
-                List<BlockImpl> peerPoppedOffBlocks = popOffTo(commonBlock);
-                pushedForkBlocks = 0;
-                for (BlockImpl block : peerPoppedOffBlocks) {
-                    TransactionProcessorImpl.getInstance().processLater(block.getTransactions());
-                }
-            }
-
-            if (pushedForkBlocks == 0) {
-                Logger.logDebugMessage("Didn't accept any blocks, pushing back my previous blocks");
-                for (int i = myPoppedOffBlocks.size() - 1; i >= 0; i--) {
-                    BlockImpl block = myPoppedOffBlocks.remove(i);
+        int pushedForkBlocks = 0;
+        if (blockchain.getLastBlock().getId() == commonBlock.getId()) {
+            for (BlockImpl block : forkBlocks) {
+                if (blockchain.getLastBlock().getId() == block.getPreviousBlockId()) {
                     try {
                         pushBlock(block);
+                        pushedForkBlocks += 1;
                     } catch (BlockNotAcceptedException e) {
-                        Logger.logErrorMessage("Popped off block no longer acceptable: " + block.getJSONObject().toJSONString(), e);
+                        if (peer != null) {
+                            peer.blacklist(e);
+                        }
                         break;
                     }
                 }
-            } else {
-                Logger.logDebugMessage("Switched to peer's fork");
-                for (BlockImpl block : myPoppedOffBlocks) {
-                    TransactionProcessorImpl.getInstance().processLater(block.getTransactions());
-                }
             }
-
         }
 
-    };
+        if (pushedForkBlocks > 0 && blockchain.getLastBlock().getCumulativeDifficulty().compareTo(curCumulativeDifficulty) < 0) {
+            if (peer != null) {
+                Logger.logDebugMessage("Pop off caused by peer " + peer.getHost() + ", blacklisting");
+                peer.blacklist("Pop off");
+            }
+            List<BlockImpl> peerPoppedOffBlocks = popOffTo(commonBlock);
+            pushedForkBlocks = 0;
+            for (BlockImpl block : peerPoppedOffBlocks) {
+                TransactionProcessorImpl.getInstance().processLater(block.getTransactions());
+            }
+        }
+
+        if (pushedForkBlocks == 0) {
+            Logger.logDebugMessage("Didn't accept any blocks, pushing back my previous blocks");
+            for (int i = myPoppedOffBlocks.size() - 1; i >= 0; i--) {
+                BlockImpl block = myPoppedOffBlocks.remove(i);
+                try {
+                    pushBlock(block);
+                } catch (BlockNotAcceptedException e) {
+                    Logger.logErrorMessage("Popped off block no longer acceptable: " + block.getJSONObject().toJSONString(), e);
+                    break;
+                }
+            }
+            return false;
+        } else {
+            Logger.logDebugMessage("Switched to peer's fork");
+            for (BlockImpl block : myPoppedOffBlocks) {
+                TransactionProcessorImpl.getInstance().processLater(block.getTransactions());
+            }
+            return true;
+        }
+    }
 
     /**
      * Callable method to get the next block segment from the selected peer
@@ -1066,85 +1071,80 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     }
 
     @Override
-    public boolean processMinerBlock(Block block) throws MetroException {
+    public boolean processKeyBlock(Block blk) throws MetroException {
 
-        if (!(block instanceof BlockImpl)) {
-            throw new BlockNotAcceptedException("Unknown block class " + block.getClass().getName() + ", should not happen", new BlockImpl(null, null));
+        if (!(blk instanceof BlockImpl)) {
+            throw new BlockNotAcceptedException("Unknown block class " + blk.getClass().getName() + ", should not happen", new BlockImpl(null, null));
         }
-        return processNewBlock((BlockImpl)block);
-    }
+        BlockImpl block = (BlockImpl)blk;
 
-    @Override
-    public void processPeerBlock(JSONObject request) throws MetroException {
-        BlockImpl block = BlockImpl.parseBlock(request);
-        processNewBlock(block);
-    }
-
-    /**
-     * The common method to process a new block submitted by a peer or by a miner
-     *
-     * @param block
-     * @return true if this block was accepted, false if ignored
-     * @throws MetroException
-     */
-    private boolean processNewBlock(BlockImpl block) throws MetroException {
         blockchain.writeLock();
         try {
             BlockImpl lastBlock = blockchain.getLastBlock();
-            if (!block.isKeyBlock()) {
-                // TODO correct logic when a new keyBlock arrives from peer
-                if (block.getPreviousBlockId() == lastBlock.getId()) {
-                    pushBlock(block);
-                    return true;
-                } else if (block.getPreviousBlockId() == lastBlock.getPreviousBlockId() && block.getTimestamp() < lastBlock.getTimestamp()) {
-                    if (lastBlock.getId() != blockchain.getLastBlock().getId()) {
-                        return false; // blockchain changed, ignore the block
-                    }
-                    BlockImpl previousBlock = blockchain.getBlock(lastBlock.getPreviousBlockId());
-                    lastBlock = popOffTo(previousBlock).get(0);
-                    try {
-                        pushBlock(block);
-                        TransactionProcessorImpl.getInstance().processLater(lastBlock.getTransactions());
-                        Logger.logWarningMessage("Last block " + lastBlock.getStringId() + " was replaced by " + block.getStringId());
-                        return true;
-                    } catch (BlockNotAcceptedException e) {
-                        Logger.logWarningMessage("Replacement block failed to be accepted, pushing back our last block");
-                        pushBlock(lastBlock);
-                        TransactionProcessorImpl.getInstance().processLater(block.getTransactions());
-                    }
-                } // else ignore the block
-                return false;
-            } else {
-                BlockImpl lastKeyBlock = blockchain.getLastKeyBlock();
-                BlockImpl common = blockchain.getBlock(block.getPreviousBlockId());
-                if (common != null && (lastKeyBlock == null || lastKeyBlock.getHeight() < common.getHeight() + 1)) {
+            if (block.getPreviousBlockId() == lastBlock.getId()) {
+                pushBlock(block);
+                return true;
+            }
 
-                    List<BlockImpl> fork = Collections.EMPTY_LIST;
-                    if (!common.equals(lastBlock)) {
-                        fork = popOffTo(common);
-                    }
-                    try {
-                        pushBlock(block);
-                        for (BlockImpl posBlock : fork) {
-                            TransactionProcessorImpl.getInstance().processLater(posBlock.getTransactions());
-                            Logger.logWarningMessage("Pos block " + posBlock.getStringId() + " was replaced by key block " + block.getStringId());
-                        }
-                        return true;
-                    } catch (BlockNotAcceptedException e) {
-                        Logger.logWarningMessage("Replacement block failed to be accepted, pushing back our last block");
-                        for (int i = fork.size() - 1; i >= 0; i--) {
-                            BlockImpl posBlock = fork.get(i);
-                            pushBlock(posBlock);
-                        }
-                        TransactionProcessorImpl.getInstance().processLater(block.getTransactions());
-                    }
-                } // else ignore the block
+            BlockImpl lastKeyBlock = blockchain.getLastKeyBlock();
+            BlockImpl common = blockchain.getBlock(block.getPreviousBlockId());
+
+            if (common == null || (lastKeyBlock != null && lastKeyBlock.getLocalHeight() >= block.getLocalHeight())) {
                 return false;
             }
+
+            boolean added = processFork(null, Collections.singletonList(block), common);
+            if (added) {
+                Logger.logWarningMessage("Block " + lastBlock.getStringId() + " at hight " + lastBlock.getHeight() +
+                        " was replaced by key block " + block.getStringId() + " hight " + block.getHeight());
+            }
+            return added;
         } finally {
             blockchain.writeUnlock();
         }
+    }
 
+
+    /**
+     * The method to process a block submitted by a peer
+     *
+     * @param request
+     * @return true if this block was accepted, false if ignored
+     * @throws MetroException
+     */
+    @Override
+    public void processPeerBlock(JSONObject request) throws MetroException {
+        BlockImpl block = BlockImpl.parseBlock(request);
+        if (block.isKeyBlock()) {
+            processKeyBlock(block);
+        }
+
+        blockchain.writeLock();
+        try {
+            BlockImpl lastBlock = blockchain.getLastBlock();
+            if (block.getPreviousBlockId() == lastBlock.getId()) {
+                pushBlock(block);
+            } else if (!lastBlock.isKeyBlock() && block.getPreviousBlockId() == lastBlock.getPreviousBlockId() && block.getTimestamp() < lastBlock.getTimestamp()) {
+                if (lastBlock.getId() != blockchain.getLastBlock().getId()) {
+                    // blockchain changed, ignore the block
+                    return;
+                }
+                BlockImpl previousBlock = blockchain.getBlock(lastBlock.getPreviousBlockId());
+                lastBlock = popOffTo(previousBlock).get(0);
+                try {
+                    pushBlock(block);
+                    TransactionProcessorImpl.getInstance().processLater(lastBlock.getTransactions());
+                    Logger.logWarningMessage("Last block " + lastBlock.getStringId() + " was replaced by " + block.getStringId());
+                } catch (BlockNotAcceptedException e) {
+                    Logger.logWarningMessage("Replacement block failed to be accepted, pushing back our last block");
+                    pushBlock(lastBlock);
+                    TransactionProcessorImpl.getInstance().processLater(block.getTransactions());
+                }
+            }
+            // else ignore the block
+        } finally {
+            blockchain.writeUnlock();
+        }
     }
 
     @Override

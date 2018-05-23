@@ -387,7 +387,7 @@ public final class BlockImpl implements Block {
             }
             BlockImpl block = new BlockImpl(version, timestamp, baseTarget, previousBlock, previousKeyBlock, nonce, totalAmountMQT, rewardMQT, payloadLength, txMerkleRoot, generatorPublicKey,
                     generationSequence, blockSignature, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, blockTransactions);
-            if (!block.checkSignature()) {
+            if (!(keyBlock || block.checkSignature())) {
                 throw new MetroException.NotValidException("Invalid block signature");
             }
             return block;

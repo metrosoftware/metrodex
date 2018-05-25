@@ -49,8 +49,18 @@ public class Consensus {
 
     public static long getBlockSubsidy(int atLocalHeight) {
         int halvings = atLocalHeight / SUBSIDY_HALVING_INTERVAL;
-        if (halvings >= 64)
+        if (halvings > 37)
             return 0;
+        if (halvings > 34)
+            return (INITIAL_SUBSIDY >> halvings) + 5;
         return INITIAL_SUBSIDY >> halvings;
+    }
+
+    public static void main(String[] args) {
+        long sum = 0;
+        for (int i = 0; i < 200000 * 40; i++) {
+            sum+=getBlockSubsidy(i);
+        }
+        System.out.println(sum);
     }
 }

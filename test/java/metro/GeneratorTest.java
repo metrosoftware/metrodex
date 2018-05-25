@@ -40,7 +40,7 @@ public class GeneratorTest extends BlockchainTest {
         BigInteger effectiveBalance = BigInteger.valueOf(account == null || account.getEffectiveBalanceMTR() <= 0 ? 0 : account.getEffectiveBalanceMTR());
         long hitTime = Generator.getHitTime(effectiveBalance, hit, lastBlock);
         long deadline = hitTime - lastBlock.getTimestamp();
-        Generator generator = Generator.startForging(ALICE.getSecretPhrase(), -1);
+        Generator generator = Generator.startForging(ALICE.getSecretPhrase(), null);
         int i=1;
         try {
             while (i<deadline) {

@@ -37,8 +37,8 @@ public final class StartForging extends APIServlet.APIRequestHandler {
 
         String secretPhrase = ParameterParser.getSecretPhrase(req, true);
         int blocks = ParameterParser.getInt(req, "blockCount", 1, Integer.MAX_VALUE, false);
-        // -1 means unlimited number (the default)
-        Generator generator = Generator.startForging(secretPhrase, blocks > 0 ? blocks : -1);
+        // null means unlimited number (the default)
+        Generator generator = Generator.startForging(secretPhrase, blocks > 0 ? blocks : null);
 
         JSONObject response = new JSONObject();
         response.put("deadline", generator.getDeadline());

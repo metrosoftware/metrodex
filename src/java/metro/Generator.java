@@ -176,7 +176,7 @@ public final class Generator implements Comparable<Generator> {
         return listeners.removeListener(listener, eventType);
     }
 
-    public static Generator startForging(String secretPhrase, int blockCount) {
+    public static Generator startForging(String secretPhrase, Integer blockCount) {
         if (generators.size() >= MAX_FORGERS) {
             throw new RuntimeException("Cannot forge with more than " + MAX_FORGERS + " accounts on the same node");
         }
@@ -291,7 +291,7 @@ public final class Generator implements Comparable<Generator> {
                 + hit.divide(BigInteger.valueOf(block.getBaseTarget()).multiply(effectiveBalance)).longValue();
     }
 
-
+    private final static Integer ZERO = new Integer(0);
     private final long accountId;
     private final String secretPhrase;
     private final byte[] publicKey;
@@ -299,9 +299,9 @@ public final class Generator implements Comparable<Generator> {
     private volatile BigInteger hit;
     private volatile BigInteger effectiveBalance;
     private volatile long deadline;
-    private volatile int blockCount;
+    private volatile Integer blockCount;
 
-    private Generator(String secretPhrase, int blockCount) {
+    private Generator(String secretPhrase, Integer blockCount) {
         this.secretPhrase = secretPhrase;
         this.publicKey = Crypto.getPublicKey(secretPhrase);
         this.accountId = Account.getId(publicKey);
@@ -367,7 +367,7 @@ public final class Generator implements Comparable<Generator> {
     }
 
     boolean forge(Block lastBlock, long generationLimit) throws BlockchainProcessor.BlockNotAcceptedException {
-        if (blockCount == 0) {
+        if (ZERO.equals(blockCount)) {
             stopForging(secretPhrase);
             return false;
         }
@@ -381,7 +381,9 @@ public final class Generator implements Comparable<Generator> {
             try {
                 BlockchainProcessorImpl.getInstance().generateBlock(secretPhrase, timestamp);
                 setDelay(Constants.FORGING_DELAY);
-                blockCount--;
+                if (blockCount != null) {
+                    blockCount--;
+                }
                 return true;
             } catch (BlockchainProcessor.TransactionNotAcceptedException e) {
                 // the bad transaction has been expunged, try again

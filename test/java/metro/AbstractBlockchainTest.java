@@ -122,7 +122,7 @@ public abstract class AbstractBlockchainTest {
         synchronized (doneLock) {
             done = false;
             Logger.logMessage("Starting forging from height " + blockchain.getHeight());
-            Generator.startForging(secretPhrase);
+            Generator.startForging(secretPhrase, null);
             while (! done) {
                 try {
                     doneLock.wait();

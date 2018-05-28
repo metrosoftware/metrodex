@@ -931,7 +931,8 @@ public final class Account {
     private Set<ControlType> controls;
 
     private Account(long id) {
-        if (id != Crypto.rsDecode(Crypto.rsEncode(id))) {
+        //FIXME extraId - use Pair id
+        if (id != Crypto.rsDecode(Crypto.rsEncode(id)).getLeft()) {
             Logger.logMessage("CRITICAL ERROR: Reed-Solomon encoding fails for " + id);
         }
         this.id = id;

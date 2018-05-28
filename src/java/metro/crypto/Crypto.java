@@ -20,6 +20,7 @@ package metro.crypto;
 import metro.Metro;
 import metro.util.Convert;
 import metro.util.Logger;
+import org.apache.commons.lang3.tuple.Pair;
 import org.bouncycastle.crypto.CipherParameters;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.engines.AESEngine;
@@ -283,14 +284,23 @@ public final class Crypto {
         }
     }
 
+    public static String rsEncode(long id1, int id2) {
+        return ReedSolomon.encode(id1, id2);
+    }
+
     public static String rsEncode(long id) {
+        //FIXME extraId - remove this method
+        return null;
+    }
+
+    public static String rsEncode(Pair<Long, Integer> id) {
         return ReedSolomon.encode(id);
     }
 
-    public static long rsDecode(String rsString) {
+    public static Pair<Long, Integer> rsDecode(String rsString) {
         rsString = rsString.toUpperCase();
         try {
-            long id = ReedSolomon.decode(rsString);
+            Pair<Long, Integer> id = ReedSolomon.decode(rsString);
             if (! rsString.equals(ReedSolomon.encode(id))) {
                 throw new RuntimeException("ERROR: Reed-Solomon decoding of " + rsString
                         + " not reversible, decoded to " + id);

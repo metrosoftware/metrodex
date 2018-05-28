@@ -6,20 +6,32 @@
 */
 package metro.crypto;
 
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+
+import java.math.BigInteger;
+
 final class ReedSolomon {
 
-    private static final int[] initial_codeword = {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    private static final int[] initial_codeword = {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     private static final int[] gexp = {1, 2, 4, 8, 16, 5, 10, 20, 13, 26, 17, 7, 14, 28, 29, 31, 27, 19, 3, 6, 12, 24, 21, 15, 30, 25, 23, 11, 22, 9, 18, 1};
     private static final int[] glog = {0, 0, 1, 18, 2, 5, 19, 11, 3, 29, 6, 27, 20, 8, 12, 23, 4, 10, 30, 17, 7, 22, 28, 26, 21, 25, 9, 16, 13, 14, 24, 15};
-    private static final int[] codeword_map = {3, 2, 1, 0, 7, 6, 5, 4, 13, 14, 15, 16, 12, 8, 9, 10, 11};
+    private static final int[] codeword_map = {3, 2, 1, 0, 7, 6, 5, 4, 13, 14, 15, 12, 8, 9, 10, 11, 16, 17, 18, 19, 23, 22, 21, 20};
     private static final String alphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
 
-    private static final int base_32_length = 13;
-    private static final int base_10_length = 20;
+    private static final int base_32_length = 20; //?
+    private static final int base_10_length = 29;
 
-    static String encode(long plain) {
+    static String encode(long id1, int id2) {
+        return encode(new ImmutablePair<Long, Integer>(id1,id2));
+    }
 
-        String plain_string = Long.toUnsignedString(plain);
+    static String encode(Pair<Long, Integer> plain) {
+        BigInteger bigPlain = new BigInteger(Long.toUnsignedString(plain.getLeft()));
+        bigPlain = bigPlain.multiply(BigInteger.valueOf((long)Math.pow(2,32)));
+        bigPlain = bigPlain.add(new BigInteger(Integer.toUnsignedString(plain.getRight())));
+        String plain_string = bigPlain.toString();
         int length = plain_string.length();
         int[] plain_string_10 = new int[ReedSolomon.base_10_length];
         for (int i = 0; i < length; i++) {
@@ -60,19 +72,19 @@ final class ReedSolomon {
         System.arraycopy(p, 0, codeword, ReedSolomon.base_32_length, ReedSolomon.initial_codeword.length - ReedSolomon.base_32_length);
 
         StringBuilder cypher_string_builder = new StringBuilder();
-        for (int i = 0; i < 17; i++) {
+        for (int i = 0; i < ReedSolomon.base_32_length + 4; i++) {
             final int codework_index = ReedSolomon.codeword_map[i];
             final int alphabet_index = codeword[codework_index];
             cypher_string_builder.append(ReedSolomon.alphabet.charAt(alphabet_index));
 
-            if ((i & 3) == 3 && i < 13) {
+            if ((i & 3) == 3 && i < 21) {
                 cypher_string_builder.append('-');
             }
         }
         return cypher_string_builder.toString();
     }
 
-    static long decode(String cypher_string) throws DecodeException {
+    static Pair<Long, Integer> decode(String cypher_string) throws DecodeException {
 
         int[] codeword = new int[ReedSolomon.initial_codeword.length];
         System.arraycopy(ReedSolomon.initial_codeword, 0, codeword, 0, ReedSolomon.initial_codeword.length);
@@ -85,7 +97,7 @@ final class ReedSolomon {
                 continue;
             }
 
-            if (codeword_length > 16) {
+            if (codeword_length > 23) {
                 throw new CodewordTooLongException();
             }
 
@@ -94,7 +106,7 @@ final class ReedSolomon {
             codeword_length += 1;
         }
 
-        if (codeword_length == 17 && !ReedSolomon.is_codeword_valid(codeword) || codeword_length != 17) {
+        if (codeword_length == ReedSolomon.base_32_length + 4 && !ReedSolomon.is_codeword_valid(codeword) || codeword_length != ReedSolomon.base_32_length + 4) {
             throw new CodewordInvalidException();
         }
 
@@ -124,8 +136,11 @@ final class ReedSolomon {
             length = new_length;
             plain_string_builder.append((char)(digit_10 + (int)'0'));
         } while (length > 0);
-
-        return Long.parseUnsignedLong(plain_string_builder.reverse().toString());
+        BigInteger two32 = BigInteger.valueOf((long) Math.pow(2, 32));
+        BigInteger result = new BigInteger(plain_string_builder.reverse().toString());
+        long id1 = result.divide(two32).longValue();
+        int id2 = result.subtract(result.divide(two32).multiply(two32)).intValue();
+        return new ImmutablePair<Long, Integer>(id1,id2);
     }
 
     private static int gmult(int a, int b) {
@@ -145,13 +160,13 @@ final class ReedSolomon {
             int t = 0;
 
             for (int j = 0; j < 31; j++) {
-                if (j > 12 && j < 27) {
+                if (j > 19 && j < 27) {
                     continue;
                 }
 
                 int pos = j;
                 if (j > 26) {
-                    pos -= 14;
+                    pos -= 7;
                 }
 
                 t ^= ReedSolomon.gmult(codeword[pos], ReedSolomon.gexp[(i * j) % 31]);

@@ -121,7 +121,8 @@ public final class Convert {
         account = account.toUpperCase();
         int prefixEnd = account.indexOf('-');
         if (prefixEnd > 0) {
-            return Crypto.rsDecode(account.substring(prefixEnd + 1));
+            //FIXME extraId - return Pair not long
+            return Crypto.rsDecode(account.substring(prefixEnd + 1)).getLeft();
         } else if (prefixEnd == 0) {
             return Long.valueOf(account);
         } else {

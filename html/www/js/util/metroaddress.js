@@ -22,13 +22,13 @@
 */
 
 function MetroAddress() {
-	var codeword = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+	var codeword = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 	var syndrome = [0, 0, 0, 0, 0];
 
 	var gexp = [1, 2, 4, 8, 16, 5, 10, 20, 13, 26, 17, 7, 14, 28, 29, 31, 27, 19, 3, 6, 12, 24, 21, 15, 30, 25, 23, 11, 22, 9, 18, 1];
 	var glog = [0, 0, 1, 18, 2, 5, 19, 11, 3, 29, 6, 27, 20, 8, 12, 23, 4, 10, 30, 17, 7, 22, 28, 26, 21, 25, 9, 16, 13, 14, 24, 15];
 
-	var cwmap = [3, 2, 1, 0, 7, 6, 5, 4, 13, 14, 15, 16, 12, 8, 9, 10, 11];
+	var cwmap = [3, 2, 1, 0, 7, 6, 5, 4, 13, 14, 15, 12, 8, 9, 10, 11, 16, 17, 18, 19, 23, 22, 21, 20];
 
 	var alphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 	//var alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ345679';
@@ -177,18 +177,18 @@ function MetroAddress() {
 			p[0] = gmult(17, fb);
 		}
 
-		codeword[13] = p[0];
-		codeword[14] = p[1];
-		codeword[15] = p[2];
-		codeword[16] = p[3];
+		codeword[20] = p[0];
+		codeword[21] = p[1];
+		codeword[22] = p[2];
+		codeword[23] = p[3];
 	} //__________________________
 
 	function reset() {
-		for (var i = 0; i < 17; i++) codeword[i] = 1;
+		for (var i = 0; i < 24; i++) codeword[i] = 1;
 	} //__________________________
 
 	function set_codeword(cw, len, skip) {
-		if (typeof len === 'undefined') len = 17;
+		if (typeof len === 'undefined') len = 24;
 		if (typeof skip === 'undefined') skip = -1;
 
 		for (var i = 0, j = 0; i < len; i++) {
@@ -235,7 +235,7 @@ function MetroAddress() {
 			pos = 0,
 			len = acc.length;
 
-		if (len == 20 && acc.charAt(0) != '1') return false;
+		if (len == 29 && (acc.charAt(0) == '8' || acc.charAt(0) == '9')) return false;
 
 		for (var i = 0; i < len; i++) {
 			inp[i] = acc.charCodeAt(i) - '0'.charCodeAt(0);
@@ -262,7 +262,7 @@ function MetroAddress() {
 		}
 		while (newlen);
 
-		for (i = 0; i < 13; i++) // copy to codeword in reverse, pad with 0's
+		for (i = 0; i < 20; i++) // copy to codeword in reverse, pad with 0's
 		{
 			codeword[i] = (--pos >= 0 ? out[i] : 0);
 		}
@@ -275,10 +275,10 @@ function MetroAddress() {
 	this.toString = function() {
 		var out = MRS.getAccountMask();
 
-		for (var i = 0; i < 17; i++) {
+		for (var i = 0; i < 24; i++) {
 			out += alphabet[codeword[cwmap[i]]];
 
-			if ((i & 3) == 3 && i < 13) out += '-';
+			if ((i & 3) == 3 && i < 21) out += '-';
 		}
 
 		return out;
@@ -287,10 +287,10 @@ function MetroAddress() {
 	this.account_id = function() {
 		var out = '',
 			inp = [],
-			len = 13;
+			len = 20;
 
-		for (var i = 0; i < 13; i++) {
-			inp[i] = codeword[12 - i];
+		for (var i = 0; i < 20; i++) {
+			inp[i] = codeword[19 - i];
 		}
 
 		do // base 32 to base 10 conversion
@@ -330,7 +330,7 @@ function MetroAddress() {
 
 		if (adr.indexOf(MRS.getAccountMask()) == 0) adr = adr.substr(4);
 
-		if (adr.match(/^\d{1,20}$/g)) // account id
+		if (adr.match(/^\d{1,29}$/g)) // account id
 		{
 			if (allow_accounts) return from_acc(adr);
 		} else // address
@@ -342,14 +342,14 @@ function MetroAddress() {
 
 				if (pos >= 0) {
 					clean[len++] = pos;
-					if (len > 18) return false;
+					if (len > 25) return false;
 				}
 			}
 		}
 
-		if (len == 16) // guess deletion
+		if (len == 23) // guess deletion
 		{
-			for (var i = 16; i >= 0; i--) {
+			for (var i = 23; i >= 0; i--) {
 				for (var j = 0; j < 32; j++) {
 					clean[i] = j;
 
@@ -366,16 +366,16 @@ function MetroAddress() {
 			}
 		}
 
-		if (len == 18) // guess insertion
+		if (len == 25) // guess insertion
 		{
-			for (var i = 0; i < 18; i++) {
-				set_codeword(clean, 18, i);
+			for (var i = 0; i < 25; i++) {
+				set_codeword(clean, 25, i);
 
 				if (this.ok()) this.add_guess();
 			}
 		}
 
-		if (len == 17) {
+		if (len == 24) {
 			set_codeword(clean);
 
 			if (this.ok()) return true;

@@ -36,6 +36,8 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Map;
 
+import static metro.Consensus.HASH_FUNCTION;
+
 public final class Genesis {
 
     private static final byte[] CREATOR_PUBLIC_KEY;
@@ -66,7 +68,7 @@ public final class Genesis {
     private static JSONObject genesisAccountsJSON = null;
 
     private static byte[] loadGenesisAccountsJSON() {
-        MessageDigest digest = Crypto.sha256();
+        MessageDigest digest = HASH_FUNCTION.messageDigest();
         try (InputStreamReader is = new InputStreamReader(new DigestInputStream(
                 ClassLoader.getSystemResourceAsStream("data/genesisAccounts" + (Constants.isTestnet ? "-testnet.json" : ".json")), digest))) {
             genesisAccountsJSON = (JSONObject) JSONValue.parseWithException(is);

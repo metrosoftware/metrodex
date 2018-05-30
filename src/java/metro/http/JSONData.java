@@ -29,6 +29,7 @@ import metro.AssetDividend;
 import metro.AssetTransfer;
 import metro.Attachment;
 import metro.Block;
+import metro.Consensus;
 import metro.Constants;
 import metro.FundingMonitor;
 import metro.Generator;
@@ -673,7 +674,7 @@ public final class JSONData {
         byte[] signature = Convert.emptyToNull(transaction.getSignature());
         if (signature != null) {
             json.put("signature", Convert.toHexString(signature));
-            json.put("signatureHash", Convert.toHexString(Crypto.sha256().digest(signature)));
+            json.put("signatureHash", Convert.toHexString(Consensus.HASH_FUNCTION.hash(signature)));
             json.put("fullHash", transaction.getFullHash());
             json.put("transaction", transaction.getStringId());
         }

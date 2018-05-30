@@ -67,7 +67,7 @@ public final class Generator implements Comparable<Generator> {
     private static int delayTime = Constants.FORGING_DELAY;
 
     public static Set<String> getFakeForgingPublicKeys() {
-        if (Metro.getBlockchain().getHeight() > 0 && fakeForgingPublicKeys == null) {
+        if (fakeForgingPublicKeys == null) {
             fakeForgingPublicKeys = Collections.EMPTY_SET;
             if (Metro.getBooleanProperty("metro.enableFakeForging")) {
                 JSONObject fakeForgersJSON = (JSONObject) JSONValue.parse(Metro.getStringProperty("metro.fakeForgingAccounts"));
@@ -367,7 +367,7 @@ public final class Generator implements Comparable<Generator> {
     boolean forge(Block lastBlock, long generationLimit) throws BlockchainProcessor.BlockNotAcceptedException {
         long timestamp = getTimestamp(generationLimit);
         if (!verifyHit(hit, effectiveBalance, lastBlock, timestamp)) {
-            Logger.logDebugMessage(this.toString() + " failed to forge at " + timestamp + " height " + lastBlock.getHeight() + " last timestamp " + lastBlock.getTimestamp());
+            Logger.logWarningMessage(this.toString() + " failed to forge at " + timestamp + " height " + lastBlock.getHeight() + " last timestamp " + lastBlock.getTimestamp());
             return false;
         }
         long start = Metro.getEpochTime();

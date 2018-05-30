@@ -1477,7 +1477,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         if (!block.verifyGenerationSequence() && !Generator.allowsFakeForging(block.getGeneratorPublicKey())) {
             Account generatorAccount = Account.getAccount(block.getGeneratorId());
             long generatorBalance = generatorAccount == null ? 0 : generatorAccount.getEffectiveBalanceMTR();
-            throw new BlockNotAcceptedException("Generation signature verification failed, effective balance " + generatorBalance, block);
+            throw new BlockNotAcceptedException("Generation sequence verification failed, effective balance " + generatorBalance, block);
         }
         if (!block.verifyBlockSignature()) {
             throw new BlockNotAcceptedException("Block signature verification failed", block);
@@ -1917,14 +1917,12 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
 
 
-    private TransactionImpl buildCoinbase(long timestamp, List<TransactionImpl> blockTransactions,
+    private TransactionImpl buildCoinbase(byte[] generatorPubKey, long timestamp, List<TransactionImpl> blockTransactions,
                                           boolean isKeyBlock, int localHeight) {
-        byte[] publicKey = Convert.parseHexString(Miner.getPublicKey());
-        byte[] publicKeyHash = Crypto.sha256().digest(publicKey);
-        long generatorId = Convert.fullHashToId(publicKeyHash);
+        long generatorId = Convert.publicKeyToId(generatorPubKey);
         short COINBASE_DEADLINE = 1;
-        Map<Long, Long> recipients = coinbaseRecipients(publicKey, blockTransactions, isKeyBlock, localHeight);
-        Transaction.Builder builder = Metro.newTransactionBuilder(publicKey, 0, 0L, COINBASE_DEADLINE, new Attachment.CoinbaseRecipientsAttachment(recipients, true));
+        Map<Long, Long> recipients = coinbaseRecipients(generatorPubKey, blockTransactions, isKeyBlock, localHeight);
+        Transaction.Builder builder = Metro.newTransactionBuilder(generatorPubKey, 0, 0L, COINBASE_DEADLINE, new Attachment.CoinbaseRecipientsAttachment(recipients, true));
         builder.timestamp(timestamp);
         builder.recipientId(generatorId);
         try {
@@ -1974,7 +1972,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 rewardMQT += transaction.getFeeMQT();
                 payloadLength += transaction.getFullSize();
             }
-            TransactionImpl coinbase = buildCoinbase(blockTimestamp, blockTransactions, false, prevPosBlock.getLocalHeight() + 1);
+            TransactionImpl coinbase = buildCoinbase(publicKey, blockTimestamp, blockTransactions, false, prevPosBlock.getLocalHeight() + 1);
             blockTransactions.set(0, coinbase);
             payloadLength += coinbase.getFullSize();
             List<byte[]> txids = new ArrayList<>();
@@ -2240,7 +2238,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 }
             }
         }
-        TransactionImpl coinbase = buildCoinbase(blockTimestamp, blockTransactions, true, keyHeight);
+        TransactionImpl coinbase = buildCoinbase(generatorPublicKey, blockTimestamp, blockTransactions, true, keyHeight);
         blockTransactions.set(0, coinbase);
 
         List<byte[]> txids = new ArrayList<>();

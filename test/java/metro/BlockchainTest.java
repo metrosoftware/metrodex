@@ -18,6 +18,7 @@
 package metro;
 
 import metro.crypto.Crypto;
+import metro.util.BitcoinJUtils;
 import metro.util.Convert;
 import metro.util.Logger;
 import metro.util.Time;
@@ -136,7 +137,7 @@ public abstract class BlockchainTest extends AbstractBlockchainTest {
             buffer.putInt(noncePos, currentNonce);
             byte[] hash = HASH_FUNCTION.hash(buffer.array());
             ArrayUtils.reverse(hash);
-            if (new BigInteger(1, hash).compareTo(Consensus.MAX_WORK_TARGET) < 0) {
+            if (new BigInteger(1, hash).compareTo(BitcoinJUtils.decodeCompactBits((int)preparedBlock.getBaseTarget())) < 0) {
                 Logger.logDebugMessage("%s found solution Keccak nonce %d" +
                                 " hash %s meets target",
                         Thread.currentThread().getName(), currentNonce,

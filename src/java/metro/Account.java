@@ -753,8 +753,7 @@ public final class Account {
     }
 
     public static long getId(byte[] publicKey) {
-        byte[] publicKeyHash = Crypto.sha256().digest(publicKey);
-        return Convert.fullHashToId(publicKeyHash);
+        return Convert.publicKeyToId(publicKey);
     }
 
     public static byte[] getPublicKey(long id) {

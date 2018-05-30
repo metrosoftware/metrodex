@@ -141,6 +141,10 @@ public final class Convert {
         return bigInteger.longValue();
     }
 
+    public static long publicKeyToId(byte[] publicKey) {
+        return fullHashToId(Crypto.sha256().digest(publicKey));
+    }
+
     public static BigInteger fullHashToBigInteger(byte[] hash) {
         if (hash == null || hash.length < 8) {
             throw new IllegalArgumentException("Invalid hash: " + Arrays.toString(hash));

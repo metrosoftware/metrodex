@@ -30,10 +30,10 @@ public class BlockTest extends BlockchainTest {
         byte[] pubKey = issuer.getPublicKey();
         byte[] generationSignature = Convert.generationSequence(posBlock.getGenerationSequence(), pubKey);
         if (prevKeyBlockHash != null) {
-            Method coinbaseBuilder = blockchainProcessor.getClass().getDeclaredMethod("buildCoinbase", long.class, String.class, List.class, boolean.class, int.class);
+            Method coinbaseBuilder = blockchainProcessor.getClass().getDeclaredMethod("buildCoinbase", byte[].class, long.class, List.class, boolean.class, int.class);
             coinbaseBuilder.setAccessible(true);
 
-            TransactionImpl coinbase = (TransactionImpl) coinbaseBuilder.invoke(blockchainProcessor, posBlock.getTimestamp() + 1, ALICE.getSecretPhrase(), Collections.EMPTY_LIST, true, 0);
+            TransactionImpl coinbase = (TransactionImpl) coinbaseBuilder.invoke(blockchainProcessor, ALICE.getPublicKey(), posBlock.getTimestamp() + 1, Collections.EMPTY_LIST, true, 0);
             return new BlockImpl(Consensus.getKeyBlockVersion(posBlock.getHeight()), Metro.getEpochTime(), 0x9299FF3, prevBlockId, 0, 1,
                     0, 0, 0, Convert.EMPTY_HASH, pubKey,
                     generationSignature, null, prevBlockHash, prevKeyBlockHash, forgersBranches, Collections.singletonList(coinbase));

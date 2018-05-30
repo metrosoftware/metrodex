@@ -508,7 +508,7 @@ public final class TransactionImpl implements Transaction {
             if (getType().isCoinbase()) {
                 fullHash = digest.digest(data);
             } else {
-                byte[] signatureHash = Crypto.sha256().digest(signature);
+                byte[] signatureHash = digest.digest(signature);
                 digest.update(data);
                 fullHash = digest.digest(signatureHash);
             }

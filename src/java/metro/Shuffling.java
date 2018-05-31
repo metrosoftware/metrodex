@@ -622,7 +622,7 @@ public final class Shuffling {
         for (byte[] recipientPublicKey : recipientPublicKeys) {
             long recipientId = Account.getId(recipientPublicKey);
             if (Account.setOrVerify(recipientId, recipientPublicKey)) {
-                Account.addOrGetAccount(recipientId).apply(recipientPublicKey);
+                Account.addOrGetAccount(recipientId, null).apply(recipientPublicKey);
             }
         }
         setStage(Stage.VERIFICATION, 0, (short)(Constants.SHUFFLING_PROCESSING_DEADLINE + participantCount));
@@ -678,7 +678,7 @@ public final class Shuffling {
         }
         for (byte[] recipientPublicKey : recipientPublicKeys) {
             long recipientId = Account.getId(recipientPublicKey);
-            Account recipientAccount = Account.addOrGetAccount(recipientId);
+            Account recipientAccount = Account.addOrGetAccount(recipientId, null);
             recipientAccount.apply(recipientPublicKey);
             holdingType.addToBalanceAndUnconfirmedBalance(recipientAccount, event, this.id, this.holdingId, amount);
             if (holdingType != HoldingType.MTR) {
@@ -701,7 +701,7 @@ public final class Shuffling {
             for (ShufflingParticipant participant : participants) {
                 Account participantAccount = Account.getAccount(participant.getAccountId());
                 holdingType.addToUnconfirmedBalance(participantAccount, event, this.id, this.holdingId, this.amount);
-                if (participantAccount.getId() != blamedAccountId) {
+                if (participantAccount.getId1() != blamedAccountId) {
                     if (holdingType != HoldingType.MTR) {
                         participantAccount.addToUnconfirmedBalanceMQT(event, this.id, Constants.SHUFFLING_DEPOSIT_MQT);
                     }

@@ -32,6 +32,7 @@ function MetroAddress() {
 
 	var alphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 	//var alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ345679';
+	var extraId;
 
 	this.guess = [];
 
@@ -281,6 +282,20 @@ function MetroAddress() {
 			if ((i & 3) == 3 && i < 21) out += '-';
 		}
 
+		if (extraId) {
+            out += '#';
+            var sha256 = CryptoJS.algo.SHA256.create();
+            sha256.update(converters.byteArrayToWordArrayEx(extraId));
+            var hash = sha256.finalize();
+            hash = converters.wordArrayToByteArrayImpl(hash, false);
+            var hashLength = hash.length;
+            hash.slice(hashLength-5, hashLength);
+            hash.slice(hashLength-9, hashLength -5);
+            out += alphabet[hash & 992 >>5];
+            out += alphabet[hash & 32];
+            out += extraId;
+		}
+
 		return out;
 	} //__________________________
 
@@ -386,6 +401,11 @@ function MetroAddress() {
 		reset();
 
 		return false;
+	}
+
+	this.setExtraId = function(eid) {
+		extraId = eid;
+		return true;
 	}
 
 	this.format_guess = function(s, org) {

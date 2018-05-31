@@ -71,7 +71,7 @@ public final class SetAlias extends CreateTransaction {
         Account account = ParameterParser.getSenderAccount(req);
 
         Alias alias = Alias.getAlias(normalizedAlias);
-        if (alias != null && alias.getAccountId() != account.getId()) {
+        if (alias != null && alias.getAccountId() != account.getId1()) {
             JSONObject response = new JSONObject();
             response.put("errorCode", 8);
             response.put("errorDescription", "\"" + aliasName + "\" is already used");

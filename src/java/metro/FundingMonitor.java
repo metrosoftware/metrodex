@@ -23,6 +23,7 @@ import metro.util.Convert;
 import metro.util.Filter;
 import metro.util.Listener;
 import metro.util.Logger;
+import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
@@ -94,7 +95,7 @@ public final class FundingMonitor {
     private final int interval;
 
     /** Fund account identifier */
-    private final long accountId;
+    private final Pair<Long, Integer> accountId;
 
     /** Fund account name */
     private final String accountName;
@@ -118,8 +119,8 @@ public final class FundingMonitor {
      * @param   secretPhrase        Fund account secret phrase
      */
     private FundingMonitor(HoldingType holdingType, long holdingId, String property,
-                                    long amount, long threshold, int interval,
-                                    long accountId, String secretPhrase) {
+                           long amount, long threshold, int interval,
+                           Pair<Long, Integer> accountId, String secretPhrase) {
         this.holdingType = holdingType;
         this.holdingId = (holdingType != HoldingType.MTR ? holdingId : 0);
         this.property = property;
@@ -191,7 +192,7 @@ public final class FundingMonitor {
      *
      * @return                      Account identifier
      */
-    public long getAccountId() {
+    public Pair<Long, Integer> getAccountId() {
         return accountId;
     }
 
@@ -227,7 +228,7 @@ public final class FundingMonitor {
         // won't be used.
         //
         init();
-        long accountId = Account.getId(Crypto.getPublicKey(secretPhrase));
+        Pair<> accountId = Account.getFullId(Crypto.getPublicKey(secretPhrase));
         //
         // Create the monitor
         //
@@ -634,8 +635,8 @@ public final class FundingMonitor {
     private static void processAssetEvent(MonitoredAccount monitoredAccount, Account targetAccount, Account fundingAccount)
                                             throws MetroException {
         FundingMonitor monitor = monitoredAccount.monitor;
-        Account.AccountAsset targetAsset = Account.getAccountAsset(targetAccount.getId(), monitor.holdingId);
-        Account.AccountAsset fundingAsset = Account.getAccountAsset(fundingAccount.getId(), monitor.holdingId);
+        Account.AccountAsset targetAsset = Account.getAccountAsset(targetAccount.getId1(), monitor.holdingId);
+        Account.AccountAsset fundingAsset = Account.getAccountAsset(fundingAccount.getId1(), monitor.holdingId);
         if (fundingAsset == null || fundingAsset.getUnconfirmedQuantityQNT() < monitoredAccount.amount) {
             Logger.logWarningMessage(
                     String.format("Funding account %s has insufficient quantity for asset %s; funding transaction discarded",
@@ -779,7 +780,7 @@ public final class FundingMonitor {
             // Check the MTR balance for monitored accounts
             //
             synchronized(monitors) {
-                List<MonitoredAccount> accountList = accounts.get(account.getId());
+                List<MonitoredAccount> accountList = accounts.get(account.getId1());
                 if (accountList != null) {
                     accountList.forEach((maccount) -> {
                        if (maccount.monitor.holdingType == HoldingType.MTR && balance < maccount.threshold &&

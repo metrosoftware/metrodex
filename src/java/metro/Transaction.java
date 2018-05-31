@@ -28,6 +28,8 @@ public interface Transaction {
 
         Builder recipientId(long recipientId);
 
+        Builder recipientId2(long recipientId2);
+
         Builder referencedTransactionFullHash(String referencedTransactionFullHash);
 
         Builder appendix(Appendix.Message message);

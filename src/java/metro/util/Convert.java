@@ -22,6 +22,8 @@ import metro.Constants;
 import metro.Genesis;
 import metro.MetroException;
 import metro.crypto.Crypto;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -45,7 +47,7 @@ import static metro.Consensus.HASH_FUNCTION;
 
 public final class Convert {
 
-    private static final char[] hexChars = { '0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f' };
+    private static final char[] hexChars = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
     private static final long[] multipliers = {1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000};
 
     public static final BigInteger two64 = new BigInteger("18446744073709551616");
@@ -63,7 +65,8 @@ public final class Convert {
      */
     public static BigInteger LARGEST_HASH = BigInteger.ONE.shiftLeft(256);
 
-    private Convert() {} //never
+    private Convert() {
+    } //never
 
     public static byte[] parseHexString(String hex) {
         if (hex == null) {
@@ -78,7 +81,7 @@ public final class Convert {
             if (char1 < 0 || char2 < 0 || char1 > 15 || char2 > 15) {
                 throw new NumberFormatException("Invalid hex number at index: " + i);
             }
-            bytes[i] = (byte)((char1 << 4) + char2);
+            bytes[i] = (byte) ((char1 << 4) + char2);
         }
         return bytes;
     }
@@ -106,31 +109,43 @@ public final class Convert {
         if (o == null) {
             return 0;
         } else if (o instanceof Long) {
-            return ((Long)o);
+            return ((Long) o);
         } else if (o instanceof String) {
-            return Long.parseLong((String)o);
+            return Long.parseLong((String) o);
         } else {
             throw new IllegalArgumentException("Not a long: " + o);
         }
     }
 
-    public static long parseAccountId(String account) {
+    public static Pair<Long, Integer> parseAccountId(String account) {
         if (account == null || (account = account.trim()).isEmpty()) {
-            return 0;
+            return null;
         }
         account = account.toUpperCase();
         int prefixEnd = account.indexOf('-');
         if (prefixEnd > 0) {
-            //FIXME extraId - return Pair not long
-            return Crypto.rsDecode(account.substring(prefixEnd + 1)).getLeft();
+            return Crypto.rsDecode(account.substring(prefixEnd + 1));
         } else if (prefixEnd == 0) {
-            return Long.valueOf(account);
+            //TODO there was convertion for signed id. Should we have this case?
+            return stringNumericToPairId(account);
         } else {
-            return Long.parseUnsignedLong(account);
+            return stringNumericToPairId(account);
         }
     }
 
-    public static String rsAccount(long accountId) {
+    public static long parseAccountIdToId1(String account) {
+        return parseAccountId(account).getLeft();
+    }
+
+    public static Pair<Long, Integer> stringNumericToPairId(String account) {
+        BigInteger two32 = BigInteger.valueOf((long) Math.pow(2, 32));
+        BigInteger result = new BigInteger(account);
+        long id1 = result.divide(two32).longValue();
+        int id2 = result.subtract(result.divide(two32).multiply(two32)).intValue();
+        return new ImmutablePair<>(id1, id2);
+    }
+
+    public static String rsAccount(Pair<Long, Integer> accountId) {
         return Constants.ACCOUNT_PREFIX + "-" + Crypto.rsEncode(accountId);
     }
 
@@ -142,15 +157,20 @@ public final class Convert {
         return bigInteger.longValue();
     }
 
-    public static long publicKeyToId(byte[] publicKey) {
-        return fullHashToId(Crypto.sha256().digest(publicKey));
+    public static Pair<Long, Integer> fullHashToFullId(byte[] hash) {
+        if (hash == null || hash.length < 8) {
+            throw new IllegalArgumentException("Invalid hash: " + Arrays.toString(hash));
+        }
+        BigInteger bigInteger = new BigInteger(1, new byte[] {hash[7], hash[6], hash[5], hash[4], hash[3], hash[2], hash[1], hash[0]});
+        BigInteger bigInteger2 = new BigInteger(1, new byte[] {hash[11], hash[10], hash[9], hash[8]});
+        return Pair.of(bigInteger.longValue(), bigInteger2.intValue());
     }
 
     public static BigInteger fullHashToBigInteger(byte[] hash) {
         if (hash == null || hash.length < 8) {
             throw new IllegalArgumentException("Invalid hash: " + Arrays.toString(hash));
         }
-        return new BigInteger(1, new byte[] {hash[7], hash[6], hash[5], hash[4], hash[3], hash[2], hash[1], hash[0]});
+        return new BigInteger(1, new byte[]{hash[7], hash[6], hash[5], hash[4], hash[3], hash[2], hash[1], hash[0]});
     }
 
     public static byte[] generationSequence(byte[] previousGenerationSequence, byte[] generatorPublicKey) {
@@ -231,7 +251,7 @@ public final class Convert {
     }
 
     public static Set<Long> toSet(long[] array) {
-        if (array == null || array.length ==0) {
+        if (array == null || array.length == 0) {
             return Collections.emptySet();
         }
         Set<Long> set = new HashSet<>(array.length);
@@ -268,7 +288,7 @@ public final class Convert {
     public static byte[] toBytes(long n) {
         byte[] bytes = new byte[8];
         for (int i = 0; i < 8; i++) {
-            bytes[i] = (byte)(n >> (8 * i));
+            bytes[i] = (byte) (n >> (8 * i));
         }
         return bytes;
     }
@@ -355,12 +375,12 @@ public final class Convert {
         BitSet bits = new BitSet(text.length() * 5);
         int pos = 0;
         for (char ch : text.toUpperCase().toCharArray()) {
-            int i = (int)ch;
+            int i = (int) ch;
             // 0 means space, 1 means A, 26 means Z
             if (i < 65)
                 i = 0;
             else
-                i-= 64;
+                i -= 64;
 //            Logger.logDebugMessage(ch + "=" + i);
             bits.set(pos++, (i & 1) > 0);
             bits.set(pos++, (i & 2) > 0);
@@ -380,10 +400,10 @@ public final class Convert {
         final BitSet set = BitSet.valueOf(Arrays.copyOfRange(message, 1, message.length));
         StringBuffer sb = new StringBuffer();
         for (byte i = 0; i < message[0]; i++) {
-            long[] value = set.get(i*5, i*5 + 5).toLongArray();
+            long[] value = set.get(i * 5, i * 5 + 5).toLongArray();
             if (value.length > 0) {
 //                System.out.println(value[0]);
-                sb.append((char)(int)(64 + value[0]));
+                sb.append((char) (int) (64 + value[0]));
             } else {
 //                System.out.println("0(space)");
                 sb.append(" ");

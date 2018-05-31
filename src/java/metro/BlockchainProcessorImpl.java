@@ -1418,6 +1418,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     }
 
     private void validate(BlockImpl block, BlockImpl previousLastBlock, BlockImpl previousLastKeyBlock, long curTime) throws BlockNotAcceptedException {
+
         boolean keyBlock = block.isKeyBlock();
         if (previousLastBlock.getId() != block.getPreviousBlockId()) {
             throw new BlockOutOfOrderException("Previous block id doesn't match", block);

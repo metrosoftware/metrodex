@@ -47,6 +47,7 @@ public final class TransactionImpl implements Transaction {
         private Attachment.AbstractAttachment attachment;
 
         private long recipientId;
+        private int recipientId2;
         private byte[] referencedTransactionFullHash;
         private byte[] signature;
         private Appendix.Message message;
@@ -60,6 +61,7 @@ public final class TransactionImpl implements Transaction {
         private int height = Integer.MAX_VALUE;
         private long id;
         private long senderId;
+        private int senderId2;
         private long timestamp = Long.MAX_VALUE;
         private long blockTimestamp = -1;
         private byte[] fullHash;
@@ -99,6 +101,11 @@ public final class TransactionImpl implements Transaction {
 
         public BuilderImpl recipientId(long recipientId) {
             this.recipientId = recipientId;
+            return this;
+        }
+
+        public BuilderImpl recipientId2(int recipientId2) {
+            this.recipientId2 = recipientId2;
             return this;
         }
 
@@ -225,6 +232,7 @@ public final class TransactionImpl implements Transaction {
     private final short deadline;
     private volatile byte[] senderPublicKey;
     private final long recipientId;
+    private final int recipientId2;
     private final long amountMQT;
     private final long feeMQT;
     private final byte[] referencedTransactionFullHash;
@@ -254,6 +262,7 @@ public final class TransactionImpl implements Transaction {
     private volatile long id;
     private volatile String stringId;
     private volatile long senderId;
+    private volatile int senderId2;
     private volatile byte[] fullHash;
     private volatile DbKey dbKey;
     private volatile byte[] bytes = null;
@@ -265,6 +274,7 @@ public final class TransactionImpl implements Transaction {
         this.deadline = builder.deadline;
         this.senderPublicKey = builder.senderPublicKey;
         this.recipientId = builder.recipientId;
+        this.recipientId2 = builder.recipientId2;
         this.amountMQT = builder.amountMQT;
         this.referencedTransactionFullHash = builder.referencedTransactionFullHash;
         this.type = builder.type;
@@ -274,6 +284,7 @@ public final class TransactionImpl implements Transaction {
         this.index = builder.index;
         this.id = builder.id;
         this.senderId = builder.senderId;
+        this.senderId2 = builder.senderId2;
         this.blockTimestamp = builder.blockTimestamp;
         this.fullHash = builder.fullHash;
 		this.ecBlockHeight = builder.ecBlockHeight;
@@ -881,6 +892,7 @@ public final class TransactionImpl implements Transaction {
     }
 
     public boolean verifySignature() {
+        //TODO add verification of id+extra id
         return (getType().isCoinbase() || checkSignature()) && Account.setOrVerify(getSenderId(), getSenderPublicKey());
     }
 
@@ -1033,7 +1045,7 @@ public final class TransactionImpl implements Transaction {
         if (recipientId != 0) {
             recipientAccount = Account.getAccount(recipientId);
             if (recipientAccount == null) {
-                recipientAccount = Account.addOrGetAccount(recipientId);
+                recipientAccount = Account.addOrGetAccount(recipientId, recipientExtraId);
             }
         }
         if (referencedTransactionFullHash != null) {

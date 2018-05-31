@@ -494,7 +494,7 @@ public final class BlockImpl implements Block {
     }
 
     void apply() {
-        Account generatorAccount = Account.addOrGetAccount(getGeneratorId());
+        Account generatorAccount = Account.addOrGetAccount(getGeneratorId(),null);
         generatorAccount.apply(getGeneratorPublicKey());
     }
 

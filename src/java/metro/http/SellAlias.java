@@ -59,7 +59,7 @@ public final class SellAlias extends CreateTransaction {
             }
         }
 
-        if (alias.getAccountId() != owner.getId()) {
+        if (alias.getAccountId() != owner.getId1()) {
             return INCORRECT_ALIAS_OWNER;
         }
 

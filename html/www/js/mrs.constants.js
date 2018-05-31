@@ -95,7 +95,7 @@ var MRS = (function (MRS, $) {
 
     MRS.getRsAccountRegex = function(accountPrefix, withoutSeparator) {
         if (withoutSeparator) {
-            return new RegExp("^" + accountPrefix + "-[A-Z0-9]{17}", "i");
+            return new RegExp("^" + accountPrefix + "-[A-Z0-9]{24}", "i");
         }
         return new RegExp(MRS.constants.ACCOUNT_REGEX_STR, "i");
     };
@@ -128,11 +128,11 @@ var MRS = (function (MRS, $) {
             $(".coin-symbol").html(response.coinSymbol);
             MRS.constants.ACCOUNT_PREFIX = response.accountPrefix;
             MRS.constants.PROJECT_NAME = response.projectName;
-            MRS.constants.ACCOUNT_REGEX_STR = "^" + response.accountPrefix + "-[A-Z0-9_]{4}-[A-Z0-9_]{4}-[A-Z0-9_]{4}-[A-Z0-9_]{5}";
+            MRS.constants.ACCOUNT_REGEX_STR = "^" + response.accountPrefix + "-[A-Z0-9_]{4}-[A-Z0-9_]{4}-[A-Z0-9_]{4}-[A-Z0-9_]{4}-[A-Z0-9_]{4}-[A-Z0-9_]{4}";
             MRS.constants.ACCOUNT_RS_MATCH = MRS.getRsAccountRegex(response.accountPrefix);
             MRS.constants.ACCOUNT_NUMERIC_MATCH = MRS.getNumericAccountRegex();
-            MRS.constants.ACCOUNT_MASK_ASTERIX = response.accountPrefix + "-****-****-****-*****";
-            MRS.constants.ACCOUNT_MASK_UNDERSCORE = response.accountPrefix + "-____-____-____-_____";
+            MRS.constants.ACCOUNT_MASK_ASTERIX = response.accountPrefix + "-****-****-****-****-****-****";
+            MRS.constants.ACCOUNT_MASK_UNDERSCORE = response.accountPrefix + "-____-____-____-____-____-____";
             MRS.constants.ACCOUNT_MASK_PREFIX = response.accountPrefix + "-";
             MRS.constants.GENESIS_RS = converters.convertNumericToRSAccountFormat(response.genesisAccountId);
             MRS.constants.INITIAL_BASE_TARGET = parseInt(response.initialBaseTarget);

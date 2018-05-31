@@ -77,7 +77,7 @@ var MRS = (function (MRS, $) {
 		var hex = converters.hexStringToByteArray(publicKey);
 		var account = simpleHash(hex);
 		account = converters.byteArrayToHexString(account);
-		var slice = (converters.hexStringToByteArray(account)).slice(0, 8);
+		var slice = (converters.hexStringToByteArray(account)).slice(0, 12);
 		var accountId = byteArrayToBigInteger(slice).toString();
 		if (isRsFormat) {
 			return MRS.convertNumericToRSAccountFormat(accountId);
@@ -86,7 +86,7 @@ var MRS = (function (MRS, $) {
 		}
 	};
 
-	MRS.getEncryptionKeys = function (options, secretPhrase){
+    MRS.getEncryptionKeys = function (options, secretPhrase){
 		if (!options.sharedKey) {
 			if (!options.privateKey) {
 				if (!secretPhrase) {

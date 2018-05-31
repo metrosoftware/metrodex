@@ -44,9 +44,9 @@ public final class GetAccount extends APIServlet.APIRequestHandler {
         boolean includeEffectiveBalance = "true".equalsIgnoreCase(req.getParameter("includeEffectiveBalance"));
 
         JSONObject response = JSONData.accountBalance(account, includeEffectiveBalance);
-        JSONData.putAccount(response, "account", account.getId());
+        JSONData.putAccount(response, "account", account.getId1(), account.getId2());
 
-        byte[] publicKey = Account.getPublicKey(account.getId());
+        byte[] publicKey = Account.getPublicKey(account.getId1());
         if (publicKey != null) {
             response.put("publicKey", Convert.toHexString(publicKey));
         }
@@ -81,8 +81,8 @@ public final class GetAccount extends APIServlet.APIRequestHandler {
                     JSONArray lessorInfo = new JSONArray();
                     while (lessors.hasNext()) {
                         Account lessor = lessors.next();
-                        lessorIds.add(Long.toUnsignedString(lessor.getId()));
-                        lessorIdsRS.add(Convert.rsAccount(lessor.getId()));
+                        lessorIds.add(Long.toUnsignedString(lessor.getId1()));
+                        lessorIdsRS.add(Convert.rsAccount(lessor.getId1()));
                         lessorInfo.add(JSONData.lessor(lessor, includeEffectiveBalance));
                     }
                     response.put("lessors", lessorIds);

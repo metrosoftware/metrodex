@@ -288,11 +288,6 @@ public final class Crypto {
         return ReedSolomon.encode(id1, id2);
     }
 
-    public static String rsEncode(long id) {
-        //FIXME extraId - remove this method
-        return null;
-    }
-
     public static String rsEncode(Pair<Long, Integer> id) {
         return ReedSolomon.encode(id);
     }

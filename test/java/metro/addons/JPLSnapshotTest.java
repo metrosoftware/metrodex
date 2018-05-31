@@ -34,7 +34,7 @@ public class JPLSnapshotTest extends BlockchainTest {
     @Test
     public void testSnapshotWithoutInput() {
         long aliceCurrentBalance = ALICE.getBalance();
-        String aliceId = Long.toUnsignedString(ALICE.getAccount().getId());
+        String aliceId = Long.toUnsignedString(ALICE.getAccount().getId1());
         JSONObject response = new APICall.Builder("downloadJPLSnapshot").
                 param("height", getHeight()).
                 build().invoke();
@@ -54,7 +54,7 @@ public class JPLSnapshotTest extends BlockchainTest {
     @Test
     public void testSnapshotWithInput() {
         long aliceCurrentBalance = ALICE.getBalance();
-        String aliceId = Long.toUnsignedString(ALICE.getAccount().getId());
+        String aliceId = Long.toUnsignedString(ALICE.getAccount().getId1());
         JSONObject response = new APICall.Builder("downloadJPLSnapshot").
             param("height", getHeight()).
             parts("newGenesisAccounts", INPUT_JSON_STR).

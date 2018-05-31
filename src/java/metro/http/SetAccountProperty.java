@@ -43,7 +43,7 @@ public final class SetAccountProperty extends CreateTransaction {
         Account senderAccount = ParameterParser.getSenderAccount(req);
         long recipientId = ParameterParser.getAccountId(req, "recipient", false);
         if (recipientId == 0) {
-            recipientId = senderAccount.getId();
+            recipientId = senderAccount.getId1();
         }
         String property = Convert.nullToEmpty(req.getParameter("property")).trim();
         String value = Convert.nullToEmpty(req.getParameter("value")).trim();

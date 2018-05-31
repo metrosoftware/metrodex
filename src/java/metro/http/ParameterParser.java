@@ -33,6 +33,7 @@ import metro.crypto.EncryptedData;
 import metro.util.Convert;
 import metro.util.Logger;
 import metro.util.Search;
+import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
@@ -184,17 +185,17 @@ public final class ParameterParser {
         return getAccountId(req, "account", isMandatory);
     }
 
-    public static long getAccountId(HttpServletRequest req, String name, boolean isMandatory) throws ParameterException {
+    public static Pair<Long, Integer> getAccountId(HttpServletRequest req, String name, boolean isMandatory) throws ParameterException {
         String paramValue = Convert.emptyToNull(req.getParameter(name));
         if (paramValue == null) {
             if (isMandatory) {
                 throw new ParameterException(missing(name));
             }
-            return 0;
+            return null;
         }
         try {
-            long value = Convert.parseAccountId(paramValue);
-            if (value == 0) {
+            Pair<Long, Integer> value = Convert.parseAccountId(paramValue);
+            if (value == null) {
                 throw new ParameterException(incorrect(name));
             }
             return value;
@@ -643,8 +644,9 @@ public final class ParameterParser {
                     throw new ParameterException(INCORRECT_MESSAGE_TO_ENCRYPT);
                 }
             }
+
             if (recipient != null) {
-                recipientPublicKey = Account.getPublicKey(recipient.getId());
+                recipientPublicKey = Account.getPublicKey(recipient.getId1());
             }
             if (recipientPublicKey == null) {
                 recipientPublicKey = Convert.parseHexString(Convert.emptyToNull(req.getParameter("recipientPublicKey")));

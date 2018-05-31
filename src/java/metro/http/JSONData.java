@@ -846,6 +846,11 @@ public final class JSONData {
         json.put(name + "RS", Convert.rsAccount(accountId));
     }
 
+    static void putAccount(JSONObject json, String name, long accountId, long extraId) {
+        json.put(name, Long.toUnsignedString(accountId));
+        json.put(name + "RS", Convert.rsAccount(accountId, extraId));
+    }
+
     private static void putAssetInfo(JSONObject json, long assetId) {
         Asset asset = Asset.getAsset(assetId);
         json.put("name", asset.getName());

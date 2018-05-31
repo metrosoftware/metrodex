@@ -1601,7 +1601,7 @@ public abstract class TransactionType {
                 Attachment.ColoredCoinsAssetTransfer attachment = (Attachment.ColoredCoinsAssetTransfer) transaction.getAttachment();
                 senderAccount.addToAssetBalanceQNT(getLedgerEvent(), transaction.getId(), attachment.getAssetId(),
                         -attachment.getQuantityQNT());
-                if (recipientAccount.getId() == Genesis.CREATOR_ID) {
+                if (recipientAccount.getId1() == Genesis.CREATOR_ID) {
                     Asset.deleteAsset(transaction, attachment.getAssetId(), attachment.getQuantityQNT());
                 } else {
                     recipientAccount.addToAssetAndUnconfirmedAssetBalanceQNT(getLedgerEvent(), transaction.getId(),

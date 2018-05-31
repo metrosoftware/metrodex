@@ -63,7 +63,7 @@ public class PhasingVote {
     }
 
     static void addVote(Transaction transaction, Account voter, long phasedTransactionId) {
-        PhasingVote phasingVote = phasingVoteTable.get(phasingVoteDbKeyFactory.newKey(phasedTransactionId, voter.getId()));
+        PhasingVote phasingVote = phasingVoteTable.get(phasingVoteDbKeyFactory.newKey(phasedTransactionId, voter.getId1()));
         if (phasingVote == null) {
             phasingVote = new PhasingVote(transaction, voter, phasedTransactionId);
             phasingVoteTable.insert(phasingVote);
@@ -80,7 +80,7 @@ public class PhasingVote {
 
     private PhasingVote(Transaction transaction, Account voter, long phasedTransactionId) {
         this.phasedTransactionId = phasedTransactionId;
-        this.voterId = voter.getId();
+        this.voterId = voter.getId1();
         this.dbKey = phasingVoteDbKeyFactory.newKey(this.phasedTransactionId, this.voterId);
         this.voteId = transaction.getId();
     }

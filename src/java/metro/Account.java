@@ -33,6 +33,7 @@ import metro.util.Convert;
 import metro.util.Listener;
 import metro.util.Listeners;
 import metro.util.Logger;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -286,7 +287,7 @@ public final class Account {
         }
 
         private AccountProperty(ResultSet rs, DbKey dbKey) throws SQLException {
-            this.id = rs.getLong("id");
+            this.id = rs.getLong("id1");
             this.dbKey = dbKey;
             this.recipientId = rs.getLong("recipient_id");
             long setterId = rs.getLong("setter_id");
@@ -387,16 +388,16 @@ public final class Account {
 
     }
 
-    private static final DbKey.LongKeyFactory<Account> accountDbKeyFactory = new DbKey.LongKeyFactory<Account>("id") {
+    private static final DbKey.PairKeyFactory<Account> accountDbKeyFactory = new DbKey.PairKeyFactory<Account>("id1", "id2") {
 
         @Override
         public DbKey newKey(Account account) {
-            return account.dbKey == null ? newKey(account.id) : account.dbKey;
+            return account.dbKey == null ? newKey(account.id1, account.id2) : account.dbKey;
         }
 
         @Override
         public Account newEntity(DbKey dbKey) {
-            return new Account(((DbKey.LongKey)dbKey).getId());
+            return new Account(Pair.of(((DbKey.PairKey)dbKey).getIdA(), ((DbKey.PairKey)dbKey).getIdB()));
         }
 
     };
@@ -571,7 +572,7 @@ public final class Account {
         }
     };
 
-    private static final DbKey.LongKeyFactory<AccountProperty> accountPropertyDbKeyFactory = new DbKey.LongKeyFactory<AccountProperty>("id") {
+    private static final DbKey.LongKeyFactory<AccountProperty> accountPropertyDbKeyFactory = new DbKey.LongKeyFactory<AccountProperty>("id1") {
 
         @Override
         public DbKey newKey(AccountProperty accountProperty) {
@@ -711,7 +712,13 @@ public final class Account {
     }
 
     public static Account getAccount(long id) {
-        DbKey dbKey = accountDbKeyFactory.newKey(id);
+        DbClause dbClause = new DbClause.LongClause("id", id);
+        Account account = accountTable.getBy(dbClause);
+        return account;
+    }
+
+    public static Account getAccount(Pair<Long, Integer> fullId) {
+        DbKey dbKey = accountDbKeyFactory.newKey(fullId.getLeft(), fullId.getRight());
         Account account = accountTable.get(dbKey);
         if (account == null) {
             PublicKey publicKey = publicKeyTable.get(dbKey);
@@ -724,7 +731,21 @@ public final class Account {
     }
 
     public static Account getAccount(long id, int height) {
-        DbKey dbKey = accountDbKeyFactory.newKey(id);
+        //TODO
+        DbKey dbKey = accountDbKeyFactory.newKey(id.getLeft(), id.getRight());
+        Account account = accountTable.get(dbKey, height);
+        if (account == null) {
+            PublicKey publicKey = publicKeyTable.get(dbKey, height);
+            if (publicKey != null) {
+                account = new Account(id);
+                account.publicKey = publicKey;
+            }
+        }
+        return account;
+    }
+
+    public static Account getAccount(Pair<Long, Integer> id, int height) {
+        DbKey dbKey = accountDbKeyFactory.newKey(id.getLeft(), id.getRight());
         Account account = accountTable.get(dbKey, height);
         if (account == null) {
             PublicKey publicKey = publicKeyTable.get(dbKey, height);
@@ -737,23 +758,32 @@ public final class Account {
     }
 
     public static Account getAccount(byte[] publicKey) {
-        long accountId = getId(publicKey);
-        Account account = getAccount(accountId);
+        Pair<Long, Integer> fullId = getFullId(publicKey);
+        Account account = getAccount(fullId);
         if (account == null) {
             return null;
         }
         if (account.publicKey == null) {
-            account.publicKey = publicKeyTable.get(accountDbKeyFactory.newKey(account));
+            account.publicKey = publicKeyTable.get(ac);
         }
         if (account.publicKey == null || account.publicKey.publicKey == null || Arrays.equals(account.publicKey.publicKey, publicKey)) {
             return account;
         }
-        throw new RuntimeException("DUPLICATE KEY for account " + Long.toUnsignedString(accountId)
+        throw new RuntimeException("DUPLICATE KEY for account " + Long.toUnsignedString(fullId)
                 + " existing key " + Convert.toHexString(account.publicKey.publicKey) + " new key " + Convert.toHexString(publicKey));
     }
 
     public static long getId(byte[] publicKey) {
         return Convert.publicKeyToId(publicKey);
+    }
+
+    public static Pair<Long, Integer> getFullId(byte[] publicKey) {
+        byte[] publicKeyHash = Crypto.sha256().digest(publicKey);
+        return Convert.fullHashToFullId(publicKeyHash);
+    }
+
+    public static long getExtraId(long id) {
+        return getAccount(id).getId2();
     }
 
     public static byte[] getPublicKey(long id) {
@@ -774,7 +804,25 @@ public final class Account {
         return key;
     }
 
-    static Account addOrGetAccount(long id) {
+//    public static byte[] getPublicKey(Pair<Long, Integer> id) {
+//        DbKey dbKey = publicKeyDbKeyFactory.newKey(id);
+//        byte[] key = null;
+//        if (publicKeyCache != null) {
+//            key = publicKeyCache.get(dbKey);
+//        }
+//        if (key == null) {
+//            PublicKey publicKey = publicKeyTable.get(dbKey);
+//            if (publicKey == null || (key = publicKey.publicKey) == null) {
+//                return null;
+//            }
+//            if (publicKeyCache != null) {
+//                publicKeyCache.put(dbKey, key);
+//            }
+//        }
+//        return key;
+//    }
+
+    static Account addOrGetAccount(long id, Long extraId) {
         if (id == 0) {
             throw new IllegalArgumentException("Invalid accountId 0");
         }
@@ -788,6 +836,9 @@ public final class Account {
                 publicKeyTable.insert(publicKey);
             }
             account.publicKey = publicKey;
+            if (extraId != null) {
+                account.id2 = extraId;
+            }
         }
         return account;
     }
@@ -921,7 +972,8 @@ public final class Account {
     static void init() {}
 
 
-    private final long id;
+    private final long id1;
+    private final int id2;
     private final DbKey dbKey;
     private PublicKey publicKey;
     private long balanceMQT;
@@ -930,18 +982,19 @@ public final class Account {
     private long activeLesseeId;
     private Set<ControlType> controls;
 
-    private Account(long id) {
-        //FIXME extraId - use Pair id
-        if (id != Crypto.rsDecode(Crypto.rsEncode(id)).getLeft()) {
+    private Account(Pair<Long, Integer> id) {
+        if (id != Crypto.rsDecode(Crypto.rsEncode(id))) {
             Logger.logMessage("CRITICAL ERROR: Reed-Solomon encoding fails for " + id);
         }
-        this.id = id;
-        this.dbKey = accountDbKeyFactory.newKey(this.id);
+        this.id1 = id.getLeft();
+        this.id2 = id.getRight();
+        this.dbKey = accountDbKeyFactory.newKey(this.id1, this.id2);
         this.controls = Collections.emptySet();
     }
 
     private Account(ResultSet rs, DbKey dbKey) throws SQLException {
-        this.id = rs.getLong("id");
+        this.id1 = rs.getLong("id");
+        this.id2 = rs.getInt("id2");
         this.dbKey = dbKey;
         this.balanceMQT = rs.getLong("balance");
         this.unconfirmedBalanceMQT = rs.getLong("unconfirmed_balance");
@@ -955,12 +1008,13 @@ public final class Account {
     }
 
     private void save(Connection con) throws SQLException {
-        try (PreparedStatement pstmt = con.prepareStatement("MERGE INTO account (id, "
+        try (PreparedStatement pstmt = con.prepareStatement("MERGE INTO account (id, id2, "
                 + "balance, unconfirmed_balance, forged_balance, "
                 + "active_lessee_id, has_control_phasing, height, latest) "
-                + "KEY (id, height) VALUES (?, ?, ?, ?, ?, ?, ?, TRUE)")) {
+                + "KEY (id, height) VALUES (?, ?, ?, ?, ?, ?, ?, ?, TRUE)")) {
             int i = 0;
-            pstmt.setLong(++i, this.id);
+            pstmt.setLong(++i, this.id1);
+            pstmt.setInt(++i, this.id2);
             pstmt.setLong(++i, this.balanceMQT);
             pstmt.setLong(++i, this.unconfirmedBalanceMQT);
             pstmt.setLong(++i, this.forgedBalanceMQT);
@@ -979,8 +1033,12 @@ public final class Account {
         }
     }
 
-    public long getId() {
-        return id;
+    public long getId1() {
+        return id1;
+    }
+
+    public int getId2() {
+        return id2;
     }
 
     public AccountInfo getAccountInfo() {
@@ -992,7 +1050,7 @@ public final class Account {
         description = Convert.emptyToNull(description.trim());
         AccountInfo accountInfo = getAccountInfo();
         if (accountInfo == null) {
-            accountInfo = new AccountInfo(id, name, description);
+            accountInfo = new AccountInfo(id1, name, description);
         } else {
             accountInfo.name = name;
             accountInfo.description = description;
@@ -1005,7 +1063,7 @@ public final class Account {
     }
 
     public EncryptedData encryptTo(byte[] data, String senderSecretPhrase, boolean compress) {
-        byte[] key = getPublicKey(this.id);
+        byte[] key = getPublicKey(this.id1);
         if (key == null) {
             throw new IllegalArgumentException("Recipient account doesn't have a public key set");
         }
@@ -1020,7 +1078,7 @@ public final class Account {
     }
 
     public byte[] decryptFrom(EncryptedData encryptedData, String recipientSecretPhrase, boolean uncompress) {
-        byte[] key = getPublicKey(this.id);
+        byte[] key = getPublicKey(this.id1);
         if (key == null) {
             throw new IllegalArgumentException("Sender account doesn't have a public key set");
         }
@@ -1055,7 +1113,7 @@ public final class Account {
         try (Connection con = Db.db.getConnection();
              PreparedStatement pstmt = con.prepareStatement("SELECT SUM (additions) AS additions "
                      + "FROM account_guaranteed_balance WHERE account_id = ? AND coinbase AND height > ? AND height <= ?")) {
-            pstmt.setLong(1, this.id);
+            pstmt.setLong(1, this.id1);
             pstmt.setInt(2, guaranteedBalanceHeight);
             pstmt.setInt(3, currentHeight);
             try (ResultSet rs = pstmt.executeQuery()) {
@@ -1079,7 +1137,7 @@ public final class Account {
 
     private long getGenesisAccountBalanceMQT() {
         try {
-            Account genesisAccount = getAccount(id, 0);
+            Account genesisAccount = getAccount(id1, 0);
             return genesisAccount == null ? 0 : genesisAccount.getBalanceMQT();
         } catch (IllegalArgumentException iae) {
             return 0;
@@ -1124,7 +1182,7 @@ public final class Account {
         Long[] lessorIds = new Long[lessors.size()];
         long[] balances = new long[lessors.size()];
         for (int i = 0; i < lessors.size(); i++) {
-            lessorIds[i] = lessors.get(i).getId();
+            lessorIds[i] = lessors.get(i).getId1();
             balances[i] = lessors.get(i).getBalanceMQT();
         }
         int blockchainHeight = Metro.getBlockchain().getHeight();
@@ -1161,11 +1219,11 @@ public final class Account {
     }
 
     public DbIterator<Account> getLessors() {
-        return accountTable.getManyBy(new DbClause.LongClause("active_lessee_id", id), 0, -1, " ORDER BY id ASC ");
+        return accountTable.getManyBy(new DbClause.LongClause("active_lessee_id", id1), 0, -1, " ORDER BY id1 ASC ");
     }
 
     public DbIterator<Account> getLessors(int height) {
-        return accountTable.getManyBy(new DbClause.LongClause("active_lessee_id", id), height, 0, -1, " ORDER BY id ASC ");
+        return accountTable.getManyBy(new DbClause.LongClause("active_lessee_id", id1), height, 0, -1, " ORDER BY id1 ASC ");
     }
 
     public long getGuaranteedBalanceMQT() {
@@ -1184,7 +1242,7 @@ public final class Account {
             try (Connection con = Db.db.getConnection();
                  PreparedStatement pstmt = con.prepareStatement("SELECT SUM (additions) AS additions "
                          + "FROM account_guaranteed_balance WHERE account_id = ? AND NOT coinbase AND height > ? AND height <= ?")) {
-                pstmt.setLong(1, this.id);
+                pstmt.setLong(1, this.id1);
                 pstmt.setInt(2, height);
                 pstmt.setInt(3, currentHeight);
                 try (ResultSet rs = pstmt.executeQuery()) {
@@ -1202,39 +1260,39 @@ public final class Account {
     }
 
     public DbIterator<AccountAsset> getAssets(int from, int to) {
-        return accountAssetTable.getManyBy(new DbClause.LongClause("account_id", this.id), from, to);
+        return accountAssetTable.getManyBy(new DbClause.LongClause("account_id", this.id1), from, to);
     }
 
     public DbIterator<AccountAsset> getAssets(int height, int from, int to) {
-        return accountAssetTable.getManyBy(new DbClause.LongClause("account_id", this.id), height, from, to);
+        return accountAssetTable.getManyBy(new DbClause.LongClause("account_id", this.id1), height, from, to);
     }
 
     public DbIterator<Trade> getTrades(int from, int to) {
-        return Trade.getAccountTrades(this.id, from, to);
+        return Trade.getAccountTrades(this.id1, from, to);
     }
 
     public DbIterator<AssetTransfer> getAssetTransfers(int from, int to) {
-        return AssetTransfer.getAccountAssetTransfers(this.id, from, to);
+        return AssetTransfer.getAccountAssetTransfers(this.id1, from, to);
     }
 
     public AccountAsset getAsset(long assetId) {
-        return accountAssetTable.get(accountAssetDbKeyFactory.newKey(this.id, assetId));
+        return accountAssetTable.get(accountAssetDbKeyFactory.newKey(this.id1, assetId));
     }
 
     public AccountAsset getAsset(long assetId, int height) {
-        return accountAssetTable.get(accountAssetDbKeyFactory.newKey(this.id, assetId), height);
+        return accountAssetTable.get(accountAssetDbKeyFactory.newKey(this.id1, assetId), height);
     }
 
     public long getAssetBalanceQNT(long assetId) {
-        return getAssetBalanceQNT(this.id, assetId);
+        return getAssetBalanceQNT(this.id1, assetId);
     }
 
     public long getAssetBalanceQNT(long assetId, int height) {
-        return getAssetBalanceQNT(this.id, assetId, height);
+        return getAssetBalanceQNT(this.id1, assetId, height);
     }
 
     public long getUnconfirmedAssetBalanceQNT(long assetId) {
-        return getUnconfirmedAssetBalanceQNT(this.id, assetId);
+        return getUnconfirmedAssetBalanceQNT(this.id1, assetId);
     }
 
     public Set<ControlType> getControls() {
@@ -1245,7 +1303,7 @@ public final class Account {
         int height = Metro.getBlockchain().getHeight();
         AccountLease accountLease = accountLeaseTable.get(accountDbKeyFactory.newKey(this));
         if (accountLease == null) {
-            accountLease = new AccountLease(id,
+            accountLease = new AccountLease(id1,
                     height + Constants.LEASING_DELAY,
                     height + Constants.LEASING_DELAY + period,
                     lesseeId);
@@ -1287,9 +1345,9 @@ public final class Account {
 
     void setProperty(Transaction transaction, Account setterAccount, String property, String value) {
         value = Convert.emptyToNull(value);
-        AccountProperty accountProperty = getProperty(this.id, property, setterAccount.id);
+        AccountProperty accountProperty = getProperty(this.id1, property, setterAccount.id1);
         if (accountProperty == null) {
-            accountProperty = new AccountProperty(transaction.getId(), this.id, setterAccount.id, property, value);
+            accountProperty = new AccountProperty(transaction.getId(), this.id1, setterAccount.id1, property, value);
         } else {
             accountProperty.value = value;
         }
@@ -1303,8 +1361,8 @@ public final class Account {
         if (accountProperty == null) {
             return;
         }
-        if (accountProperty.getSetterId() != this.id && accountProperty.getRecipientId() != this.id) {
-            throw new RuntimeException("Property " + Long.toUnsignedString(propertyId) + " cannot be deleted by " + Long.toUnsignedString(this.id));
+        if (accountProperty.getSetterId() != this.id1 && accountProperty.getRecipientId() != this.id1) {
+            throw new RuntimeException("Property " + Long.toUnsignedString(propertyId) + " cannot be deleted by " + Long.toUnsignedString(this.id1));
         }
         accountPropertyTable.delete(accountProperty);
         listeners.notify(this, Event.DELETE_PROPERTY);
@@ -1324,6 +1382,19 @@ public final class Account {
         }
         return Arrays.equals(publicKey.publicKey, key);
     }
+
+    public static boolean verifyExtraId(long senderId, byte[] senderPublicKey) {
+        DbKey dbKey = accountDbKeyFactory.newKey(senderId);
+        Account account = accountTable.get(dbKey);
+        if (account.getId2() != 0) {
+            byte[] publicKeyHash = Crypto.sha256().digest(senderPublicKey);
+            return Convert.fullHashToExtraId(senderPublicKey) == account.getId2();
+        }
+        return true;
+    }
+
+
+
 
     void apply(byte[] key) {
         PublicKey publicKey = publicKeyTable.get(dbKey);
@@ -1352,19 +1423,19 @@ public final class Account {
             return;
         }
         AccountAsset accountAsset;
-        accountAsset = accountAssetTable.get(accountAssetDbKeyFactory.newKey(this.id, assetId));
+        accountAsset = accountAssetTable.get(accountAssetDbKeyFactory.newKey(this.id1, assetId));
         long assetBalance = accountAsset == null ? 0 : accountAsset.quantityQNT;
         assetBalance = Math.addExact(assetBalance, quantityQNT);
         if (accountAsset == null) {
-            accountAsset = new AccountAsset(this.id, assetId, assetBalance, 0);
+            accountAsset = new AccountAsset(this.id1, assetId, assetBalance, 0);
         } else {
             accountAsset.quantityQNT = assetBalance;
         }
         accountAsset.save();
         listeners.notify(this, Event.ASSET_BALANCE);
         assetListeners.notify(accountAsset, Event.ASSET_BALANCE);
-        if (AccountLedger.mustLogEntry(this.id, false)) {
-            AccountLedger.logEntry(new LedgerEntry(event, eventId, this.id, LedgerHolding.ASSET_BALANCE, assetId,
+        if (AccountLedger.mustLogEntry(this.id1, false)) {
+            AccountLedger.logEntry(new LedgerEntry(event, eventId, this.id1, LedgerHolding.ASSET_BALANCE, assetId,
                     quantityQNT, assetBalance));
         }
     }
@@ -1374,11 +1445,11 @@ public final class Account {
             return;
         }
         AccountAsset accountAsset;
-        accountAsset = accountAssetTable.get(accountAssetDbKeyFactory.newKey(this.id, assetId));
+        accountAsset = accountAssetTable.get(accountAssetDbKeyFactory.newKey(this.id1, assetId));
         long unconfirmedAssetBalance = accountAsset == null ? 0 : accountAsset.unconfirmedQuantityQNT;
         unconfirmedAssetBalance = Math.addExact(unconfirmedAssetBalance, quantityQNT);
         if (accountAsset == null) {
-            accountAsset = new AccountAsset(this.id, assetId, 0, unconfirmedAssetBalance);
+            accountAsset = new AccountAsset(this.id1, assetId, 0, unconfirmedAssetBalance);
         } else {
             accountAsset.unconfirmedQuantityQNT = unconfirmedAssetBalance;
         }
@@ -1388,8 +1459,8 @@ public final class Account {
         if (event == null) {
             return;
         }
-        if (AccountLedger.mustLogEntry(this.id, true)) {
-            AccountLedger.logEntry(new LedgerEntry(event, eventId, this.id,
+        if (AccountLedger.mustLogEntry(this.id1, true)) {
+            AccountLedger.logEntry(new LedgerEntry(event, eventId, this.id1,
                     LedgerHolding.UNCONFIRMED_ASSET_BALANCE, assetId,
                     quantityQNT, unconfirmedAssetBalance));
         }
@@ -1400,13 +1471,13 @@ public final class Account {
             return;
         }
         AccountAsset accountAsset;
-        accountAsset = accountAssetTable.get(accountAssetDbKeyFactory.newKey(this.id, assetId));
+        accountAsset = accountAssetTable.get(accountAssetDbKeyFactory.newKey(this.id1, assetId));
         long assetBalance = accountAsset == null ? 0 : accountAsset.quantityQNT;
         assetBalance = Math.addExact(assetBalance, quantityQNT);
         long unconfirmedAssetBalance = accountAsset == null ? 0 : accountAsset.unconfirmedQuantityQNT;
         unconfirmedAssetBalance = Math.addExact(unconfirmedAssetBalance, quantityQNT);
         if (accountAsset == null) {
-            accountAsset = new AccountAsset(this.id, assetId, assetBalance, unconfirmedAssetBalance);
+            accountAsset = new AccountAsset(this.id1, assetId, assetBalance, unconfirmedAssetBalance);
         } else {
             accountAsset.quantityQNT = assetBalance;
             accountAsset.unconfirmedQuantityQNT = unconfirmedAssetBalance;
@@ -1416,13 +1487,13 @@ public final class Account {
         listeners.notify(this, Event.UNCONFIRMED_ASSET_BALANCE);
         assetListeners.notify(accountAsset, Event.ASSET_BALANCE);
         assetListeners.notify(accountAsset, Event.UNCONFIRMED_ASSET_BALANCE);
-        if (AccountLedger.mustLogEntry(this.id, true)) {
-            AccountLedger.logEntry(new LedgerEntry(event, eventId, this.id,
+        if (AccountLedger.mustLogEntry(this.id1, true)) {
+            AccountLedger.logEntry(new LedgerEntry(event, eventId, this.id1,
                     LedgerHolding.UNCONFIRMED_ASSET_BALANCE, assetId,
                     quantityQNT, unconfirmedAssetBalance));
         }
-        if (AccountLedger.mustLogEntry(this.id, false)) {
-            AccountLedger.logEntry(new LedgerEntry(event, eventId, this.id,
+        if (AccountLedger.mustLogEntry(this.id1, false)) {
+            AccountLedger.logEntry(new LedgerEntry(event, eventId, this.id1,
                     LedgerHolding.ASSET_BALANCE, assetId,
                     quantityQNT, assetBalance));
         }
@@ -1439,16 +1510,16 @@ public final class Account {
         long totalAmountMQT = Math.addExact(amountMQT, feeMQT);
         this.balanceMQT = Math.addExact(this.balanceMQT, totalAmountMQT);
         addToGuaranteedBalanceMQT(totalAmountMQT, false);
-        checkBalance(this.id, this.balanceMQT, this.unconfirmedBalanceMQT);
+        checkBalance(this.id1, this.balanceMQT, this.unconfirmedBalanceMQT);
         save();
         listeners.notify(this, Event.BALANCE);
-        if (AccountLedger.mustLogEntry(this.id, false)) {
+        if (AccountLedger.mustLogEntry(this.id1, false)) {
             if (feeMQT != 0) {
-                AccountLedger.logEntry(new LedgerEntry(LedgerEvent.TRANSACTION_FEE, eventId, this.id,
+                AccountLedger.logEntry(new LedgerEntry(LedgerEvent.TRANSACTION_FEE, eventId, this.id1,
                         LedgerHolding.METRO_BALANCE, null, feeMQT, this.balanceMQT - amountMQT));
             }
             if (amountMQT != 0) {
-                AccountLedger.logEntry(new LedgerEntry(event, eventId, this.id,
+                AccountLedger.logEntry(new LedgerEntry(event, eventId, this.id1,
                         LedgerHolding.METRO_BALANCE, null, amountMQT, this.balanceMQT));
             }
         }
@@ -1464,19 +1535,19 @@ public final class Account {
         }
         long totalAmountMQT = Math.addExact(amountMQT, feeMQT);
         this.unconfirmedBalanceMQT = Math.addExact(this.unconfirmedBalanceMQT, totalAmountMQT);
-        checkBalance(this.id, this.balanceMQT, this.unconfirmedBalanceMQT);
+        checkBalance(this.id1, this.balanceMQT, this.unconfirmedBalanceMQT);
         save();
         listeners.notify(this, Event.UNCONFIRMED_BALANCE);
         if (event == null) {
             return;
         }
-        if (AccountLedger.mustLogEntry(this.id, true)) {
+        if (AccountLedger.mustLogEntry(this.id1, true)) {
             if (feeMQT != 0) {
-                AccountLedger.logEntry(new LedgerEntry(LedgerEvent.TRANSACTION_FEE, eventId, this.id,
+                AccountLedger.logEntry(new LedgerEntry(LedgerEvent.TRANSACTION_FEE, eventId, this.id1,
                         LedgerHolding.UNCONFIRMED_METRO_BALANCE, null, feeMQT, this.unconfirmedBalanceMQT - amountMQT));
             }
             if (amountMQT != 0) {
-                AccountLedger.logEntry(new LedgerEntry(event, eventId, this.id,
+                AccountLedger.logEntry(new LedgerEntry(event, eventId, this.id1,
                         LedgerHolding.UNCONFIRMED_METRO_BALANCE, null, amountMQT, this.unconfirmedBalanceMQT));
             }
         }
@@ -1494,30 +1565,30 @@ public final class Account {
         this.balanceMQT = Math.addExact(this.balanceMQT, totalAmountMQT);
         this.unconfirmedBalanceMQT = Math.addExact(this.unconfirmedBalanceMQT, totalAmountMQT);
         addToGuaranteedBalanceMQT(totalAmountMQT, event == LedgerEvent.ORDINARY_COINBASE);
-        checkBalance(this.id, this.balanceMQT, this.unconfirmedBalanceMQT);
+        checkBalance(this.id1, this.balanceMQT, this.unconfirmedBalanceMQT);
         save();
         listeners.notify(this, Event.BALANCE);
         listeners.notify(this, Event.UNCONFIRMED_BALANCE);
         if (event == null) {
             return;
         }
-        if (AccountLedger.mustLogEntry(this.id, true)) {
+        if (AccountLedger.mustLogEntry(this.id1, true)) {
             if (feeMQT != 0) {
-                AccountLedger.logEntry(new LedgerEntry(LedgerEvent.TRANSACTION_FEE, eventId, this.id,
+                AccountLedger.logEntry(new LedgerEntry(LedgerEvent.TRANSACTION_FEE, eventId, this.id1,
                         LedgerHolding.UNCONFIRMED_METRO_BALANCE, null, feeMQT, this.unconfirmedBalanceMQT - amountMQT));
             }
             if (amountMQT != 0) {
-                AccountLedger.logEntry(new LedgerEntry(event, eventId, this.id,
+                AccountLedger.logEntry(new LedgerEntry(event, eventId, this.id1,
                         LedgerHolding.UNCONFIRMED_METRO_BALANCE, null, amountMQT, this.unconfirmedBalanceMQT));
             }
         }
-        if (AccountLedger.mustLogEntry(this.id, false)) {
+        if (AccountLedger.mustLogEntry(this.id1, false)) {
             if (feeMQT != 0) {
-                AccountLedger.logEntry(new LedgerEntry(LedgerEvent.TRANSACTION_FEE, eventId, this.id,
+                AccountLedger.logEntry(new LedgerEntry(LedgerEvent.TRANSACTION_FEE, eventId, this.id1,
                         LedgerHolding.METRO_BALANCE, null, feeMQT, this.balanceMQT - amountMQT));
             }
             if (amountMQT != 0) {
-                AccountLedger.logEntry(new LedgerEntry(event, eventId, this.id,
+                AccountLedger.logEntry(new LedgerEntry(event, eventId, this.id1,
                         LedgerHolding.METRO_BALANCE, null, amountMQT, this.balanceMQT));
             }
         }
@@ -1557,7 +1628,7 @@ public final class Account {
                      + "WHERE account_id = ? AND coinbase = ? AND height = ?");
              PreparedStatement pstmtUpdate = con.prepareStatement("MERGE INTO account_guaranteed_balance (account_id, "
                      + " additions, height, coinbase) KEY (account_id, height, coinbase) VALUES(?, ?, ?, ?)")) {
-            pstmtSelect.setLong(1, this.id);
+            pstmtSelect.setLong(1, this.id1);
             pstmtSelect.setBoolean(2, isCoinbase);
             pstmtSelect.setInt(3, blockchainHeight);
             try (ResultSet rs = pstmtSelect.executeQuery()) {
@@ -1565,7 +1636,7 @@ public final class Account {
                 if (rs.next()) {
                     additions = Math.addExact(additions, rs.getLong("additions"));
                 }
-                pstmtUpdate.setLong(1, this.id);
+                pstmtUpdate.setLong(1, this.id1);
                 pstmtUpdate.setLong(2, additions);
                 pstmtUpdate.setInt(3, blockchainHeight);
                 pstmtUpdate.setBoolean(4, isCoinbase);
@@ -1587,7 +1658,7 @@ public final class Account {
         final long amountMQTPerQNT = attachment.getAmountMQTPerQNT();
         long numAccounts = 0;
         for (final AccountAsset accountAsset : accountAssets) {
-            if (accountAsset.getAccountId() != this.id && accountAsset.getQuantityQNT() != 0) {
+            if (accountAsset.getAccountId() != this.id1 && accountAsset.getQuantityQNT() != 0) {
                 long dividend = Math.multiplyExact(accountAsset.getQuantityQNT(), amountMQTPerQNT);
                 Account.getAccount(accountAsset.getAccountId())
                         .addToBalanceAndUnconfirmedBalanceMQT(LedgerEvent.ASSET_DIVIDEND_PAYMENT, transactionId, dividend);
@@ -1601,6 +1672,6 @@ public final class Account {
 
     @Override
     public String toString() {
-        return "Account " + Long.toUnsignedString(getId());
+        return "Account " + Long.toUnsignedString(getId1());
     }
 }

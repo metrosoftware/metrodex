@@ -50,7 +50,7 @@ public final class ShufflingProcess extends CreateTransaction {
             return JSON.prepare(response);
         }
         Account senderAccount = ParameterParser.getSenderAccount(req);
-        long senderId = senderAccount.getId();
+        long senderId = senderAccount.getId1();
         if (shuffling.getAssigneeAccountId() != senderId) {
             JSONObject response = new JSONObject();
             response.put("errorCode", 12);

@@ -262,7 +262,7 @@ QUnit.test("accountMatching", function (assert) {
     assert.equal(MRS.isRsAccountImpl("Mtr-xk4r-7VJU-6EQG-7R335", regex), true, "not.case.sensitive");
     assert.equal(MRS.isRsAccountImpl("MTR-XK4R-7VJU-6EQG-7R336", regex), true, "nor.rs.valid.still.valid");
     assert.equal(MRS.isRsAccountImpl("5873880488492319831", regex), false, "numeric.no.match");
-    assert.equal(MRS.isRsAccountImpl("MTR-____-____-____-_____", regex), true, "underscore_mask_again");
+    assert.equal(MRS.isRsAccountImpl("MTR-____-____-____-____-____-____", regex), true, "underscore_mask_again");
     regex = MRS.getNumericAccountRegex();
     assert.equal(MRS.isNumericAccountImpl("MTR-XK4R-7VJU-6EQG-7R335", regex), false, "non.numeric.no.match");
     assert.equal(MRS.isNumericAccountImpl("5873880488492319831", regex), true, "numeric.match");

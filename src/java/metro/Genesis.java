@@ -93,7 +93,7 @@ public final class Genesis {
         Logger.logDebugMessage("Loading public keys");
         for (Object jsonPublicKey : publicKeys) {
             byte[] publicKey = Convert.parseHexString((String)jsonPublicKey);
-            Account account = Account.addOrGetAccount(Account.getId(publicKey));
+            Account account = Account.addOrGetAccount(Account.getId(publicKey), null);
             account.apply(publicKey);
             if (count++ % 100 == 0) {
                 Db.db.commitTransaction();
@@ -105,7 +105,7 @@ public final class Genesis {
         Logger.logDebugMessage("Loading genesis amounts");
         long total = 0;
         for (Map.Entry<String, Long> entry : ((Map<String, Long>)balances).entrySet()) {
-            Account account = Account.addOrGetAccount(Long.parseUnsignedLong(entry.getKey()));
+            Account account = Account.addOrGetAccount(Long.parseUnsignedLong(entry.getKey()), null);
             account.addToBalanceAndUnconfirmedBalanceMQT(null, 0, entry.getValue());
             total += entry.getValue();
             if (count++ % 100 == 0) {
@@ -116,7 +116,7 @@ public final class Genesis {
             throw new RuntimeException("Total balance " + total + " exceeds maximum allowed " + Constants.MAX_BALANCE_MQT);
         }
         Logger.logDebugMessage("Total balance %f %s", (double)total / Constants.ONE_MTR, Constants.COIN_SYMBOL);
-        Account creatorAccount = Account.addOrGetAccount(Genesis.CREATOR_ID);
+        Account creatorAccount = Account.addOrGetAccount(Genesis.CREATOR_ID, null);
         creatorAccount.apply(Genesis.CREATOR_PUBLIC_KEY);
         creatorAccount.addToBalanceAndUnconfirmedBalanceMQT(null, 0, -total);
         genesisAccountsJSON = null;

@@ -1115,6 +1115,7 @@ var MRS = (function(MRS, $, undefined) {
                 MRS.updateDashboardMessage();
 			} else {
 				if (MRS.accountRS && MRS.accountInfo.accountRS != MRS.accountRS) {
+
 					$.growl("Generated Reed Solomon address different from the one in the blockchain!", {
 						"type": "danger"
 					});

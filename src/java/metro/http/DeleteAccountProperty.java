@@ -39,11 +39,11 @@ public final class DeleteAccountProperty extends CreateTransaction {
         Account senderAccount = ParameterParser.getSenderAccount(req);
         long recipientId = ParameterParser.getAccountId(req, "recipient", false);
         if (recipientId == 0) {
-            recipientId = senderAccount.getId();
+            recipientId = senderAccount.getId1();
         }
         long setterId = ParameterParser.getAccountId(req, "setter", false);
         if (setterId == 0) {
-            setterId = senderAccount.getId();
+            setterId = senderAccount.getId1();
         }
         String property = Convert.nullToEmpty(req.getParameter("property")).trim();
         if (property.isEmpty()) {
@@ -53,7 +53,7 @@ public final class DeleteAccountProperty extends CreateTransaction {
         if (accountProperty == null) {
             return JSONResponses.UNKNOWN_PROPERTY;
         }
-        if (accountProperty.getRecipientId() != senderAccount.getId() && accountProperty.getSetterId() != senderAccount.getId()) {
+        if (accountProperty.getRecipientId() != senderAccount.getId1() && accountProperty.getSetterId() != senderAccount.getId1()) {
             return JSONResponses.INCORRECT_PROPERTY;
         }
         Attachment attachment = new Attachment.MessagingAccountPropertyDelete(accountProperty.getId());

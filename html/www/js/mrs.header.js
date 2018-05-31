@@ -140,7 +140,7 @@ var MRS = (function(MRS, $) {
     });
 
     $("#passphrase_validation_modal").on("show.bs.modal", function() {
-        $("#passphrae_validation_account").val(MRS.accountRS);
+        $("#passphrase_validation_account").val(MRS.accountRS);
     });
 
     MRS.forms.validatePassphrase = function($modal) {

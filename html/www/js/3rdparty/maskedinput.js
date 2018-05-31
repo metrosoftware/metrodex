@@ -102,7 +102,7 @@
                         var curValUpper = curVal.toUpperCase();
                         var addressStart = curValUpper.indexOf(MRS.getAccountMask(), 4);
                         if (addressStart > 0) {
-                            var insertedAddress = curValUpper.substr(addressStart, 24);
+                            var insertedAddress = curValUpper.substr(addressStart, 33);
                             if (MRS.isRsAccount(insertedAddress)) {
                                 //since pasting into a msked field will first trigger androidInputEvent, search for inserted address and use it
                                 input.val(insertedAddress);
@@ -146,7 +146,8 @@
 
                         if (settings.unmask !== false) {
                             //backspace, remove
-                            if ((pos.begin == 0 && pos.end == 24) || (currentInput == MRS.getAccountMask("_") && pos.begin == 4)) {
+                            if ((pos.begin == 0 && pos.end == 33) || (currentInput == MRS.getAccountMask("_") && pos.begin == 4)) {
+
                                 input.val("");
                                 $(this).trigger("unmask");
                                 return;

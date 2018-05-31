@@ -34,6 +34,7 @@ var MRS = (function(MRS, $) {
 			var modal = $(this).closest(".modal");
 
 			if (value && value != MRS.getAccountMask("_")) {
+
 				MRS.checkRecipient(value, modal);
 			} else {
 				modal.find(".account_info").hide();

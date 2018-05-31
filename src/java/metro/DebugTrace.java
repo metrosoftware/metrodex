@@ -52,7 +52,7 @@ public final class DebugTrace {
                 accountIds.clear();
                 break;
             }
-            accountIds.add(Convert.parseAccountId(accountId));
+            accountIds.add(Convert.parseAccountId(accountId).getLeft());
         }
         final DebugTrace debugTrace = addDebugTrace(accountIds, logName);
         Metro.getBlockchainProcessor().addListener(block -> debugTrace.resetLog(), BlockchainProcessor.Event.RESCAN_BEGIN);
@@ -140,8 +140,8 @@ public final class DebugTrace {
     }
 
     private void trace(Account account, boolean unconfirmed) {
-        if (include(account.getId())) {
-            log(getValues(account.getId(), unconfirmed));
+        if (include(account.getId1())) {
+            log(getValues(account.getId1(), unconfirmed));
         }
     }
 
@@ -258,7 +258,7 @@ public final class DebugTrace {
 
     private Map<String,String> lessorGuaranteedBalance(Account account, long lesseeId) {
         Map<String,String> map = new HashMap<>();
-        map.put("account", Long.toUnsignedString(account.getId()));
+        map.put("account", Long.toUnsignedString(account.getId1()));
         map.put("lessor guaranteed balance", String.valueOf(account.getGuaranteedBalanceMQT()));
         map.put("lessee", Long.toUnsignedString(lesseeId));
         map.put("timestamp", String.valueOf(Metro.getBlockchain().getLastBlock().getTimestamp()));

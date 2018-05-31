@@ -338,6 +338,7 @@ var MRS = (function(MRS, $, undefined) {
 			MRS.sendRequest(accountRequest, requestVariable, function(response, data) {
 				console.log(accountRequest + " response received");
 				if (!response.errorCode) {
+
 					MRS.account = MRS.escapeRespStr(response.account);
 					MRS.accountRS = MRS.escapeRespStr(response.accountRS);
 					if (isPassphraseLogin) {

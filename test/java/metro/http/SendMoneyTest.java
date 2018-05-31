@@ -183,4 +183,20 @@ public class SendMoneyTest extends BlockchainTest {
         Assert.assertEquals(100 * Constants.ONE_MTR, BOB.getBalanceDiff());
         Assert.assertEquals(100 * Constants.ONE_MTR, BOB.getUnconfirmedBalanceDiff());
     }
+
+    @Test
+    public void sendMoney_recipientNoPubKey_success() {
+
+
+    }
+
+    @Test
+    public void sendMoney_recipientNoPubKey_fail() {
+
+    }
+
+    @Test
+    public void sendMoney_recipientHasPubKey_success() {
+
+    }
 }

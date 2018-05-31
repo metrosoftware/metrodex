@@ -131,6 +131,30 @@ public interface DbKey {
 
     }
 
+    abstract class PairKeyFactory<T> extends Factory<T> {
+
+        private final String idColumnA;
+        private final String idColumnB;
+
+        public PairKeyFactory(String idColumnA, String idColumnB) {
+            super(" WHERE " + idColumnA + " = ? AND " + idColumnB + " = ? ",
+                    idColumnA + ", " + idColumnB,
+                    " a." + idColumnA + " = b." + idColumnA + " AND a." + idColumnB + " = b." + idColumnB + " ");
+            this.idColumnA = idColumnA;
+            this.idColumnB = idColumnB;
+        }
+
+        @Override
+        public DbKey newKey(ResultSet rs) throws SQLException {
+            return new LinkKey(rs.getLong(idColumnA), rs.getInt(idColumnB));
+        }
+
+        public DbKey newKey(long idA, int idB) {
+            return new PairKey(idA, idB);
+        }
+
+    }
+
     final class LongKey implements DbKey {
 
         private final long id;
@@ -230,6 +254,52 @@ public interface DbKey {
         @Override
         public boolean equals(Object o) {
             return o instanceof LinkKey && ((LinkKey) o).idA == idA && ((LinkKey) o).idB == idB;
+        }
+
+        @Override
+        public int hashCode() {
+            return (int)(idA ^ (idA >>> 32)) ^ (int)(idB ^ (idB >>> 32));
+        }
+
+    }
+
+    final class PairKey implements DbKey {
+
+        private final long idA;
+        private final int idB;
+
+        private PairKey(long idA, int idB) {
+            this.idA = idA;
+            this.idB = idB;
+        }
+
+        public long[] getId() {
+            return new long[]{idA, idB};
+        }
+
+        public long getIdA() {
+            return idA;
+        }
+
+        public int getIdB() {
+            return idB;
+        }
+
+        @Override
+        public int setPK(PreparedStatement pstmt) throws SQLException {
+            return setPK(pstmt, 1);
+        }
+
+        @Override
+        public int setPK(PreparedStatement pstmt, int index) throws SQLException {
+            pstmt.setLong(index, idA);
+            pstmt.setLong(index + 1, idB);
+            return index + 2;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return o instanceof PairKey && ((PairKey) o).idA == idA && ((PairKey) o).idB == idB;
         }
 
         @Override

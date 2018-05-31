@@ -79,7 +79,7 @@ public class AccountLedger {
             } else {
                 for (String account : ledgerAccounts) {
                     try {
-                        trackAccounts.add(Convert.parseAccountId(account));
+                        trackAccounts.add(Convert.parseAccountId(account).getLeft());
                         Logger.logInfoMessage("Account ledger is tracking account " + account);
                     } catch (RuntimeException e) {
                         Logger.logErrorMessage("Account " + account + " is not valid; ignored");

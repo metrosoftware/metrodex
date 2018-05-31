@@ -25,22 +25,18 @@ import metro.Metro;
 import metro.MetroException;
 import metro.PhasingParams;
 import metro.Transaction;
+import metro.TransactionType;
 import metro.crypto.Crypto;
 import metro.util.Convert;
+import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONStreamAware;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
+import java.util.stream.IntStream;
 
-import static metro.http.JSONResponses.FEATURE_NOT_AVAILABLE;
-import static metro.http.JSONResponses.INCORRECT_DEADLINE;
-import static metro.http.JSONResponses.INCORRECT_EC_BLOCK;
-import static metro.http.JSONResponses.INCORRECT_LINKED_FULL_HASH;
-import static metro.http.JSONResponses.INCORRECT_WHITELIST;
-import static metro.http.JSONResponses.MISSING_DEADLINE;
-import static metro.http.JSONResponses.MISSING_SECRET_PHRASE;
-import static metro.http.JSONResponses.NOT_ENOUGH_FUNDS;
+import static metro.http.JSONResponses.*;
 
 abstract class CreateTransaction extends APIServlet.APIRequestHandler {
 
@@ -55,6 +51,8 @@ abstract class CreateTransaction extends APIServlet.APIRequestHandler {
             "phasingHashedSecret", "phasingHashedSecretAlgorithm",
             "recipientPublicKey",
             "ecBlockId", "ecBlockHeight"};
+    private static final int[] RECIPIENT_PUBKEY_VERIFY_TRANSACTION_TYPES = {TransactionType.Payment.ORDINARY.getType(), TransactionType.Messaging.ARBITRARY_MESSAGE.getType(),
+            TransactionType.ColoredCoins.DIVIDEND_PAYMENT.getType()};
 
     private static String[] addCommonParameters(String[] parameters) {
         String[] result = Arrays.copyOf(parameters, parameters.length + commonParameters.length);
@@ -123,7 +121,7 @@ abstract class CreateTransaction extends APIServlet.APIRequestHandler {
         if (whitelistValues != null && whitelistValues.length > 0) {
             whitelist = new long[whitelistValues.length];
             for (int i = 0; i < whitelistValues.length; i++) {
-                whitelist[i] = Convert.parseAccountId(whitelistValues[i]);
+                whitelist[i] = Convert.parseAccountIdToId1(whitelistValues[i]);
                 if (whitelist[i] == 0) {
                     throw new ParameterException(INCORRECT_WHITELIST);
                 }
@@ -132,17 +130,27 @@ abstract class CreateTransaction extends APIServlet.APIRequestHandler {
         return new PhasingParams(votingModel, holdingId, quorum, minBalance, minBalanceModel, whitelist);
     }
 
+
     final JSONStreamAware createTransaction(HttpServletRequest req, Account senderAccount, long recipientId,
                                             long amountMQT, Attachment attachment) throws MetroException {
         String deadlineValue = req.getParameter("deadline");
         String referencedTransactionFullHash = Convert.emptyToNull(req.getParameter("referencedTransactionFullHash"));
         String secretPhrase = ParameterParser.getSecretPhrase(req, false);
         String publicKeyValue = Convert.emptyToNull(req.getParameter("publicKey"));
+        String recipientString = Convert.emptyToNull(req.getParameter("recipient"));
+        //FIXME
+        //long recipientExtraId = Convert.parseAccountExtraId(recipientString);
         boolean broadcast = !"false".equalsIgnoreCase(req.getParameter("broadcast")) && secretPhrase != null;
         Appendix.EncryptedMessage encryptedMessage = null;
         Appendix.PrunableEncryptedMessage prunableEncryptedMessage = null;
         if (attachment.getTransactionType().canHaveRecipient() && recipientId != 0) {
             Account recipient = Account.getAccount(recipientId);
+//            if (IntStream.of(RECIPIENT_PUBKEY_VERIFY_TRANSACTION_TYPES).anyMatch(value -> value == attachment.getTransactionType().getType())) {
+//                byte[] recipientPubKey = Account.getPublicKey(recipientId);
+//                if (recipientPubKey == null && recipientExtraId == 0) {
+//                    return MISSING_RECIPIENT_PUBLIC_KEY_IN_CHAIN;
+//                }
+//            }
             if ("true".equalsIgnoreCase(req.getParameter("encryptedMessageIsPrunable"))) {
                 prunableEncryptedMessage = (Appendix.PrunableEncryptedMessage) ParameterParser.getEncryptedMessage(req, recipient, true);
             } else {
@@ -205,6 +213,7 @@ abstract class CreateTransaction extends APIServlet.APIRequestHandler {
                     deadline, attachment).referencedTransactionFullHash(referencedTransactionFullHash);
             if (attachment.getTransactionType().canHaveRecipient()) {
                 builder.recipientId(recipientId);
+                builder.recipientId2(recipientExtraId);
             }
             builder.appendix(encryptedMessage);
             builder.appendix(message);

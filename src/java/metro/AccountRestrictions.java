@@ -55,15 +55,15 @@ public final class AccountRestrictions {
             if (phasingParams.getVoteWeighting().getVotingModel() == VotingModel.NONE) {
                 //no voting - remove the control
                 senderAccount.removeControl(ControlType.PHASING_ONLY);
-                PhasingOnly phasingOnly = get(senderAccount.getId());
+                PhasingOnly phasingOnly = get(senderAccount.getId1());
                 phasingOnly.phasingParams = phasingParams;
                 phasingControlTable.delete(phasingOnly);
                 unset(senderAccount);
             } else {
                 senderAccount.addControl(ControlType.PHASING_ONLY);
-                PhasingOnly phasingOnly = get(senderAccount.getId());
+                PhasingOnly phasingOnly = get(senderAccount.getId1());
                 if (phasingOnly == null) {
-                    phasingOnly = new PhasingOnly(senderAccount.getId(), phasingParams, attachment.getMaxFees(),
+                    phasingOnly = new PhasingOnly(senderAccount.getId1(), phasingParams, attachment.getMaxFees(),
                             attachment.getMinDuration(), attachment.getMaxDuration());
                 } else {
                     phasingOnly.phasingParams = phasingParams;
@@ -77,7 +77,7 @@ public final class AccountRestrictions {
 
         static void unset(Account account) {
             account.removeControl(ControlType.PHASING_ONLY);
-            PhasingOnly phasingOnly = get(account.getId());
+            PhasingOnly phasingOnly = get(account.getId1());
             phasingControlTable.delete(phasingOnly);
         }
 
@@ -219,7 +219,7 @@ public final class AccountRestrictions {
             return false;
         }
         return transaction.getType() != TransactionType.AccountControl.SET_PHASING_ONLY &&
-                TransactionType.isDuplicate(TransactionType.AccountControl.SET_PHASING_ONLY, Long.toUnsignedString(senderAccount.getId()),
+                TransactionType.isDuplicate(TransactionType.AccountControl.SET_PHASING_ONLY, Long.toUnsignedString(senderAccount.getId1()),
                         duplicates, true);
     }
 

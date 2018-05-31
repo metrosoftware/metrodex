@@ -1335,9 +1335,6 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
                 BlockImpl previousKeyBlock = blockchain.getLastKeyBlock();
                 BlockImpl previousPosBlock = blockchain.getLastPosBlock();
-                if (previousKeyBlock != null) {
-                    Logger.logInfoMessage("previousLastKeyBlock=" + Convert.toHexString(previousKeyBlock.getBytes()));
-                }
 
                 if (previousPosBlock.getId() != previousBlock.getId() &&
                         (previousKeyBlock == null || previousKeyBlock.getId() != previousBlock.getId())) {

@@ -534,13 +534,16 @@ public final class TransactionImpl implements Transaction {
             if (signature == null && !getType().isCoinbase()) {
                 throw new IllegalStateException("Transaction is not signed yet");
             }
-            byte[] data = zeroSignature(getBytes());
             MessageDigest digest = Consensus.HASH_FUNCTION.messageDigest();
+            byte[] data = getBytes();
+            int start = signatureOffset(), end = data.length - 64;
+            digest.update(data, 0, start);
+            digest.update(data, start + 64, end - start);
+
             if (getType().isCoinbase()) {
-                fullHash = digest.digest(data);
+                fullHash = digest.digest();
             } else {
-                byte[] signatureHash = digest.digest(signature);
-                digest.update(data);
+                byte[] signatureHash = Consensus.HASH_FUNCTION.hash(signature);
                 fullHash = digest.digest(signatureHash);
             }
 

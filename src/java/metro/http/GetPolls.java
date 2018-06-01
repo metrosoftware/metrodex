@@ -18,6 +18,7 @@
 package metro.http;
 
 
+import metro.Account;
 import metro.Metro;
 import metro.MetroException;
 import metro.Poll;
@@ -39,7 +40,7 @@ public class GetPolls extends APIServlet.APIRequestHandler {
 
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
-        long accountId = ParameterParser.getAccountId(req, "account", false);
+        Account.FullId accountId = ParameterParser.getAccountFullId(req, "account", false);
         boolean includeFinished = "true".equalsIgnoreCase(req.getParameter("includeFinished"));
         boolean finishedOnly = "true".equalsIgnoreCase(req.getParameter("finishedOnly"));
         int firstIndex = ParameterParser.getFirstIndex(req);
@@ -49,7 +50,7 @@ public class GetPolls extends APIServlet.APIRequestHandler {
         JSONArray pollsJson = new JSONArray();
         DbIterator<Poll> polls = null;
         try {
-            if (accountId == 0) {
+            if (accountId == null) {
                 if (finishedOnly) {
                     polls = Poll.getPollsFinishingAtOrBefore(Metro.getBlockchain().getHeight(), firstIndex, lastIndex);
                 } else if (includeFinished) {
@@ -58,7 +59,7 @@ public class GetPolls extends APIServlet.APIRequestHandler {
                     polls = Poll.getActivePolls(firstIndex, lastIndex);
                 }
             } else {
-                polls = Poll.getPollsByAccount(accountId, includeFinished, finishedOnly, firstIndex, lastIndex);
+                polls = Poll.getPollsByAccount(accountId.getLeft(), includeFinished, finishedOnly, firstIndex, lastIndex);
             }
             while (polls.hasNext()) {
                 Poll poll = polls.next();

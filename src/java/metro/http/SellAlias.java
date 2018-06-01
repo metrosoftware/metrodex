@@ -47,19 +47,19 @@ public final class SellAlias extends CreateTransaction {
         long priceMQT = ParameterParser.getLong(req, "priceMQT", 0L, Constants.MAX_BALANCE_MQT, true);
 
         String recipientValue = Convert.emptyToNull(req.getParameter("recipient"));
-        long recipientId = 0;
+        Account.FullId recipientId = null;
         if (recipientValue != null) {
             try {
-                recipientId = Convert.parseAccountId(recipientValue);
+                recipientId = Account.FullId.fromStrId(recipientValue);
             } catch (RuntimeException e) {
                 return INCORRECT_RECIPIENT;
             }
-            if (recipientId == 0) {
+            if (recipientId == null) {
                 return INCORRECT_RECIPIENT;
             }
         }
 
-        if (alias.getAccountId() != owner.getId1()) {
+        if (alias.getAccountId() != owner.getId()) {
             return INCORRECT_ALIAS_OWNER;
         }
 

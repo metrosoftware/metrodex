@@ -32,6 +32,7 @@ import metro.util.Listeners;
 import metro.util.Logger;
 import metro.util.ThreadPool;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONStreamAware;
@@ -1428,7 +1429,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         }
         if (block.getTimestamp() > curTime + Constants.MAX_TIMEDRIFT) {
             Logger.logWarningMessage("Received block " + block.getStringId() + " from the future, timestamp " + block.getTimestamp()
-                    + " generator " + Long.toUnsignedString(block.getGeneratorId()) + " current time " + curTime + ", system clock may be off");
+                    + " generator " + block.getGeneratorFullId().toString() + " current time " + curTime + ", system clock may be off");
             throw new BlockOutOfOrderException("Invalid timestamp: " + block.getTimestamp()
                     + " current time is " + curTime, block);
         }
@@ -1476,7 +1477,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             }
         }
         if (!block.verifyGenerationSequence() && !Generator.allowsFakeForging(block.getGeneratorPublicKey())) {
-            Account generatorAccount = Account.getAccount(block.getGeneratorId());
+            Account generatorAccount = Account.getAccount(block.getGeneratorFullId());
             long generatorBalance = generatorAccount == null ? 0 : generatorAccount.getEffectiveBalanceMTR();
             throw new BlockNotAcceptedException("Generation sequence verification failed, effective balance " + generatorBalance, block);
         }
@@ -1519,13 +1520,13 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         if (!tx.getType().isCoinbase()) {
             throw new TransactionNotAcceptedException("First tx should be coinbase", tx);
         }
-        if (tx.getSenderId() != block.getGeneratorId() || tx.getSenderId() != tx.getRecipientId()) {
+        if (!tx.getSenderFullId().equals(block.getGeneratorFullId()) || tx.getSenderId() != tx.getRecipientId()) {
             throw new TransactionNotAcceptedException("Coinbase sender and recipient should be equal to block generator", tx);
         }
 
-        Map<Long, Long> recipients = coinbaseRecipients(block.getGeneratorPublicKey(), block.getTransactions(), block.isKeyBlock(), block.getLocalHeight());
+        Map<Account.FullId, Long> recipients = coinbaseRecipients(block.getGeneratorPublicKey(), block.getTransactions(), block.isKeyBlock(), block.getLocalHeight());
         Attachment.CoinbaseRecipientsAttachment attachment = (Attachment.CoinbaseRecipientsAttachment)tx.getAttachment();
-        for (Long recipient: attachment.getRecipients().keySet()) {
+        for (Account.FullId recipient: attachment.getRecipients().keySet()) {
             if (!recipients.containsKey(recipient)) {
                 throw new TransactionNotAcceptedException("Coinbase recipient " + recipient + " is absent.", tx);
             }
@@ -1870,9 +1871,9 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     }
 
 
-    private Map<Long, Long> coinbaseRecipients(byte[] publicKey, List<? extends Transaction> blockTransactions,
+    private Map<Account.FullId, Long> coinbaseRecipients(byte[] publicKey, List<? extends Transaction> blockTransactions,
                                                boolean isKeyBlock, int localHeight) {
-        Map<Long, Long> recipients = new HashMap<>();
+        Map<Account.FullId, Long> recipients = new HashMap<>();
         long totalReward = isKeyBlock ? Consensus.getBlockSubsidy(localHeight) : 0;
         long totalBackFees = 0;
         long[] backFees = new long[3];
@@ -1901,7 +1902,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                     break;
                 }
                 totalBackFees += backFees[i];
-                Long previousGenerator = BlockDb.findBlockAtLocalHeight(localHeight - i - 1, false).getGeneratorId();
+                Account.FullId previousGenerator = BlockDb.findBlockAtLocalHeight(localHeight - i - 1, false).getGeneratorFullId();
                 Logger.logDebugMessage("Back fees %f %s to forger at POS height %d", ((double) backFees[i]) / Constants.ONE_MTR, Constants.COIN_SYMBOL, localHeight - i - 1);
                 long reward = backFees[i];
                 if (recipients.containsKey(previousGenerator)) {
@@ -1911,21 +1912,22 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 //previousGeneratorAccount.addToForgedBalanceMQT(backFees[i]);
             }
         }
-        Long generator = Account.getId(publicKey);
+        Account.FullId generator = Account.FullId.fromPublicKey(publicKey);
         recipients.put(generator, totalReward + (recipients.containsKey(generator) ? recipients.get(generator) : 0) - totalBackFees);
         return recipients;
     }
 
 
 
-    private TransactionImpl buildCoinbase(byte[] generatorPubKey, long timestamp, List<TransactionImpl> blockTransactions,
+    private TransactionImpl buildCoinbase(byte[] publicKey, long timestamp, List<TransactionImpl> blockTransactions,
                                           boolean isKeyBlock, int localHeight) {
-        long generatorId = Convert.publicKeyToId(generatorPubKey);
+        byte[] publicKeyHash = Crypto.sha256().digest(publicKey);
+        Account.FullId generatorId = Account.FullId.fromFullHash(publicKeyHash);
         short COINBASE_DEADLINE = 1;
-        Map<Long, Long> recipients = coinbaseRecipients(generatorPubKey, blockTransactions, isKeyBlock, localHeight);
-        Transaction.Builder builder = Metro.newTransactionBuilder(generatorPubKey, 0, 0L, COINBASE_DEADLINE, new Attachment.CoinbaseRecipientsAttachment(recipients, true));
+        Map<Account.FullId, Long> recipients = coinbaseRecipients(publicKey, blockTransactions, isKeyBlock, localHeight);
+        Transaction.Builder builder = Metro.newTransactionBuilder(publicKey, 0, 0L, COINBASE_DEADLINE, new Attachment.CoinbaseRecipientsAttachment(recipients, true));
         builder.timestamp(timestamp);
-        builder.recipientId(generatorId);
+        builder.recipientFullId(generatorId);
         try {
             return (TransactionImpl)builder.build();
         } catch (MetroException.NotValidException e) {
@@ -1993,7 +1995,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         try {
             pushBlock(block);
             blockListeners.notify(block, Event.BLOCK_GENERATED);
-            Logger.logDebugMessage("Account " + Long.toUnsignedString(block.getGeneratorId()) + " generated block " + block.getStringId()
+            Logger.logDebugMessage("Account " + block.getGeneratorFullId().toString() + " generated block " + block.getStringId()
                     + " at height " + block.getHeight() + " timestamp " + block.getTimestamp() + " fee " + ((float)block.getRewardMQT())/Constants.ONE_MTR);
         } catch (TransactionNotAcceptedException e) {
             Logger.logDebugMessage("Generate block failed: " + e.getMessage());

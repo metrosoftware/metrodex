@@ -23,6 +23,7 @@ import metro.util.BitcoinJUtils;
 import metro.util.Convert;
 import metro.util.Filter;
 import metro.util.ReadWriteUpdateLock;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -464,8 +465,8 @@ final class BlockchainImpl implements Blockchain {
         long rewardMQT = 0L;
         TransactionImpl coinbase = transactions.get(0);
         Attachment.CoinbaseRecipientsAttachment attachment = (Attachment.CoinbaseRecipientsAttachment)coinbase.getAttachment();
-        Map<Long, Long> coinbaseRewards = attachment.getRecipients();
-        for (long id: coinbaseRewards.keySet()) {
+        Map<Account.FullId, Long> coinbaseRewards = attachment.getRecipients();
+        for (Account.FullId id: coinbaseRewards.keySet()) {
             rewardMQT += coinbaseRewards.get(id);
         }
 

@@ -19,11 +19,15 @@ package metro;
 
 import metro.MetroException.ValidationException;
 import metro.util.Convert;
+import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Class for handling phasing parameters shared between {@link Appendix.Phasing} and {@link AccountRestrictions.PhasingOnly}
@@ -31,7 +35,7 @@ import java.util.Arrays;
 public final class PhasingParams {
 
     private final long quorum;
-    private final long[] whitelist;
+    private final List<Account.FullId> whitelist;
     private final VoteWeighting voteWeighting;
     
     PhasingParams(ByteBuffer buffer) {
@@ -39,13 +43,14 @@ public final class PhasingParams {
         quorum = buffer.getLong();
         long minBalance = buffer.getLong();
         byte whitelistSize = buffer.get();
+        whitelist = new ArrayList<>();
         if (whitelistSize > 0) {
-            whitelist = new long[whitelistSize];
+
             for (int i = 0; i < whitelistSize; i++) {
-                whitelist[i] = buffer.getLong();
+                byte[] fullIdBytes = new byte[Account.FullId.BYTES_SIZE];
+                buffer.get(fullIdBytes);
+                whitelist.add(Account.FullId.fromBytes(fullIdBytes));
             }
-        } else {
-            whitelist = Convert.EMPTY_LONG;
         }
         long holdingId = buffer.getLong();
         byte minBalanceModel = buffer.get();
@@ -58,38 +63,37 @@ public final class PhasingParams {
         byte votingModel = ((Long) attachmentData.get("phasingVotingModel")).byteValue();
         long holdingId = Convert.parseUnsignedLong((String) attachmentData.get("phasingHolding"));
         JSONArray whitelistJson = (JSONArray) (attachmentData.get("phasingWhitelist"));
+        whitelist = new ArrayList<>();
         if (whitelistJson != null && whitelistJson.size() > 0) {
-            whitelist = new long[whitelistJson.size()];
-            for (int i = 0; i < whitelist.length; i++) {
-                whitelist[i] = Convert.parseUnsignedLong((String) whitelistJson.get(i));
+            for (int i = 0; i < whitelist.size(); i++) {
+                whitelist.add(Account.FullId.fromStrId((String) whitelistJson.get(i)));
             }
-        } else {
-            whitelist = Convert.EMPTY_LONG;
         }
         byte minBalanceModel = ((Long) attachmentData.get("phasingMinBalanceModel")).byteValue();
         voteWeighting = new VoteWeighting(votingModel, holdingId, minBalance, minBalanceModel);
     }
     
-    public PhasingParams(byte votingModel, long holdingId, long quorum, long minBalance, byte minBalanceModel, long[] whitelist) {
+    public PhasingParams(byte votingModel, long holdingId, long quorum, long minBalance, byte minBalanceModel, List<Account.FullId> whitelist) {
         this.quorum = quorum;
-        this.whitelist = Convert.nullToEmpty(whitelist);
-        if (this.whitelist.length > 0) {
-            Arrays.sort(this.whitelist);
+        //FIXME #220
+        this.whitelist = whitelist == null ? new ArrayList<>() : whitelist;
+        if (this.whitelist.size() > 0) {
+            Collections.sort(this.whitelist);
         }
         voteWeighting = new VoteWeighting(votingModel, holdingId, minBalance, minBalanceModel);
     }
     
     int getMySize() {
-        return 1 + 8 + 8 + 1 + 8 * whitelist.length + 8 + 1;
+        return 1 + 8 + 8 + 1 + 12 * whitelist.size() + 8 + 1;
     }
     
     void putMyBytes(ByteBuffer buffer) {
         buffer.put(voteWeighting.getVotingModel().getCode());
         buffer.putLong(quorum);
         buffer.putLong(voteWeighting.getMinBalance());
-        buffer.put((byte) whitelist.length);
-        for (long account : whitelist) {
-            buffer.putLong(account);
+        buffer.put((byte) whitelist.size());
+        for (Account.FullId fullId : whitelist) {
+            fullId.putMyBytes(buffer);
         }
         buffer.putLong(voteWeighting.getHoldingId());
         buffer.put(voteWeighting.getMinBalanceModel().getCode());
@@ -101,30 +105,30 @@ public final class PhasingParams {
         json.put("phasingVotingModel", voteWeighting.getVotingModel().getCode());
         json.put("phasingHolding", Long.toUnsignedString(voteWeighting.getHoldingId()));
         json.put("phasingMinBalanceModel", voteWeighting.getMinBalanceModel().getCode());
-        if (whitelist.length > 0) {
+        if (whitelist.size() > 0) {
             JSONArray whitelistJson = new JSONArray();
-            for (long accountId : whitelist) {
-                whitelistJson.add(Long.toUnsignedString(accountId));
+            for (Account.FullId accountId : whitelist) {
+                whitelistJson.add(accountId.toString());
             }
             json.put("phasingWhitelist", whitelistJson);
         }
     }
 
     void validate() throws ValidationException {
-        if (whitelist.length > Constants.MAX_PHASING_WHITELIST_SIZE) {
+        if (whitelist.size() > Constants.MAX_PHASING_WHITELIST_SIZE) {
             throw new MetroException.NotValidException("Whitelist is too big");
         }
 
-        long previousAccountId = 0;
-        for (long accountId : whitelist) {
-            if (accountId == 0) {
+        Account.FullId previousAccountId = null;
+        for (Account.FullId accountId : whitelist) {
+            if (accountId == null || accountId.getLeft() == 0) {
                 throw new MetroException.NotValidException("Invalid accountId 0 in whitelist");
             }
-            if (previousAccountId != 0 && accountId < previousAccountId) {
-                throw new MetroException.NotValidException("Whitelist not sorted " + Arrays.toString(whitelist));
+            if (previousAccountId != null && accountId.compareTo(previousAccountId) < 0 ) {
+                throw new MetroException.NotValidException("Whitelist not sorted " + Arrays.toString(whitelist.toArray()));
             }
-            if (accountId == previousAccountId) {
-                throw new MetroException.NotValidException("Duplicate accountId " + Long.toUnsignedString(accountId) + " in whitelist");
+            if (accountId.equals(previousAccountId)) {
+                throw new MetroException.NotValidException("Duplicate accountId " + Long.toUnsignedString(accountId.getLeft()) + " in whitelist");
             }
             previousAccountId = accountId;
         }
@@ -137,14 +141,14 @@ public final class PhasingParams {
             if (quorum != 0) {
                 throw new MetroException.NotValidException("Quorum must be 0 for no-voting phased transaction");
             }
-            if (whitelist.length != 0) {
+            if (whitelist.size() != 0) {
                 throw new MetroException.NotValidException("No whitelist needed for no-voting phased transaction");
             }
         }
 
-        if (voteWeighting.getVotingModel() == VoteWeighting.VotingModel.ACCOUNT && whitelist.length > 0 && quorum > whitelist.length) {
+        if (voteWeighting.getVotingModel() == VoteWeighting.VotingModel.ACCOUNT && whitelist.size() > 0 && quorum > whitelist.size()) {
             throw new MetroException.NotValidException("Quorum of " + quorum + " cannot be achieved in by-account voting with whitelist of length "
-                    + whitelist.length);
+                    + whitelist.size());
         }
 
         voteWeighting.validate();
@@ -175,7 +179,7 @@ public final class PhasingParams {
         return quorum;
     }
 
-    public long[] getWhitelist() {
+    public List<Account.FullId> getWhitelist() {
         return whitelist;
     }
 
@@ -191,15 +195,15 @@ public final class PhasingParams {
         PhasingParams other = (PhasingParams)obj;
         return other.quorum == this.quorum
                 && other.voteWeighting.equals(this.voteWeighting)
-                && Arrays.equals(other.whitelist, this.whitelist);
+                && this.whitelist.equals(other.whitelist);
     }
     
     @Override
     public int hashCode() {
         int hashCode = 17;
         hashCode = 31 * hashCode + Long.hashCode(quorum);
-        for (long voter : whitelist) {
-            hashCode = 31 * hashCode + Long.hashCode(voter);
+        for (Account.FullId voter : whitelist) {
+            hashCode = 31 * hashCode + voter.hashCode();
         }
         hashCode = 31 * hashCode + voteWeighting.hashCode();
         return hashCode;

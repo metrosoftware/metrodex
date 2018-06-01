@@ -159,7 +159,7 @@ public class DesktopSystemTray {
 
         StringBuilder generators = new StringBuilder();
         for (Generator generator : allGenerators) {
-            generators.append(Convert.rsAccount(generator.getAccountId())).append(' ');
+            generators.append(generator.getAccountFullId().toRS()).append(' ');
         }
         Object optionPaneBackground = UIManager.get("OptionPane.background");
         UIManager.put("OptionPane.background", Color.WHITE);

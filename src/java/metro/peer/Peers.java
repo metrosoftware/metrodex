@@ -767,7 +767,7 @@ public final class Peers {
 
     static {
         Account.addListener(account -> peers.values().forEach(peer -> {
-            if (peer.getHallmark() != null && peer.getHallmark().getAccountId() == account.getId1()) {
+            if (peer.getHallmark() != null && peer.getHallmark().getAccountId() == account.getId()) {
                 Peers.listeners.notify(peer, Event.WEIGHT);
             }
         }), Account.Event.BALANCE);

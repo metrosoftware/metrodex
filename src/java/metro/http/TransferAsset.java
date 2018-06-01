@@ -21,6 +21,7 @@ import metro.Account;
 import metro.Asset;
 import metro.Attachment;
 import metro.MetroException;
+import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONStreamAware;
 
 import javax.servlet.http.HttpServletRequest;
@@ -38,7 +39,7 @@ public final class TransferAsset extends CreateTransaction {
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
 
-        long recipient = ParameterParser.getAccountId(req, "recipient", true);
+        Account.FullId recipient = ParameterParser.getAccountFullId(req, "recipient", true);
 
         Asset asset = ParameterParser.getAsset(req);
         long quantityQNT = ParameterParser.getQuantityQNT(req);

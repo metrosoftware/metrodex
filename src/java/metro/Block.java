@@ -83,6 +83,8 @@ public interface Block {
 
     byte[] getBytes();
 
+    Account.FullId getGeneratorFullId();
+
     JSONObject getJSONObject();
 
     BigInteger getDifficultyTargetAsInteger();

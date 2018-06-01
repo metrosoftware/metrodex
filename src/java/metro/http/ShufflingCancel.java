@@ -36,10 +36,11 @@ public final class ShufflingCancel extends CreateTransaction {
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
         Shuffling shuffling = ParameterParser.getShuffling(req);
-        long cancellingAccountId = ParameterParser.getAccountId(req, "cancellingAccount", false);
+        Account.FullId cancellingAccountId = ParameterParser.getAccountFullId(req, "cancellingAccount", false);
         byte[] shufflingStateHash = ParameterParser.getBytes(req, "shufflingStateHash", true);
         String secretPhrase = ParameterParser.getSecretPhrase(req, true);
-        Attachment.ShufflingCancellation attachment = shuffling.revealKeySeeds(secretPhrase, cancellingAccountId, shufflingStateHash);
+        long id = cancellingAccountId != null ? cancellingAccountId.getLeft() : 0;
+        Attachment.ShufflingCancellation attachment = shuffling.revealKeySeeds(secretPhrase, id, shufflingStateHash);
         Account account = ParameterParser.getSenderAccount(req);
         return createTransaction(req, account, attachment);
     }

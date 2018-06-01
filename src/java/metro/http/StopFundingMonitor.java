@@ -59,25 +59,25 @@ public class StopFundingMonitor extends APIServlet.APIRequestHandler {
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws ParameterException {
         String secretPhrase = ParameterParser.getSecretPhrase(req, false);
-        long accountId = ParameterParser.getAccountId(req, false);
+        Account.FullId accountId = ParameterParser.getAccountFullId(req, false);
         JSONObject response = new JSONObject();
         if (secretPhrase == null) {
             API.verifyPassword(req);
         }
-        if (secretPhrase != null || accountId != 0) {
+        if (secretPhrase != null || accountId != null) {
             if (secretPhrase != null) {
-                if (accountId != 0) {
-                    if (Account.getId(Crypto.getPublicKey(secretPhrase)) != accountId) {
+                if (accountId != null) {
+                    if (!Account.FullId.fromSecretPhrase(secretPhrase).equals(accountId)) {
                         return JSONResponses.INCORRECT_ACCOUNT;
                     }
                 } else {
-                    accountId = Account.getId(Crypto.getPublicKey(secretPhrase));
+                    accountId = Account.FullId.fromSecretPhrase(secretPhrase);
                 }
             }
             HoldingType holdingType = ParameterParser.getHoldingType(req);
             long holdingId = ParameterParser.getHoldingId(req, holdingType);
             String property = ParameterParser.getAccountProperty(req, true);
-            boolean stopped = FundingMonitor.stopMonitor(holdingType, holdingId, property, accountId);
+            boolean stopped = FundingMonitor.stopMonitor(holdingType, holdingId, property, accountId.getLeft());
             response.put("stopped", stopped ? 1 : 0);
         } else {
             int count = FundingMonitor.stopAllMonitors();

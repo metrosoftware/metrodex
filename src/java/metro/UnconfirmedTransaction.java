@@ -129,6 +129,11 @@ class UnconfirmedTransaction implements Transaction {
     }
 
     @Override
+    public Account.FullId getSenderFullId() {
+        return transaction.getSenderFullId();
+    }
+
+    @Override
     public long getRecipientId() {
         return transaction.getRecipientId();
     }
@@ -166,6 +171,16 @@ class UnconfirmedTransaction implements Transaction {
     @Override
     public long getExpiration() {
         return transaction.getExpiration();
+    }
+
+    @Override
+    public int getRecipientId2() {
+        return transaction.getRecipientId2();
+    }
+
+    @Override
+    public Account.FullId getRecipientFullId() {
+        return transaction.getRecipientFullId();
     }
 
     @Override
@@ -241,6 +256,11 @@ class UnconfirmedTransaction implements Transaction {
     @Override
     public int getFullSize() {
         return transaction.getFullSize();
+    }
+
+    @Override
+    public int getSenderId2() {
+        return transaction.getSenderId2();
     }
 
     @Override

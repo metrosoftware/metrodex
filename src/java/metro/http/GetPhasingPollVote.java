@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.MetroException;
 import metro.PhasingVote;
 import metro.util.JSON;
@@ -34,9 +35,9 @@ public class GetPhasingPollVote extends APIServlet.APIRequestHandler  {
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
         long transactionId = ParameterParser.getUnsignedLong(req, "transaction", true);
-        long accountId = ParameterParser.getAccountId(req, true);
+        Account.FullId accountId = ParameterParser.getAccountFullId(req, true);
 
-        PhasingVote phasingVote = PhasingVote.getVote(transactionId, accountId);
+        PhasingVote phasingVote = PhasingVote.getVote(transactionId, accountId.getLeft());
         if (phasingVote != null) {
             return JSONData.phasingPollVote(phasingVote);
         }

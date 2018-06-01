@@ -45,7 +45,7 @@ public final class GetAccountLessors extends APIServlet.APIRequestHandler {
         }
 
         JSONObject response = new JSONObject();
-        JSONData.putAccount(response, "account", account.getId1());
+        JSONData.putAccount(response, "account", account.getFullId());
         response.put("height", height);
         JSONArray lessorsJSON = new JSONArray();
 
@@ -54,7 +54,7 @@ public final class GetAccountLessors extends APIServlet.APIRequestHandler {
                 while (lessors.hasNext()) {
                     Account lessor = lessors.next();
                     JSONObject lessorJSON = new JSONObject();
-                    JSONData.putAccount(lessorJSON, "lessor", lessor.getId1());
+                    JSONData.putAccount(lessorJSON, "lessor", lessor.getFullId());
                     // TODO #173
                     lessorJSON.put("guaranteedBalanceMQT", String.valueOf(lessor.getGuaranteedBalanceMQT(height - Metro.getBlockchain().getGuaranteedBalanceHeight(height), height)));
                     lessorsJSON.add(lessorJSON);

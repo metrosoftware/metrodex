@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.Block;
 import metro.Metro;
 import metro.MetroException;
@@ -38,13 +39,13 @@ public final class GetAccountBlockIds extends APIServlet.APIRequestHandler {
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
 
-        long accountId = ParameterParser.getAccountId(req, true);
+        Account.FullId accountId = ParameterParser.getAccountFullId(req, true);
         long timestamp = ParameterParser.getTimestamp(req);
         int firstIndex = ParameterParser.getFirstIndex(req);
         int lastIndex = ParameterParser.getLastIndex(req);
 
         JSONArray blockIds = new JSONArray();
-        try (DbIterator<? extends Block> iterator = Metro.getBlockchain().getBlocks(accountId, timestamp, firstIndex, lastIndex, false)) {
+        try (DbIterator<? extends Block> iterator = Metro.getBlockchain().getBlocks(accountId.getLeft(), timestamp, firstIndex, lastIndex, false)) {
             while (iterator.hasNext()) {
                 Block block = iterator.next();
                 blockIds.add(block.getStringId());

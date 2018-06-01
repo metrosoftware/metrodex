@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.AccountLedger;
 import metro.AccountLedger.LedgerEntry;
 import metro.Block;
@@ -223,12 +224,12 @@ class EventListener implements Runnable, AsyncListener, TransactionalDb.Transact
                 while (it.hasNext()) {
                     MetroEventListener listener = it.next();
                     if (listener.getEvent() == event.getEvent()) {
-                        long accountId = listener.getAccountId();
-                        if (accountId == event.getAccountId() || accountId == 0) {
+                        Account.FullId accountId = listener.getAccountId();
+                        if (accountId == event.getAccountId() || accountId == null) {
                             addListener = false;
                             break;
                         }
-                        if (event.getAccountId() == 0) {
+                        if (event.getAccountId() == null) {
                             listener.removeListener();
                             it.remove();
                         }
@@ -265,7 +266,7 @@ class EventListener implements Runnable, AsyncListener, TransactionalDb.Transact
                 while (it.hasNext()) {
                     MetroEventListener listener = it.next();
                     if (listener.getEvent() == event.getEvent() &&
-                            (listener.getAccountId() == event.getAccountId() || event.getAccountId() == 0)) {
+                            (listener.getAccountId() == event.getAccountId() || event.getAccountId() == null)) {
                         listener.removeListener();
                         it.remove();
                     }
@@ -658,7 +659,7 @@ class EventListener implements Runnable, AsyncListener, TransactionalDb.Transact
          *
          * @return                  Account identifier
          */
-        public long getAccountId() {
+        public Account.FullId getAccountId() {
             return eventHandler.getAccountId();
         }
 
@@ -707,7 +708,7 @@ class EventListener implements Runnable, AsyncListener, TransactionalDb.Transact
             protected final EventListener owner;
 
             /** Account identifier */
-            protected final long accountId;
+            protected final Account.FullId accountId;
 
             /** Metro listener event */
             protected final Enum<? extends Enum> event;
@@ -737,7 +738,7 @@ class EventListener implements Runnable, AsyncListener, TransactionalDb.Transact
              *
              * @return                  Account identifier
              */
-            public long getAccountId() {
+            public Account.FullId getAccountId() {
                 return accountId;
             }
 
@@ -979,9 +980,9 @@ class EventListener implements Runnable, AsyncListener, TransactionalDb.Transact
              */
             @Override
             public void notify(LedgerEntry entry) {
-                if (entry.getAccountId() == accountId || accountId == 0)
+                if (accountId == null || entry.getAccountId() == accountId.getLeft())
                     dispatch(new PendingEvent(String.format("Ledger.%s.%s",
-                                event.name(), Convert.rsAccount(entry.getAccountId())),
+                                event.name(), entry.getAccountId()),
                                 Long.toUnsignedString(entry.getLedgerId())));
             }
         }
@@ -996,7 +997,7 @@ class EventListener implements Runnable, AsyncListener, TransactionalDb.Transact
         private final Enum<? extends Enum> event;
 
         /** Account identifier */
-        private final long accountId;
+        private final Account.FullId accountId;
 
         /**
          * Create the event registration
@@ -1004,7 +1005,7 @@ class EventListener implements Runnable, AsyncListener, TransactionalDb.Transact
          * @param   event           Metro listener event
          * @param   accountId       Account identifier
          */
-        EventRegistration(Enum<? extends Enum> event, long accountId) {
+        EventRegistration(Enum<? extends Enum> event, Account.FullId accountId) {
             this.event = event;
             this.accountId = accountId;
         }
@@ -1023,7 +1024,7 @@ class EventListener implements Runnable, AsyncListener, TransactionalDb.Transact
          *
          * @return                  Account identifier
          */
-        public long getAccountId() {
+        public Account.FullId getAccountId() {
             return accountId;
         }
     }

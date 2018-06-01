@@ -33,7 +33,6 @@ import metro.crypto.EncryptedData;
 import metro.util.Convert;
 import metro.util.Logger;
 import metro.util.Search;
-import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
@@ -181,11 +180,11 @@ public final class ParameterParser {
         return Convert.parseHexString(paramValue);
     }
 
-    public static long getAccountId(HttpServletRequest req, boolean isMandatory) throws ParameterException {
-        return getAccountId(req, "account", isMandatory);
+    public static Account.FullId getAccountFullId(HttpServletRequest req, boolean isMandatory) throws ParameterException {
+        return getAccountFullId(req, "account", isMandatory);
     }
 
-    public static Pair<Long, Integer> getAccountId(HttpServletRequest req, String name, boolean isMandatory) throws ParameterException {
+    public static Account.FullId getAccountFullId(HttpServletRequest req, String name, boolean isMandatory) throws ParameterException {
         String paramValue = Convert.emptyToNull(req.getParameter(name));
         if (paramValue == null) {
             if (isMandatory) {
@@ -194,7 +193,7 @@ public final class ParameterParser {
             return null;
         }
         try {
-            Pair<Long, Integer> value = Convert.parseAccountId(paramValue);
+            Account.FullId value = Account.FullId.fromStrId(paramValue);
             if (value == null) {
                 throw new ParameterException(incorrect(name));
             }
@@ -204,23 +203,23 @@ public final class ParameterParser {
         }
     }
 
-    public static long[] getAccountIds(HttpServletRequest req, boolean isMandatory) throws ParameterException {
+    public static Account.FullId[] getAccountIds(HttpServletRequest req, boolean isMandatory) throws ParameterException {
         String[] paramValues = req.getParameterValues("account");
         if (paramValues == null || paramValues.length == 0) {
             if (isMandatory) {
                 throw new ParameterException(MISSING_ACCOUNT);
             } else {
-                return Convert.EMPTY_LONG;
+                return Convert.EMPTY_FULL_ID;
             }
         }
-        long[] values = new long[paramValues.length];
+        Account.FullId[] values = new Account.FullId[paramValues.length];
         try {
             for (int i = 0; i < paramValues.length; i++) {
                 if (paramValues[i] == null || paramValues[i].isEmpty()) {
                     throw new ParameterException(INCORRECT_ACCOUNT);
                 }
-                values[i] = Convert.parseAccountId(paramValues[i]);
-                if (values[i] == 0) {
+                values[i] = Account.FullId.fromStrId(paramValues[i]);
+                if (values[i] == null) {
                     throw new ParameterException(INCORRECT_ACCOUNT);
                 }
             }
@@ -410,13 +409,13 @@ public final class ParameterParser {
     }
 
     public static Account getAccount(HttpServletRequest req, boolean isMandatory) throws ParameterException {
-        long accountId = getAccountId(req, "account", isMandatory);
-        if (accountId == 0 && !isMandatory) {
+        Account.FullId accountFullId = getAccountFullId(req, "account", isMandatory);
+        if (accountFullId == null && !isMandatory) {
             return null;
         }
-        Account account = Account.getAccount(accountId);
+        Account account = Account.getAccount(accountFullId);
         if (account == null) {
-            throw new ParameterException(JSONResponses.unknownAccount(accountId));
+            throw new ParameterException(JSONResponses.unknownAccount(accountFullId));
         }
         return account;
     }
@@ -432,7 +431,7 @@ public final class ParameterParser {
                 continue;
             }
             try {
-                Account account = Account.getAccount(Convert.parseAccountId(accountValue));
+                Account account = Account.getAccount(Account.FullId.fromStrId(accountValue));
                 if (account == null) {
                     throw new ParameterException(UNKNOWN_ACCOUNT);
                 }
@@ -646,7 +645,7 @@ public final class ParameterParser {
             }
 
             if (recipient != null) {
-                recipientPublicKey = Account.getPublicKey(recipient.getId1());
+                recipientPublicKey = Account.getPublicKey(recipient.getId());
             }
             if (recipientPublicKey == null) {
                 recipientPublicKey = Convert.parseHexString(Convert.emptyToNull(req.getParameter("recipientPublicKey")));

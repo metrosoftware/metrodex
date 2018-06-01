@@ -99,14 +99,14 @@ public final class TransactionImpl implements Transaction {
             return build(null);
         }
 
-        public BuilderImpl recipientId(long recipientId) {
-            this.recipientId = recipientId;
+        public BuilderImpl recipientFullId(long id1, int id2) {
+            this.recipientId = id1;
+            this.recipientId2 = id2;
             return this;
         }
 
-        public BuilderImpl recipientId2(int recipientId2) {
-            this.recipientId2 = recipientId2;
-            return this;
+        public BuilderImpl recipientFullId(Account.FullId recipientFullId) {
+            return recipientFullId(recipientFullId.getLeft(), recipientFullId.getRight());
         }
 
         @Override
@@ -212,6 +212,11 @@ public final class TransactionImpl implements Transaction {
             return this;
         }
 
+        BuilderImpl senderId2(int senderId2) {
+            this.senderId2 = senderId2;
+            return this;
+        }
+
         BuilderImpl fullHash(byte[] fullHash) {
             this.fullHash = fullHash;
             return this;
@@ -263,6 +268,8 @@ public final class TransactionImpl implements Transaction {
     private volatile String stringId;
     private volatile long senderId;
     private volatile int senderId2;
+    private volatile Account.FullId senderFullId;
+    private volatile Account.FullId recipientFullId;
     private volatile byte[] fullHash;
     private volatile DbKey dbKey;
     private volatile byte[] bytes = null;
@@ -364,6 +371,19 @@ public final class TransactionImpl implements Transaction {
     @Override
     public long getRecipientId() {
         return recipientId;
+    }
+
+    @Override
+    public int getRecipientId2() {
+        return recipientId2;
+    }
+
+    @Override
+    public Account.FullId getRecipientFullId() {
+        if (recipientFullId == null) {
+            recipientFullId = new Account.FullId(recipientId, recipientId2);
+        }
+        return recipientFullId;
     }
 
     @Override
@@ -557,9 +577,25 @@ public final class TransactionImpl implements Transaction {
     @Override
     public long getSenderId() {
         if (senderId == 0) {
-            senderId = Account.getId(getSenderPublicKey());
+            senderId = getSenderFullId().getLeft();
         }
         return senderId;
+    }
+
+    @Override
+    public int getSenderId2() {
+        if (senderId2 == 0) {
+            senderId2 = getSenderFullId().getRight();
+        }
+        return senderId2;
+    }
+
+    @Override
+    public Account.FullId getSenderFullId() {
+        if (senderFullId == null) {
+            senderFullId = Account.FullId.fromPublicKey(getSenderPublicKey());
+        }
+        return senderFullId;
     }
 
     DbKey getDbKey() {
@@ -635,7 +671,8 @@ public final class TransactionImpl implements Transaction {
                 buffer.putLong(timestamp);
                 buffer.putShort(deadline);
                 buffer.put(getSenderPublicKey());
-                buffer.putLong(type.canHaveRecipient() ? recipientId : Genesis.CREATOR_ID);
+                buffer.putLong(type.canHaveRecipient() ? recipientId : Genesis.CREATOR_ID.getLeft());
+                buffer.putInt(type.canHaveRecipient() ? recipientId2 : Genesis.CREATOR_ID.getRight());
                 buffer.putLong(amountMQT);
                 buffer.putLong(feeMQT);
                 if (referencedTransactionFullHash != null) {
@@ -674,6 +711,7 @@ public final class TransactionImpl implements Transaction {
             byte[] senderPublicKey = new byte[32];
             buffer.get(senderPublicKey);
             long recipientId = buffer.getLong();
+            int recipientId2 = buffer.getInt();
             long amountMQT = buffer.getLong();
             long feeMQT = buffer.getLong();
             byte[] referencedTransactionFullHash = new byte[32];
@@ -699,7 +737,7 @@ public final class TransactionImpl implements Transaction {
                     .ecBlockHeight(ecBlockHeight)
                     .ecBlockId(ecBlockId);
             if (transactionType.canHaveRecipient()) {
-                builder.recipientId(recipientId);
+                builder.recipientFullId(recipientId, recipientId2);
             }
             int position = 1;
             if ((flags & position) != 0 || (version == 0 && transactionType == TransactionType.Messaging.ARBITRARY_MESSAGE)) {
@@ -851,8 +889,9 @@ public final class TransactionImpl implements Transaction {
                     .ecBlockHeight(ecBlockHeight)
                     .ecBlockId(ecBlockId);
             if (transactionType.canHaveRecipient()) {
-                long recipientId = Convert.parseUnsignedLong((String) transactionData.get("recipient"));
-                builder.recipientId(recipientId);
+
+                Account.FullId recipientId = Account.FullId.fromStrId((String) transactionData.get("recipient"));
+                builder.recipientFullId(recipientId);
             }
             if (attachmentData != null) {
                 builder.appendix(Appendix.Message.parse(attachmentData));
@@ -919,7 +958,7 @@ public final class TransactionImpl implements Transaction {
     }
 
     private int signatureOffset() {
-        return 1 + 1 + 8 + 2 + 32 + 8 + 8 + 8 + 32;
+        return 1 + 1 + 8 + 2 + 32 + 8 + 4 + 8 + 8 + 32;
     }
 
     private byte[] zeroSignature(byte[] data) {
@@ -1045,7 +1084,7 @@ public final class TransactionImpl implements Transaction {
         if (recipientId != 0) {
             recipientAccount = Account.getAccount(recipientId);
             if (recipientAccount == null) {
-                recipientAccount = Account.addOrGetAccount(recipientId, recipientExtraId);
+                recipientAccount = Account.addOrGetAccount(new Account.FullId(recipientId, recipientId2));
             }
         }
         if (referencedTransactionFullHash != null) {

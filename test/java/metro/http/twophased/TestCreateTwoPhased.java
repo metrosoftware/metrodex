@@ -55,7 +55,7 @@ public class TestCreateTwoPhased extends BlockchainTest {
 
             secretPhrase(ALICE.getSecretPhrase());
             feeMQT(2*Constants.ONE_MTR);
-            recipient(BOB.getId());
+            recipient(BOB.getFullId());
             param("amountMQT", 50 * Constants.ONE_MTR);
             param("phased", "true");
             param("phasingVotingModel", VoteWeighting.VotingModel.ACCOUNT.getCode());

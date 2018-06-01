@@ -2,7 +2,6 @@ package metro.tools;
 
 import metro.Account;
 import metro.BlockchainTest;
-import metro.util.Convert;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -45,10 +44,10 @@ public class PassphraseRecoveryTest extends BlockchainTest {
             wildcard[position] = '*';
         }
         String rsAccount = "MTR-XK4R-7VJU-6EQG-7R335";
-        long id = Convert.parseAccountId(rsAccount);
-        byte[] publicKey = Account.getPublicKey(id);
+        Account.FullId id = Account.FullId.fromStrId(rsAccount);
+        byte[] publicKey = Account.getPublicKey(id.getLeft());
         Map<Long, byte[]> publicKeys = new HashMap<>();
-        publicKeys.put(id, publicKey);
+        publicKeys.put(id.getLeft(), publicKey);
         PassphraseRecovery.Scanner scanner = new PassphraseRecovery.Scanner(publicKeys, positions, wildcard, PassphraseRecovery.getDefaultDictionary());
         PassphraseRecovery.Solution solution = scanner.scan();
         Assert.assertEquals("MTR-XK4R-7VJU-6EQG-7R335", solution.getRsAccount());

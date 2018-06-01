@@ -25,13 +25,15 @@ import metro.db.DbIterator;
 import metro.db.DbKey;
 import metro.db.DbUtils;
 import metro.db.VersionedEntityDbTable;
-import metro.util.Convert;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public final class AccountRestrictions {
 
@@ -55,15 +57,15 @@ public final class AccountRestrictions {
             if (phasingParams.getVoteWeighting().getVotingModel() == VotingModel.NONE) {
                 //no voting - remove the control
                 senderAccount.removeControl(ControlType.PHASING_ONLY);
-                PhasingOnly phasingOnly = get(senderAccount.getId1());
+                PhasingOnly phasingOnly = get(senderAccount.getId());
                 phasingOnly.phasingParams = phasingParams;
                 phasingControlTable.delete(phasingOnly);
                 unset(senderAccount);
             } else {
                 senderAccount.addControl(ControlType.PHASING_ONLY);
-                PhasingOnly phasingOnly = get(senderAccount.getId1());
+                PhasingOnly phasingOnly = get(senderAccount.getId());
                 if (phasingOnly == null) {
-                    phasingOnly = new PhasingOnly(senderAccount.getId1(), phasingParams, attachment.getMaxFees(),
+                    phasingOnly = new PhasingOnly(senderAccount.getId(), phasingParams, attachment.getMaxFees(),
                             attachment.getMinDuration(), attachment.getMaxDuration());
                 } else {
                     phasingOnly.phasingParams = phasingParams;
@@ -77,7 +79,7 @@ public final class AccountRestrictions {
 
         static void unset(Account account) {
             account.removeControl(ControlType.PHASING_ONLY);
-            PhasingOnly phasingOnly = get(account.getId1());
+            PhasingOnly phasingOnly = get(account.getId());
             phasingControlTable.delete(phasingOnly);
         }
 
@@ -100,13 +102,13 @@ public final class AccountRestrictions {
         private PhasingOnly(ResultSet rs, DbKey dbKey) throws SQLException {
             this.accountId = rs.getLong("account_id");
             this.dbKey = dbKey;
-            Long[] whitelist = DbUtils.getArray(rs, "whitelist", Long[].class);
+            String[] whitelist = DbUtils.getArray(rs, "whitelist", String[].class);
             phasingParams = new PhasingParams(rs.getByte("voting_model"),
                     rs.getLong("holding_id"),
                     rs.getLong("quorum"),
                     rs.getLong("min_balance"),
                     rs.getByte("min_balance_model"),
-                    whitelist == null ? Convert.EMPTY_LONG : Convert.toArray(whitelist));
+                    whitelist == null ? new ArrayList<>() : Arrays.stream(whitelist).map(Account.FullId::fromStrId).collect(Collectors.toList()));
             this.maxFees = rs.getLong("max_fees");
             this.minDuration = rs.getShort("min_duration");
             this.maxDuration = rs.getShort("max_duration");
@@ -160,7 +162,7 @@ public final class AccountRestrictions {
                     + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)")) {
                 int i = 0;
                 pstmt.setLong(++i, this.accountId);
-                DbUtils.setArrayEmptyToNull(pstmt, ++i, Convert.toArray(phasingParams.getWhitelist()));
+                DbUtils.setArrayEmptyToNull(pstmt, ++i, phasingParams.getWhitelist().stream().map(Account.FullId::toString).toArray());
                 pstmt.setByte(++i, phasingParams.getVoteWeighting().getVotingModel().getCode());
                 DbUtils.setLongZeroToNull(pstmt, ++i, phasingParams.getQuorum());
                 DbUtils.setLongZeroToNull(pstmt, ++i, phasingParams.getVoteWeighting().getMinBalance());
@@ -219,7 +221,7 @@ public final class AccountRestrictions {
             return false;
         }
         return transaction.getType() != TransactionType.AccountControl.SET_PHASING_ONLY &&
-                TransactionType.isDuplicate(TransactionType.AccountControl.SET_PHASING_ONLY, Long.toUnsignedString(senderAccount.getId1()),
+                TransactionType.isDuplicate(TransactionType.AccountControl.SET_PHASING_ONLY, Long.toUnsignedString(senderAccount.getId()),
                         duplicates, true);
     }
 

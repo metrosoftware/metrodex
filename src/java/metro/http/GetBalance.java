@@ -20,6 +20,7 @@ package metro.http;
 import metro.Account;
 import metro.Metro;
 import metro.MetroException;
+import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONStreamAware;
 
 import javax.servlet.http.HttpServletRequest;
@@ -35,12 +36,12 @@ public final class GetBalance extends APIServlet.APIRequestHandler {
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
         boolean includeEffectiveBalance = "true".equalsIgnoreCase(req.getParameter("includeEffectiveBalance"));
-        long accountId = ParameterParser.getAccountId(req, true);
+        Account.FullId accountFullId = ParameterParser.getAccountFullId(req, true);
         int height = ParameterParser.getHeight(req);
         if (height < 0) {
             height = Metro.getBlockchain().getHeight();
         }
-        Account account = Account.getAccount(accountId, height);
+        Account account = Account.getAccount(accountFullId, height);
         return JSONData.accountBalance(account, includeEffectiveBalance, height);
     }
 

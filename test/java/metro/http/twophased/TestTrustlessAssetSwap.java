@@ -101,8 +101,8 @@ public class TestTrustlessAssetSwap extends BlockchainTest {
         generateBlock();
 
         // Both transactions have executed
-        Assert.assertEquals(200, Account.getAssetBalanceQNT(ALICE.getId(), Convert.parseUnsignedLong(bobAssetId)));
-        Assert.assertEquals(100, Account.getAssetBalanceQNT(BOB.getId(), Convert.parseUnsignedLong(aliceAssetId)));
+        Assert.assertEquals(200, Account.getAssetBalanceQNT(ALICE.getFullId().getLeft(), Convert.parseUnsignedLong(bobAssetId)));
+        Assert.assertEquals(100, Account.getAssetBalanceQNT(BOB.getFullId().getLeft(), Convert.parseUnsignedLong(aliceAssetId)));
     }
 
 }

@@ -20,6 +20,7 @@ package metro;
 import metro.crypto.Crypto;
 import metro.db.DbIterator;
 import metro.util.Convert;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,7 +31,7 @@ public class Tester {
     private final byte[] privateKey;
     private final byte[] publicKey;
     private final String publicKeyStr;
-    private final long id;
+    private final Account.FullId fullId;
     private final String strId;
     private final String rsAccount;
     private final long initialBalance;
@@ -44,9 +45,9 @@ public class Tester {
         this.privateKey = Crypto.getPrivateKey(secretPhrase);
         this.publicKey = Crypto.getPublicKey(secretPhrase);
         this.publicKeyStr = Convert.toHexString(publicKey);
-        this.id = Account.getId(publicKey);
-        this.strId = Long.toUnsignedString(id);
-        this.rsAccount = Convert.rsAccount(id);
+        this.fullId = Account.FullId.fromPublicKey(publicKey);
+        this.strId = fullId.toString();
+        this.rsAccount = fullId.toRS();
         Account account = Account.getAccount(publicKey);
         if (account != null) {
             this.initialBalance = account.getBalanceMQT();
@@ -84,8 +85,12 @@ public class Tester {
         return Account.getAccount(publicKey);
     }
 
-    public long getId() {
-        return id;
+    public Account.FullId getFullId() {
+        return fullId;
+    }
+
+    public String getFullIdAsString() {
+        return getFullId().toString();
     }
 
     public String getStrId() {
@@ -97,11 +102,11 @@ public class Tester {
     }
 
     public long getBalanceDiff() {
-        return Account.getAccount(id).getBalanceMQT() - initialBalance;
+        return Account.getAccount(fullId).getBalanceMQT() - initialBalance;
     }
 
     public long getUnconfirmedBalanceDiff() {
-        return Account.getAccount(id).getUnconfirmedBalanceMQT() - initialUnconfirmedBalance;
+        return Account.getAccount(fullId).getUnconfirmedBalanceMQT() - initialUnconfirmedBalance;
     }
 
     public long getInitialBalance() {
@@ -113,11 +118,11 @@ public class Tester {
     }
 
     public long getAssetQuantityDiff(long assetId) {
-        return Account.getAccount(id).getAssetBalanceQNT(assetId) - getInitialAssetQuantity(assetId);
+        return Account.getAccount(fullId).getAssetBalanceQNT(assetId) - getInitialAssetQuantity(assetId);
     }
 
     public long getUnconfirmedAssetQuantityDiff(long assetId) {
-        return Account.getAccount(id).getUnconfirmedAssetBalanceQNT(assetId) - getInitialAssetQuantity(assetId);
+        return Account.getAccount(fullId).getUnconfirmedAssetBalanceQNT(assetId) - getInitialAssetQuantity(assetId);
     }
 
     public long getInitialUnconfirmedBalance() {

@@ -18,6 +18,7 @@
 package metro.http.twophased;
 
 
+import metro.Account;
 import metro.BlockchainTest;
 import metro.http.APICall;
 import metro.util.Logger;
@@ -28,16 +29,16 @@ import org.junit.Test;
 
 public class TestGetAccountPhasedTransactions extends BlockchainTest {
 
-    static APICall phasedTransactionsApiCall(long id) {
+    static APICall phasedTransactionsApiCall(Account.FullId id) {
         return new APICall.Builder("getAccountPhasedTransactions")
-                .param("account", Long.toUnsignedString(id))
+                .param("account", id.toString())
                 .param("firstIndex", 0)
                 .param("lastIndex", 10)
                 .build();
     }
 
     static APICall phasedTransactionsApiCall() {
-        return phasedTransactionsApiCall(ALICE.getId());
+        return phasedTransactionsApiCall(ALICE.getFullId());
     }
 
     @Test
@@ -51,7 +52,7 @@ public class TestGetAccountPhasedTransactions extends BlockchainTest {
         JSONArray transactionsJson = (JSONArray) response.get("transactions");
         Assert.assertTrue(TwoPhasedSuite.searchForTransactionId(transactionsJson, (String) transactionJSON.get("transaction")));
 
-        response = phasedTransactionsApiCall(CHUCK.getId()).invoke();
+        response = phasedTransactionsApiCall(CHUCK.getFullId()).invoke();
         Logger.logMessage("getAccountPhasedTransactionsResponse:" + response.toJSONString());
         transactionsJson = (JSONArray) response.get("transactions");
         Assert.assertFalse(TwoPhasedSuite.searchForTransactionId(transactionsJson, (String) transactionJSON.get("transaction")));
@@ -63,12 +64,12 @@ public class TestGetAccountPhasedTransactions extends BlockchainTest {
         JSONObject transactionJSON = TestCreateTwoPhased.issueCreateTwoPhased(apiCall, false);
         generateBlock();
 
-        JSONObject response = phasedTransactionsApiCall(BOB.getId()).invoke();
+        JSONObject response = phasedTransactionsApiCall(BOB.getFullId()).invoke();
         Logger.logMessage("getAccountPhasedTransactionsResponse:" + response.toJSONString());
         JSONArray transactionsJson = (JSONArray) response.get("transactions");
         Assert.assertTrue(TwoPhasedSuite.searchForTransactionId(transactionsJson, (String) transactionJSON.get("transaction")));
 
-        response = phasedTransactionsApiCall(CHUCK.getId()).invoke();
+        response = phasedTransactionsApiCall(CHUCK.getFullId()).invoke();
         Logger.logMessage("getAccountPhasedTransactionsResponse:" + response.toJSONString());
         transactionsJson = (JSONArray) response.get("transactions");
         Assert.assertFalse(TwoPhasedSuite.searchForTransactionId(transactionsJson, (String) transactionJSON.get("transaction")));

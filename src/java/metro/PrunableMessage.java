@@ -240,7 +240,7 @@ public final class PrunableMessage {
         if (encryptedData == null) {
             return null;
         }
-        byte[] publicKey = senderId == Account.getId(Crypto.getPublicKey(secretPhrase))
+        byte[] publicKey = senderId == Account.FullId.fromSecretPhrase(secretPhrase).getLeft()
                 ? Account.getPublicKey(recipientId) : Account.getPublicKey(senderId);
         return Account.decryptFrom(publicKey, encryptedData, secretPhrase, isCompressed);
     }

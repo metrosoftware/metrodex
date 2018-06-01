@@ -19,6 +19,7 @@ package metro;
 
 import metro.db.DbUtils;
 import metro.util.Logger;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.math.BigInteger;
@@ -290,19 +291,19 @@ final class BlockDb {
         }
     }
 
-    static List<Pair<Long,Integer>> getBlockGenerators(int startHeight, int endHeight) {
-        List<Pair<Long,Integer>> generators = new ArrayList<>();
+    static List<Pair<Account.FullId, Integer>> getBlockGenerators(int startHeight, int endHeight) {
+        List<Pair<Account.FullId, Integer>> generators = new ArrayList<>();
         try (Connection con = Db.db.getConnection();
                 PreparedStatement pstmt = con.prepareStatement(
-                        "SELECT generator_id, COUNT(generator_id) AS count FROM block WHERE height >= ? AND height <= ? AND nonce IS NULL GROUP BY generator_id")) {
+                        "SELECT A.id, A.id2, G.count FROM Account A JOIN (SELECT generator_id, COUNT(generator_id) AS count " +
+                                "FROM block WHERE height >= ? AND height <= ? AND nonce IS NULL GROUP BY generator_id) G on (A.id = G.generator_id)")) {
             pstmt.setInt(1, startHeight);
             pstmt.setInt(2, endHeight);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
                     int count = rs.getInt("count");
-                    // TODO comparing > 1 was inconvenient for testing
                     if (count > 0) {
-                        generators.add(Pair.of(rs.getLong("generator_id"), count));
+                        generators.add(new ImmutablePair<>(new Account.FullId(rs.getLong("id"), rs.getInt("id2")), count));
                     }
                 }
             }

@@ -135,16 +135,17 @@ public interface Attachment extends Appendix {
 
     final class CoinbaseRecipientsAttachment extends AbstractAttachment {
 
-        private final Map<Long, Long> recipients;
+        private final Map<Account.FullId, Long> recipients;
 
         CoinbaseRecipientsAttachment(ByteBuffer buffer) throws MetroException.NotValidException {
             super(buffer);
             recipients = new HashMap<>();
             byte size = buffer.get();
             for (byte i = 0; i < size; i++) {
-                long accountId = buffer.getLong();
+                long accountId1 = buffer.getLong();
+                int accountId2 = buffer.getInt();
                 long amount = buffer.getLong();
-                recipients.put(accountId, amount);
+                recipients.put(new Account.FullId(accountId1, accountId2), amount);
             }
         }
 
@@ -152,10 +153,10 @@ public interface Attachment extends Appendix {
             super(attachmentData);
             recipients = new HashMap<>();
             JSONObject recipientsField = (JSONObject) attachmentData.get("recipients");
-            recipientsField.forEach((accountId, amount) -> recipients.put(Long.parseLong((String) accountId), (Long) amount));
+            recipientsField.forEach((accountId, amount) -> recipients.put(Account.FullId.fromStrId((String) accountId), (Long) amount));
         }
 
-        public CoinbaseRecipientsAttachment(Map<Long, Long> recipients, boolean fakeParameter) {
+        public CoinbaseRecipientsAttachment(Map<Account.FullId, Long> recipients, boolean fakeParameter) {
             if (recipients.size() < 256) {
                 this.recipients = recipients;
             } else {
@@ -171,8 +172,9 @@ public interface Attachment extends Appendix {
         @Override
         void putMyBytes(ByteBuffer buffer) {
             buffer.put((byte)recipients.size());
-            for (Long recipient: recipients.keySet()) {
-                buffer.putLong(recipient);
+            for (Account.FullId recipient: recipients.keySet()) {
+                buffer.putLong(recipient.getLeft());
+                buffer.putInt(recipient.getRight());
                 buffer.putLong(recipients.get(recipient));
             }
         }
@@ -181,8 +183,8 @@ public interface Attachment extends Appendix {
         void putMyJSON(JSONObject attachment) {
             JSONObject recipients = new JSONObject();
             attachment.put("recipients", recipients);
-            for (Long recipient: this.recipients.keySet()) {
-                recipients.put(Long.toString(recipient), this.recipients.get(recipient));
+            for (Account.FullId recipient: this.recipients.keySet()) {
+                recipients.put(recipient.toString(), this.recipients.get(recipient));
             }
         }
 
@@ -191,7 +193,7 @@ public interface Attachment extends Appendix {
             return TransactionType.Coinbase.ORDINARY;
         }
 
-        public Map<Long, Long> getRecipients() {
+        public Map<Account.FullId, Long> getRecipients() {
             return recipients;
         }
     }

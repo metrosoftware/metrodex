@@ -41,7 +41,7 @@ public final class DecryptFrom extends APIServlet.APIRequestHandler {
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
 
-        byte[] publicKey = Account.getPublicKey(ParameterParser.getAccountId(req, true));
+        byte[] publicKey = Account.getPublicKey(ParameterParser.getAccountFullId(req, true).getLeft());
         if (publicKey == null) {
             return INCORRECT_ACCOUNT;
         }

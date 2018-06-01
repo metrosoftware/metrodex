@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.util.Convert;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONStreamAware;
@@ -41,8 +42,8 @@ public final class RSConvert extends APIServlet.APIRequestHandler {
             return MISSING_ACCOUNT;
         }
         try {
-            long accountId = Convert.parseAccountId(accountValue);
-            if (accountId == 0) {
+            Account.FullId accountId = Account.FullId.fromStrId(accountValue);
+            if (accountId == null) {
                 return INCORRECT_ACCOUNT;
             }
             JSONObject response = new JSONObject();

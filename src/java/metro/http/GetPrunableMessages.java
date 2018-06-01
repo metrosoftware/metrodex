@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.MetroException;
 import metro.PrunableMessage;
 import metro.db.DbIterator;
@@ -36,19 +37,19 @@ public final class GetPrunableMessages extends APIServlet.APIRequestHandler {
 
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
-        long accountId = ParameterParser.getAccountId(req, true);
+        Account.FullId accountId = ParameterParser.getAccountFullId(req, true);
         String secretPhrase = ParameterParser.getSecretPhrase(req, false);
         int firstIndex = ParameterParser.getFirstIndex(req);
         int lastIndex = ParameterParser.getLastIndex(req);
         final long timestamp = ParameterParser.getTimestamp(req);
-        long otherAccountId = ParameterParser.getAccountId(req, "otherAccount", false);
+        Account.FullId otherAccountId = ParameterParser.getAccountFullId(req, "otherAccount", false);
 
         JSONObject response = new JSONObject();
         JSONArray jsonArray = new JSONArray();
         response.put("prunableMessages", jsonArray);
 
-        try (DbIterator<PrunableMessage> messages = otherAccountId == 0 ? PrunableMessage.getPrunableMessages(accountId, firstIndex, lastIndex)
-                : PrunableMessage.getPrunableMessages(accountId, otherAccountId, firstIndex, lastIndex)) {
+        try (DbIterator<PrunableMessage> messages = otherAccountId == null ? PrunableMessage.getPrunableMessages(accountId.getLeft(), firstIndex, lastIndex)
+                : PrunableMessage.getPrunableMessages(accountId.getLeft(), otherAccountId.getLeft(), firstIndex, lastIndex)) {
             while (messages.hasNext()) {
                 PrunableMessage prunableMessage = messages.next();
                 if (prunableMessage.getBlockTimestamp() < timestamp) {

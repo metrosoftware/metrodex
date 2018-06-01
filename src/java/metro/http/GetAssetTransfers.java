@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.AssetTransfer;
 import metro.MetroException;
 import metro.db.DbIterator;
@@ -39,8 +40,8 @@ public final class GetAssetTransfers extends APIServlet.APIRequestHandler {
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
 
         long assetId = ParameterParser.getUnsignedLong(req, "asset", false);
-        long accountId = ParameterParser.getAccountId(req, false);
-        if (assetId == 0 && accountId == 0) {
+        Account.FullId accountId = ParameterParser.getAccountFullId(req, false);
+        if (assetId == 0 && accountId == null) {
             return JSONResponses.MISSING_ASSET_ACCOUNT;
         }
         long timestamp = ParameterParser.getTimestamp(req);
@@ -52,12 +53,12 @@ public final class GetAssetTransfers extends APIServlet.APIRequestHandler {
         JSONArray transfersData = new JSONArray();
         DbIterator<AssetTransfer> transfers = null;
         try {
-            if (accountId == 0) {
+            if (accountId == null) {
                 transfers = AssetTransfer.getAssetTransfers(assetId, firstIndex, lastIndex);
             } else if (assetId == 0) {
-                transfers = AssetTransfer.getAccountAssetTransfers(accountId, firstIndex, lastIndex);
+                transfers = AssetTransfer.getAccountAssetTransfers(accountId.getLeft(), firstIndex, lastIndex);
             } else {
-                transfers = AssetTransfer.getAccountAssetTransfers(accountId, assetId, firstIndex, lastIndex);
+                transfers = AssetTransfer.getAccountAssetTransfers(accountId.getLeft(), assetId, firstIndex, lastIndex);
             }
             while (transfers.hasNext()) {
                 AssetTransfer assetTransfer = transfers.next();

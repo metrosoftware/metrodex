@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.MetroException;
 import metro.PhasingPoll;
 import org.json.simple.JSONObject;
@@ -33,9 +34,9 @@ public class GetAccountPhasedTransactionCount extends APIServlet.APIRequestHandl
 
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
-        long accountId = ParameterParser.getAccountId(req, true);
+        Account.FullId accountId = ParameterParser.getAccountFullId(req, true);
         JSONObject response = new JSONObject();
-        response.put("numberOfPhasedTransactions", PhasingPoll.getAccountPhasedTransactionCount(accountId));
+        response.put("numberOfPhasedTransactions", PhasingPoll.getAccountPhasedTransactionCount(accountId.getLeft()));
         return response;
     }
 }

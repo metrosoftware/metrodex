@@ -18,7 +18,6 @@
 package metro;
 
 import metro.db.DbIterator;
-import metro.util.Convert;
 import metro.util.Logger;
 
 import java.io.BufferedWriter;
@@ -52,7 +51,7 @@ public final class DebugTrace {
                 accountIds.clear();
                 break;
             }
-            accountIds.add(Convert.parseAccountId(accountId).getLeft());
+            accountIds.add(Account.FullId.fromStrId(accountId).getLeft());
         }
         final DebugTrace debugTrace = addDebugTrace(accountIds, logName);
         Metro.getBlockchainProcessor().addListener(block -> debugTrace.resetLog(), BlockchainProcessor.Event.RESCAN_BEGIN);
@@ -123,8 +122,14 @@ public final class DebugTrace {
         this.log(headers);
     }
 
+    //FIXME #220 get rid of
     private boolean include(long accountId) {
         return accountId != 0 && (accountIds.isEmpty() || accountIds.contains(accountId));
+    }
+
+    //FIXME #220 accountIds should be FullIds
+    private boolean include(Account.FullId accountId) {
+        return accountId != null && accountId.getLeft() != 0 && (accountIds.isEmpty() || accountIds.contains(accountId.getLeft()));
     }
 
     // Note: Trade events occur before the change in account balances
@@ -140,8 +145,8 @@ public final class DebugTrace {
     }
 
     private void trace(Account account, boolean unconfirmed) {
-        if (include(account.getId1())) {
-            log(getValues(account.getId1(), unconfirmed));
+        if (include(account.getId())) {
+            log(getValues(account.getId(), unconfirmed));
         }
     }
 
@@ -160,7 +165,7 @@ public final class DebugTrace {
     }
 
     private void traceBeforeAccept(Block block) {
-        long generatorId = block.getGeneratorId();
+        Account.FullId generatorId = block.getGeneratorFullId();
         if (include(generatorId)) {
             log(getValues(generatorId, block));
         }
@@ -191,7 +196,7 @@ public final class DebugTrace {
             }
             long recipientId = transaction.getRecipientId();
             if (transaction.getAmountMQT() > 0 && recipientId == 0) {
-                recipientId = Genesis.CREATOR_ID;
+                recipientId = Genesis.CREATOR_ID.getLeft();
             }
             if (include(recipientId)) {
                 log(getValues(recipientId, transaction, true, true, true));
@@ -220,9 +225,9 @@ public final class DebugTrace {
             }
         });
         for (byte[] recipientPublicKey : shuffling.getRecipientPublicKeys()) {
-            long recipientId = Account.getId(recipientPublicKey);
+            Account.FullId recipientId = Account.FullId.fromPublicKey(recipientPublicKey);
             if (include(recipientId)) {
-                log(getValues(recipientId, shuffling, true));
+                log(getValues(recipientId.getLeft(), shuffling, true));
             }
         }
     }
@@ -258,7 +263,7 @@ public final class DebugTrace {
 
     private Map<String,String> lessorGuaranteedBalance(Account account, long lesseeId) {
         Map<String,String> map = new HashMap<>();
-        map.put("account", Long.toUnsignedString(account.getId1()));
+        map.put("account", Long.toUnsignedString(account.getId()));
         map.put("lessor guaranteed balance", String.valueOf(account.getGuaranteedBalanceMQT()));
         map.put("lessee", Long.toUnsignedString(lesseeId));
         map.put("timestamp", String.valueOf(Metro.getBlockchain().getLastBlock().getTimestamp()));
@@ -269,8 +274,8 @@ public final class DebugTrace {
 
     private Map<String,String> getValues(long accountId, boolean unconfirmed) {
         Map<String,String> map = new HashMap<>();
-        map.put("account", Long.toUnsignedString(accountId));
         Account account = Account.getAccount(accountId);
+        map.put("account", account.getFullId().toString());
         map.put("balance", String.valueOf(account != null ? account.getBalanceMQT() : 0));
         map.put("unconfirmed balance", String.valueOf(account != null ? account.getUnconfirmedBalanceMQT() : 0));
         map.put("timestamp", String.valueOf(Metro.getBlockchain().getLastBlock().getTimestamp()));
@@ -338,7 +343,7 @@ public final class DebugTrace {
         return map;
     }
 
-    private Map<String,String> getValues(long accountId, Block block) {
+    private Map<String,String> getValues(Account.FullId accountId, Block block) {
         long reward = block.getRewardMQT();
         if (reward == 0) {
             return Collections.emptyMap();
@@ -370,7 +375,7 @@ public final class DebugTrace {
                 }
             }
         }
-        Map<String,String> map = getValues(accountId, false);
+        Map<String,String> map = getValues(accountId.getLeft(), false);
         map.put("effective balance", String.valueOf(Account.getAccount(accountId).getEffectiveBalanceMTR()));
         map.put("generation reward", String.valueOf(reward - totalBackFees));
         map.put("block", block.getStringId());

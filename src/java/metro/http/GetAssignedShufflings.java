@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.Shuffling;
 import metro.db.DbIterator;
 import org.json.simple.JSONArray;
@@ -36,7 +37,7 @@ public final class GetAssignedShufflings extends APIServlet.APIRequestHandler {
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws ParameterException {
 
-        long accountId = ParameterParser.getAccountId(req, "account", true);
+        Account.FullId accountId = ParameterParser.getAccountFullId(req, "account", true);
         boolean includeHoldingInfo = "true".equalsIgnoreCase(req.getParameter("includeHoldingInfo"));
         int firstIndex = ParameterParser.getFirstIndex(req);
         int lastIndex = ParameterParser.getLastIndex(req);
@@ -44,7 +45,7 @@ public final class GetAssignedShufflings extends APIServlet.APIRequestHandler {
         JSONObject response = new JSONObject();
         JSONArray jsonArray = new JSONArray();
         response.put("shufflings", jsonArray);
-        try (DbIterator<Shuffling> shufflings = Shuffling.getAssignedShufflings(accountId, firstIndex, lastIndex)) {
+        try (DbIterator<Shuffling> shufflings = Shuffling.getAssignedShufflings(accountId.getLeft(), firstIndex, lastIndex)) {
             for (Shuffling shuffling : shufflings) {
                 jsonArray.add(JSONData.shuffling(shuffling, includeHoldingInfo));
             }

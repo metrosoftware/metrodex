@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.Order;
 import metro.db.DbIterator;
 import org.json.simple.JSONArray;
@@ -36,16 +37,16 @@ public final class GetAccountCurrentBidOrderIds extends APIServlet.APIRequestHan
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws ParameterException {
 
-        long accountId = ParameterParser.getAccountId(req, true);
+        Account.FullId accountId = ParameterParser.getAccountFullId(req, true);
         long assetId = ParameterParser.getUnsignedLong(req, "asset", false);
         int firstIndex = ParameterParser.getFirstIndex(req);
         int lastIndex = ParameterParser.getLastIndex(req);
 
         DbIterator<Order.Bid> bidOrders;
         if (assetId == 0) {
-            bidOrders = Order.Bid.getBidOrdersByAccount(accountId, firstIndex, lastIndex);
+            bidOrders = Order.Bid.getBidOrdersByAccount(accountId.getLeft(), firstIndex, lastIndex);
         } else {
-            bidOrders = Order.Bid.getBidOrdersByAccountAsset(accountId, assetId, firstIndex, lastIndex);
+            bidOrders = Order.Bid.getBidOrdersByAccountAsset(accountId.getLeft(), assetId, firstIndex, lastIndex);
         }
         JSONArray orderIds = new JSONArray();
         try {

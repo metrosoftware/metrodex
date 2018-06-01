@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.Transaction;
 import metro.TransactionScheduler;
 import org.json.simple.JSONArray;
@@ -37,9 +38,9 @@ public final class GetScheduledTransactions extends APIServlet.APIRequestHandler
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws ParameterException {
 
-        long accountId = ParameterParser.getAccountId(req, false);
+        Account.FullId accountId = ParameterParser.getAccountFullId(req, false);
         JSONArray jsonArray = new JSONArray();
-        List<Transaction> transactions = TransactionScheduler.getScheduledTransactions(accountId);
+        List<Transaction> transactions = TransactionScheduler.getScheduledTransactions(accountId.getLeft());
         for (Transaction transaction : transactions) {
             jsonArray.add(JSONData.unconfirmedTransaction(transaction));
         }

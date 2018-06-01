@@ -20,6 +20,7 @@ package metro.http;
 import metro.Account;
 import metro.Attachment;
 import metro.MetroException;
+import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONStreamAware;
 
 import javax.servlet.http.HttpServletRequest;
@@ -34,7 +35,7 @@ public final class SendMessage extends CreateTransaction {
 
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
-        long recipientId = ParameterParser.getAccountId(req, "recipient", false);
+        Account.FullId recipientId = ParameterParser.getAccountFullId(req, "recipient", false);
         Account account = ParameterParser.getSenderAccount(req);
         return createTransaction(req, account, recipientId, 0, Attachment.ARBITRARY_MESSAGE);
     }

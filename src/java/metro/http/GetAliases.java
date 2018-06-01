@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.Alias;
 import metro.MetroException;
 import metro.db.FilteringIterator;
@@ -37,12 +38,12 @@ public final class GetAliases extends APIServlet.APIRequestHandler {
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
         final long timestamp = ParameterParser.getTimestamp(req);
-        final long accountId = ParameterParser.getAccountId(req, true);
+        final Account.FullId accountId = ParameterParser.getAccountFullId(req, true);
         int firstIndex = ParameterParser.getFirstIndex(req);
         int lastIndex = ParameterParser.getLastIndex(req);
 
         JSONArray aliases = new JSONArray();
-        try (FilteringIterator<Alias> aliasIterator = new FilteringIterator<>(Alias.getAliasesByOwner(accountId, 0, -1),
+        try (FilteringIterator<Alias> aliasIterator = new FilteringIterator<>(Alias.getAliasesByOwner(accountId.getLeft(), 0, -1),
                 alias -> alias.getTimestamp() >= timestamp, firstIndex, lastIndex)) {
             while(aliasIterator.hasNext()) {
                 aliases.add(JSONData.alias(aliasIterator.next()));

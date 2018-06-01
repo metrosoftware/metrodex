@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.Attachment;
 import metro.Metro;
 import metro.MetroException;
@@ -42,14 +43,14 @@ public final class GetExpectedAssetTransfers extends APIServlet.APIRequestHandle
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
 
         long assetId = ParameterParser.getUnsignedLong(req, "asset", false);
-        long accountId = ParameterParser.getAccountId(req, "account", false);
+        Account.FullId accountId = ParameterParser.getAccountFullId(req, "account", false);
         boolean includeAssetInfo = "true".equalsIgnoreCase(req.getParameter("includeAssetInfo"));
 
         Filter<Transaction> filter = transaction -> {
             if (transaction.getType() != TransactionType.ColoredCoins.ASSET_TRANSFER) {
                 return false;
             }
-            if (accountId != 0 && transaction.getSenderId() != accountId && transaction.getRecipientId() != accountId) {
+            if (accountId != null && transaction.getSenderId() != accountId.getLeft() && transaction.getRecipientId() != accountId.getLeft()) {
                 return false;
             }
             Attachment.ColoredCoinsAssetTransfer attachment = (Attachment.ColoredCoinsAssetTransfer)transaction.getAttachment();

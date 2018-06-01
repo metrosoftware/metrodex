@@ -17,6 +17,7 @@
 
 package metro.crypto;
 
+import metro.Account;
 import metro.Metro;
 import metro.util.Convert;
 import metro.util.Logger;
@@ -288,14 +289,14 @@ public final class Crypto {
         return ReedSolomon.encode(id1, id2);
     }
 
-    public static String rsEncode(Pair<Long, Integer> id) {
+    public static String rsEncode(Account.FullId id) {
         return ReedSolomon.encode(id);
     }
 
-    public static Pair<Long, Integer> rsDecode(String rsString) {
+    public static Account.FullId rsDecode(String rsString) {
         rsString = rsString.toUpperCase();
         try {
-            Pair<Long, Integer> id = ReedSolomon.decode(rsString);
+            Account.FullId id = ReedSolomon.decode(rsString);
             if (! rsString.equals(ReedSolomon.encode(id))) {
                 throw new RuntimeException("ERROR: Reed-Solomon decoding of " + rsString
                         + " not reversible, decoded to " + id);

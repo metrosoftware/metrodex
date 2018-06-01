@@ -63,23 +63,23 @@ public class GetFundingMonitor extends APIServlet.APIRequestHandler {
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws ParameterException {
         String secretPhrase = ParameterParser.getSecretPhrase(req, false);
-        long account = ParameterParser.getAccountId(req, false);
+        Account.FullId account = ParameterParser.getAccountFullId(req, false);
         boolean includeMonitoredAccounts = "true".equalsIgnoreCase(req.getParameter("includeMonitoredAccounts"));
         if (secretPhrase == null) {
             API.verifyPassword(req);
         }
         List<FundingMonitor> monitors;
-        if (secretPhrase != null || account != 0) {
+        if (secretPhrase != null || account != null) {
             if (secretPhrase != null) {
-                if (account != 0) {
-                    if (Account.getId(Crypto.getPublicKey(secretPhrase)) != account) {
+                if (account != null) {
+                    if (!Account.FullId.fromSecretPhrase(secretPhrase).equals(account)) {
                         return JSONResponses.INCORRECT_ACCOUNT;
                     }
                 } else {
-                    account = Account.getId(Crypto.getPublicKey(secretPhrase));
+                    account = Account.FullId.fromSecretPhrase(secretPhrase);
                 }
             }
-            final long accountId = account;
+            final Account.FullId accountId = account;
             final HoldingType holdingType = ParameterParser.getHoldingType(req);
             final long holdingId = ParameterParser.getHoldingId(req, holdingType);
             final String property = ParameterParser.getAccountProperty(req, false);

@@ -1,9 +1,9 @@
 package metro.addons;
 
+import metro.Account;
 import metro.BlockchainTest;
 import metro.Constants;
 import metro.http.APICall;
-import metro.util.Convert;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
@@ -34,7 +34,7 @@ public class JPLSnapshotTest extends BlockchainTest {
     @Test
     public void testSnapshotWithoutInput() {
         long aliceCurrentBalance = ALICE.getBalance();
-        String aliceId = Long.toUnsignedString(ALICE.getAccount().getId1());
+        String aliceId = Long.toUnsignedString(ALICE.getAccount().getId());
         JSONObject response = new APICall.Builder("downloadJPLSnapshot").
                 param("height", getHeight()).
                 build().invoke();
@@ -54,7 +54,7 @@ public class JPLSnapshotTest extends BlockchainTest {
     @Test
     public void testSnapshotWithInput() {
         long aliceCurrentBalance = ALICE.getBalance();
-        String aliceId = Long.toUnsignedString(ALICE.getAccount().getId1());
+        String aliceId = Long.toUnsignedString(ALICE.getAccount().getId());
         JSONObject response = new APICall.Builder("downloadJPLSnapshot").
             param("height", getHeight()).
             parts("newGenesisAccounts", INPUT_JSON_STR).
@@ -73,7 +73,7 @@ public class JPLSnapshotTest extends BlockchainTest {
         JSONObject inputGenesis = (JSONObject)JSONValue.parse(INPUT_JSON_STR);
         JSONObject inputBalances = (JSONObject) inputGenesis.get("balances");
         for (Map.Entry<String, Long> entry : ((Map<String, Long>)inputBalances).entrySet()) {
-            long newBalance = (long)(Long)balances.get(Long.toUnsignedString(Convert.parseAccountId(entry.getKey())));
+            long newBalance = (Long) balances.get(Account.FullId.fromStrId(entry.getKey()));
             if (entry.getValue() != newBalance) {
                 Assert.fail("Balances differ for key " + entry.getKey());
             }

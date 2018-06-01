@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.Metro;
 import metro.MetroException;
 import org.json.simple.JSONObject;
@@ -35,10 +36,10 @@ public final class GetAccountBlockCount extends APIServlet.APIRequestHandler {
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
 
-        long accountId = ParameterParser.getAccountId(req, true);
+        Account.FullId accountId = ParameterParser.getAccountFullId(req, true);
         boolean isKeyblock = "true".equalsIgnoreCase(req.getParameter("isKeyBlock"));
         JSONObject response = new JSONObject();
-        response.put("numberOfBlocks", Metro.getBlockchain().getBlockCount(accountId, isKeyblock));
+        response.put("numberOfBlocks", Metro.getBlockchain().getBlockCount(accountId.getLeft(), isKeyblock));
 
         return response;
     }

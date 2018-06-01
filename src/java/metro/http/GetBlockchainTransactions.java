@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.Metro;
 import metro.MetroException;
 import metro.Transaction;
@@ -40,7 +41,7 @@ public final class GetBlockchainTransactions extends APIServlet.APIRequestHandle
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
 
-        long accountId = ParameterParser.getAccountId(req, true);
+        Account.FullId accountId = ParameterParser.getAccountFullId(req, true);
         long timestamp = ParameterParser.getTimestamp(req);
         int numberOfConfirmations = ParameterParser.getNumberOfConfirmations(req);
         boolean withMessage = "true".equalsIgnoreCase(req.getParameter("withMessage"));
@@ -68,7 +69,7 @@ public final class GetBlockchainTransactions extends APIServlet.APIRequestHandle
         int lastIndex = ParameterParser.getLastIndex(req);
 
         JSONArray transactions = new JSONArray();
-        try (DbIterator<? extends Transaction> iterator = Metro.getBlockchain().getTransactions(accountId, numberOfConfirmations,
+        try (DbIterator<? extends Transaction> iterator = Metro.getBlockchain().getTransactions(accountId.getLeft(), numberOfConfirmations,
                 type, subtype, timestamp, withMessage, phasedOnly, nonPhasedOnly, firstIndex, lastIndex,
                 includeExpiredPrunable, executedOnly, excludeCoinbase)) {
             while (iterator.hasNext()) {

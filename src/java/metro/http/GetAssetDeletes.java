@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.AssetDelete;
 import metro.MetroException;
 import metro.db.DbIterator;
@@ -39,8 +40,8 @@ public final class GetAssetDeletes extends APIServlet.APIRequestHandler {
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
 
         long assetId = ParameterParser.getUnsignedLong(req, "asset", false);
-        long accountId = ParameterParser.getAccountId(req, false);
-        if (assetId == 0 && accountId == 0) {
+        Account.FullId accountId = ParameterParser.getAccountFullId(req, false);
+        if (assetId == 0 && accountId == null) {
             return JSONResponses.MISSING_ASSET_ACCOUNT;
         }
         long timestamp = ParameterParser.getTimestamp(req);
@@ -52,12 +53,12 @@ public final class GetAssetDeletes extends APIServlet.APIRequestHandler {
         JSONArray deletesData = new JSONArray();
         DbIterator<AssetDelete> deletes = null;
         try {
-            if (accountId == 0) {
+            if (accountId == null) {
                 deletes = AssetDelete.getAssetDeletes(assetId, firstIndex, lastIndex);
             } else if (assetId == 0) {
-                deletes = AssetDelete.getAccountAssetDeletes(accountId, firstIndex, lastIndex);
+                deletes = AssetDelete.getAccountAssetDeletes(accountId.getLeft(), firstIndex, lastIndex);
             } else {
-                deletes = AssetDelete.getAccountAssetDeletes(accountId, assetId, firstIndex, lastIndex);
+                deletes = AssetDelete.getAccountAssetDeletes(accountId.getLeft(), assetId, firstIndex, lastIndex);
             }
             while (deletes.hasNext()) {
                 AssetDelete assetDelete = deletes.next();

@@ -22,6 +22,7 @@ import metro.Attachment;
 import metro.Constants;
 import metro.MetroException;
 import metro.util.Convert;
+import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONStreamAware;
 
 import javax.servlet.http.HttpServletRequest;
@@ -41,9 +42,9 @@ public final class SetAccountProperty extends CreateTransaction {
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
 
         Account senderAccount = ParameterParser.getSenderAccount(req);
-        long recipientId = ParameterParser.getAccountId(req, "recipient", false);
-        if (recipientId == 0) {
-            recipientId = senderAccount.getId1();
+        Account.FullId recipientId = ParameterParser.getAccountFullId(req, "recipient", false);
+        if (recipientId == null) {
+            recipientId = senderAccount.getFullId();
         }
         String property = Convert.nullToEmpty(req.getParameter("property")).trim();
         String value = Convert.nullToEmpty(req.getParameter("value")).trim();

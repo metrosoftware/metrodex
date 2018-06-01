@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.Metro;
 import metro.MetroException;
 import metro.Transaction;
@@ -41,9 +42,9 @@ public final class GetExpectedTransactions extends APIServlet.APIRequestHandler 
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
 
-        Set<Long> accountIds = Convert.toSet(ParameterParser.getAccountIds(req, false));
+        Set<Account.FullId> accountIds = Convert.toSet(ParameterParser.getAccountIds(req, false));
         Filter<Transaction> filter = accountIds.isEmpty() ? transaction -> true :
-                transaction -> accountIds.contains(transaction.getSenderId()) || accountIds.contains(transaction.getRecipientId());
+                transaction -> accountIds.contains(transaction.getSenderFullId()) || accountIds.contains(transaction.getRecipientFullId());
 
         List<? extends Transaction> transactions = Metro.getBlockchain().getExpectedTransactions(filter);
 

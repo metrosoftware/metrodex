@@ -521,11 +521,11 @@ public final class Shuffling {
             if (shufflingStateHash == null || !Arrays.equals(shufflingStateHash, getStateHash())) {
                 throw new RuntimeException("Current shuffling state hash does not match");
             }
-            long accountId = Account.getId(Crypto.getPublicKey(secretPhrase));
+            Account.FullId accountId = Account.FullId.fromSecretPhrase(secretPhrase);
             byte[][] data = null;
             while (participants.hasNext()) {
                 ShufflingParticipant participant = participants.next();
-                if (participant.getAccountId() == accountId) {
+                if (participant.getAccountId() == accountId.getLeft()) {
                     data = participant.getData();
                     break;
                 }
@@ -534,7 +534,7 @@ public final class Shuffling {
                 throw new RuntimeException("Last participant cannot have keySeeds to reveal");
             }
             if (data == null) {
-                throw new RuntimeException("Account " + Long.toUnsignedString(accountId) + " has not submitted data");
+                throw new RuntimeException("Account " + accountId.toString() + " has not submitted data");
             }
             final byte[] nonce = Convert.toBytes(this.id);
             final List<byte[]> keySeeds = new ArrayList<>();
@@ -620,9 +620,9 @@ public final class Shuffling {
         participant.verify();
         // last participant announces all valid recipient public keys
         for (byte[] recipientPublicKey : recipientPublicKeys) {
-            long recipientId = Account.getId(recipientPublicKey);
-            if (Account.setOrVerify(recipientId, recipientPublicKey)) {
-                Account.addOrGetAccount(recipientId, null).apply(recipientPublicKey);
+            Account.FullId recipientId = Account.FullId.fromPublicKey(recipientPublicKey);
+            if (Account.setOrVerify(recipientId.getLeft(), recipientPublicKey)) {
+                Account.addOrGetAccount(recipientId).apply(recipientPublicKey);
             }
         }
         setStage(Stage.VERIFICATION, 0, (short)(Constants.SHUFFLING_PROCESSING_DEADLINE + participantCount));
@@ -677,8 +677,8 @@ public final class Shuffling {
             }
         }
         for (byte[] recipientPublicKey : recipientPublicKeys) {
-            long recipientId = Account.getId(recipientPublicKey);
-            Account recipientAccount = Account.addOrGetAccount(recipientId, null);
+            Account.FullId recipientId = Account.FullId.fromPublicKey(recipientPublicKey);
+            Account recipientAccount = Account.addOrGetAccount(recipientId);
             recipientAccount.apply(recipientPublicKey);
             holdingType.addToBalanceAndUnconfirmedBalance(recipientAccount, event, this.id, this.holdingId, amount);
             if (holdingType != HoldingType.MTR) {
@@ -701,7 +701,7 @@ public final class Shuffling {
             for (ShufflingParticipant participant : participants) {
                 Account participantAccount = Account.getAccount(participant.getAccountId());
                 holdingType.addToUnconfirmedBalance(participantAccount, event, this.id, this.holdingId, this.amount);
-                if (participantAccount.getId1() != blamedAccountId) {
+                if (participantAccount.getId() != blamedAccountId) {
                     if (holdingType != HoldingType.MTR) {
                         participantAccount.addToUnconfirmedBalanceMQT(event, this.id, Constants.SHUFFLING_DEPOSIT_MQT);
                     }
@@ -717,13 +717,13 @@ public final class Shuffling {
             // as a penalty the deposit goes to the generators of the finish block and previous 3 blocks
             long fee = Constants.SHUFFLING_DEPOSIT_MQT / 4;
             for (int i = 0; i < 3; i++) {
-                Account previousGeneratorAccount = Account.getAccount(BlockDb.findBlockAtHeight(block.getHeight() - i - 1).getGeneratorId());
+                Account previousGeneratorAccount = Account.getAccount(BlockDb.findBlockAtHeight(block.getHeight() - i - 1).getGeneratorFullId());
                 previousGeneratorAccount.addToBalanceAndUnconfirmedBalanceMQT(AccountLedger.LedgerEvent.BLOCK_GENERATED, block.getId(), fee);
                 previousGeneratorAccount.addToForgedBalanceMQT(fee);
                 Logger.logDebugMessage("Shuffling penalty %f %s awarded to forger at height %d", ((double)fee) / Constants.ONE_MTR, Constants.COIN_SYMBOL, block.getHeight() - i - 1);
             }
             fee = Constants.SHUFFLING_DEPOSIT_MQT - 3 * fee;
-            Account blockGeneratorAccount = Account.getAccount(block.getGeneratorId());
+            Account blockGeneratorAccount = Account.getAccount(block.getGeneratorFullId());
             blockGeneratorAccount.addToBalanceAndUnconfirmedBalanceMQT(AccountLedger.LedgerEvent.BLOCK_GENERATED, block.getId(), fee);
             blockGeneratorAccount.addToForgedBalanceMQT(fee);
             Logger.logDebugMessage("Shuffling penalty %f %s awarded to forger at height %d", ((double)fee) / Constants.ONE_MTR, Constants.COIN_SYMBOL, block.getHeight());

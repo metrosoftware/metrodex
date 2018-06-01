@@ -35,11 +35,11 @@ public final class GetAccountAssetCount extends APIServlet.APIRequestHandler {
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
 
-        long accountId = ParameterParser.getAccountId(req, true);
+        Account.FullId accountId = ParameterParser.getAccountFullId(req, true);
         int height = ParameterParser.getHeight(req);
 
         JSONObject response = new JSONObject();
-        response.put("numberOfAssets", Account.getAccountAssetCount(accountId, height));
+        response.put("numberOfAssets", Account.getAccountAssetCount(accountId.getLeft(), height));
         return response;
     }
 

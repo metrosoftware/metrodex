@@ -17,9 +17,9 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.http.EventListener.EventListenerException;
 import metro.http.EventListener.EventRegistration;
-import metro.util.Convert;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONStreamAware;
 
@@ -171,21 +171,21 @@ public class EventRegister extends APIServlet.APIRequestHandler {
             //
             // Add all events if no events are supplied
             //
-            EventListener.peerEvents.forEach(event -> events.add(new EventRegistration(event, 0)));
-            EventListener.blockEvents.forEach(event -> events.add(new EventRegistration(event, 0)));
-            EventListener.txEvents.forEach(event -> events.add(new EventRegistration(event, 0)));
-            EventListener.ledgerEvents.forEach(event -> events.add(new EventRegistration(event, 0)));
+            EventListener.peerEvents.forEach(event -> events.add(new EventRegistration(event, null)));
+            EventListener.blockEvents.forEach(event -> events.add(new EventRegistration(event, null)));
+            EventListener.txEvents.forEach(event -> events.add(new EventRegistration(event, null)));
+            EventListener.ledgerEvents.forEach(event -> events.add(new EventRegistration(event, null)));
         } else {
             for (String param : params) {
                 //
                 // The Ledger event can have 2 or 3 parts.  All other events have 2 parts.
                 //
-                long accountId = 0;
+                Account.FullId accountId = null;
                 String[] parts = param.split("\\.");
                 if (parts[0].equals("Ledger")) {
                     if (parts.length == 3) {
                         try {
-                            accountId = Convert.parseAccountId(parts[2]);
+                            accountId = Account.FullId.fromStrId(parts[2]);
                         } catch (RuntimeException e) {
                             return incorrectEvent;
                         }

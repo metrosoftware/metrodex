@@ -37,23 +37,23 @@ public final class DeleteAccountProperty extends CreateTransaction {
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
 
         Account senderAccount = ParameterParser.getSenderAccount(req);
-        long recipientId = ParameterParser.getAccountId(req, "recipient", false);
-        if (recipientId == 0) {
-            recipientId = senderAccount.getId1();
+        Account.FullId recipientId = ParameterParser.getAccountFullId(req, "recipient", false);
+        if (recipientId == null) {
+            recipientId = senderAccount.getFullId();
         }
-        long setterId = ParameterParser.getAccountId(req, "setter", false);
+        long setterId = ParameterParser.getAccountFullId(req, "setter", false).getLeft();
         if (setterId == 0) {
-            setterId = senderAccount.getId1();
+            setterId = senderAccount.getId();
         }
         String property = Convert.nullToEmpty(req.getParameter("property")).trim();
         if (property.isEmpty()) {
             return JSONResponses.MISSING_PROPERTY;
         }
-        Account.AccountProperty accountProperty = Account.getProperty(recipientId, property, setterId);
+        Account.AccountProperty accountProperty = Account.getProperty(recipientId.getLeft(), property, setterId);
         if (accountProperty == null) {
             return JSONResponses.UNKNOWN_PROPERTY;
         }
-        if (accountProperty.getRecipientId() != senderAccount.getId1() && accountProperty.getSetterId() != senderAccount.getId1()) {
+        if (accountProperty.getRecipientId() != senderAccount.getId() && accountProperty.getSetterId() != senderAccount.getId()) {
             return JSONResponses.INCORRECT_PROPERTY;
         }
         Attachment attachment = new Attachment.MessagingAccountPropertyDelete(accountProperty.getId());

@@ -40,7 +40,7 @@ public final class CancelAskOrder extends CreateTransaction {
         long orderId = ParameterParser.getUnsignedLong(req, "order", true);
         Account account = ParameterParser.getSenderAccount(req);
         Order.Ask orderData = Order.Ask.getAskOrder(orderId);
-        if (orderData == null || orderData.getAccountId() != account.getId1()) {
+        if (orderData == null || orderData.getAccountId() != account.getId()) {
             return UNKNOWN_ORDER;
         }
         Attachment attachment = new Attachment.ColoredCoinsAskOrderCancellation(orderId);

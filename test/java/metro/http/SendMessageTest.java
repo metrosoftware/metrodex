@@ -151,7 +151,7 @@ public class SendMessageTest extends BlockchainTest {
     public void publicKeyAnnouncement() {
         byte[] publicKey = Crypto.getPublicKey("NonExistentAccount.jkgdkjgdjkfgfkjgfjkdfgkjjdk");
         String publicKeyStr = Convert.toHexString(publicKey);
-        long id = Account.getId(publicKey);
+        Account.FullId id = Account.FullId.fromPublicKey(publicKey);
         String rsAccount = Convert.rsAccount(id);
 
         JSONObject response = new APICall.Builder("getAccount").

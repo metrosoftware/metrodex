@@ -38,7 +38,7 @@ public final class Shuffler {
 
     public static Shuffler addOrGetShuffler(String secretPhrase, byte[] recipientPublicKey, byte[] shufflingFullHash) throws ShufflerException {
         String hash = Convert.toHexString(shufflingFullHash);
-        long accountId = Account.getId(Crypto.getPublicKey(secretPhrase));
+        Account.FullId accountId = Account.FullId.fromSecretPhrase(secretPhrase);
         BlockchainImpl.getInstance().writeLock();
         try {
             Map<Long, Shuffler> map = shufflingsMap.get(hash);
@@ -46,7 +46,7 @@ public final class Shuffler {
                 map = new HashMap<>();
                 shufflingsMap.put(hash, map);
             }
-            Shuffler shuffler = map.get(accountId);
+            Shuffler shuffler = map.get(accountId.getLeft());
             if (recipientPublicKey == null) {
                 return shuffler;
             }
@@ -73,9 +73,9 @@ public final class Shuffler {
                     shuffler.init(shuffling);
                     clearExpiration(shuffling);
                 }
-                map.put(accountId, shuffler);
+                map.put(accountId.getLeft(), shuffler);
                 Logger.logMessage(String.format("Started shuffler for account %s, shuffling %s",
-                        Long.toUnsignedString(accountId), Long.toUnsignedString(Convert.fullHashToId(shufflingFullHash))));
+                        accountId.toString(), Long.toUnsignedString(Convert.fullHashToId(shufflingFullHash))));
             } else if (!Arrays.equals(shuffler.recipientPublicKey, recipientPublicKey)) {
                 throw new DuplicateShufflerException("A shuffler with different recipientPublicKey already started");
             } else if (!Arrays.equals(shuffler.shufflingFullHash, shufflingFullHash)) {
@@ -300,7 +300,7 @@ public final class Shuffler {
 
     private Shuffler(String secretPhrase, byte[] recipientPublicKey, byte[] shufflingFullHash) {
         this.secretPhrase = secretPhrase;
-        this.accountId = Account.getId(Crypto.getPublicKey(secretPhrase));
+        this.accountId = Account.FullId.fromSecretPhrase(secretPhrase).getLeft();
         this.recipientPublicKey = recipientPublicKey;
         this.shufflingFullHash = shufflingFullHash;
     }

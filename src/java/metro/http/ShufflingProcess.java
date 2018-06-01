@@ -50,15 +50,17 @@ public final class ShufflingProcess extends CreateTransaction {
             return JSON.prepare(response);
         }
         Account senderAccount = ParameterParser.getSenderAccount(req);
-        long senderId = senderAccount.getId1();
-        if (shuffling.getAssigneeAccountId() != senderId) {
+        Account.FullId senderId = senderAccount.getFullId();
+        if (shuffling.getAssigneeAccountId() != senderId.getLeft()) {
+            //FIXME #220 optimize
+            Account.FullId assigneeId = Account.getAccount(shuffling.getAssigneeAccountId()).getFullId();
             JSONObject response = new JSONObject();
             response.put("errorCode", 12);
             response.put("errorDescription", String.format("Account %s cannot process shuffling since shuffling assignee is %s",
-                    Convert.rsAccount(senderId), Convert.rsAccount(shuffling.getAssigneeAccountId())));
+                    Convert.rsAccount(senderId), Convert.rsAccount(assigneeId)));
             return JSON.prepare(response);
         }
-        ShufflingParticipant participant = shuffling.getParticipant(senderId);
+        ShufflingParticipant participant = shuffling.getParticipant(senderId.getLeft());
         if (participant == null) {
             JSONObject response = new JSONObject();
             response.put("errorCode", 13);
@@ -73,7 +75,7 @@ public final class ShufflingProcess extends CreateTransaction {
             return INCORRECT_PUBLIC_KEY; // do not allow existing account to be used as recipient
         }
 
-        Attachment.ShufflingAttachment attachment = shuffling.process(senderId, secretPhrase, recipientPublicKey);
+        Attachment.ShufflingAttachment attachment = shuffling.process(senderId.getLeft(), secretPhrase, recipientPublicKey);
         return createTransaction(req, senderAccount, attachment);
     }
 

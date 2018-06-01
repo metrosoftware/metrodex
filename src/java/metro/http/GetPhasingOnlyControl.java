@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.AccountRestrictions.PhasingOnly;
 import metro.util.JSON;
 import org.json.simple.JSONStreamAware;
@@ -55,8 +56,8 @@ public final class GetPhasingOnlyControl extends APIServlet.APIRequestHandler {
 
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws ParameterException {
-        long accountId = ParameterParser.getAccountId(req, true);
-        PhasingOnly phasingOnly = PhasingOnly.get(accountId);
+        Account.FullId accountId = ParameterParser.getAccountFullId(req, true);
+        PhasingOnly phasingOnly = PhasingOnly.get(accountId.getLeft());
         return phasingOnly == null ? JSON.emptyJSON : JSONData.phasingOnly(phasingOnly);
     }
 

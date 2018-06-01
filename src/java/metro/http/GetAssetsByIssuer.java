@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.Asset;
 import metro.db.DbIterator;
 import org.json.simple.JSONArray;
@@ -35,7 +36,7 @@ public final class GetAssetsByIssuer extends APIServlet.APIRequestHandler {
 
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws ParameterException {
-        long[] accountIds = ParameterParser.getAccountIds(req, true);
+        Account.FullId[] accountIds = ParameterParser.getAccountIds(req, true);
         int firstIndex = ParameterParser.getFirstIndex(req);
         int lastIndex = ParameterParser.getLastIndex(req);
         boolean includeCounts = "true".equalsIgnoreCase(req.getParameter("includeCounts"));
@@ -43,9 +44,9 @@ public final class GetAssetsByIssuer extends APIServlet.APIRequestHandler {
         JSONObject response = new JSONObject();
         JSONArray accountsJSONArray = new JSONArray();
         response.put("assets", accountsJSONArray);
-        for (long accountId : accountIds) {
+        for (Account.FullId accountId : accountIds) {
             JSONArray assetsJSONArray = new JSONArray();
-            try (DbIterator<Asset> assets = Asset.getAssetsIssuedBy(accountId, firstIndex, lastIndex)) {
+            try (DbIterator<Asset> assets = Asset.getAssetsIssuedBy(accountId.getLeft(), firstIndex, lastIndex)) {
                 while (assets.hasNext()) {
                     assetsJSONArray.add(JSONData.asset(assets.next(), includeCounts));
                 }

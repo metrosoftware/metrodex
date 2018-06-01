@@ -33,7 +33,7 @@ public class AccountTest extends BlockchainTest {
         }
 
         // all balance should still be there since we lacked available balance for the transfer:
-        Account alice = Account.getAccount(ALICE.getId());
+        Account alice = Account.getAccount(ALICE.getFullId());
         Assert.assertEquals(100200000000000l, alice.getBalanceMQT());
         for (int i = 0; i < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS; i++) {
             Assert.assertNotNull(mineBlock());
@@ -41,7 +41,7 @@ public class AccountTest extends BlockchainTest {
 
         // TODO should it really appear in guaranteed balance immediately - once we have 30 clusters?
         // since forgers' coinbases are time-locked as well, it's probably OK to forge with the freshly mined stake...
-        alice = Account.getAccount(ALICE.getId());
+        alice = Account.getAccount(ALICE.getFullId());
         Assert.assertEquals(1022000, alice.getEffectiveBalanceMTR());
         Assert.assertEquals(102200000000000l, alice.getBalanceMQT());
         // 2000*(11-2) of them can be spent now (2 key blocks ago)
@@ -142,7 +142,7 @@ public class AccountTest extends BlockchainTest {
                 build().invoke();
         Logger.logDebugMessage("sendMoney: " + response);
         generateBlocks(2);
-        Account bob = Account.getAccount(BOB.getId());
+        Account bob = Account.getAccount(BOB.getFullId());
         Assert.assertEquals(1000000, bob.getEffectiveBalanceMTR());
         Assert.assertEquals(100010000000000l, bob.getBalanceMQT());
     }
@@ -160,7 +160,7 @@ public class AccountTest extends BlockchainTest {
         generateBlocks(2);
         Assert.assertNotNull(mineBlock());
         generateBlocks(4);
-        Account bob = Account.getAccount(BOB.getId());
+        Account bob = Account.getAccount(BOB.getFullId());
         Assert.assertEquals(1000000, bob.getEffectiveBalanceMTR());
     }
 
@@ -178,7 +178,7 @@ public class AccountTest extends BlockchainTest {
             Assert.assertNotNull(mineBlock());
         }
         generateBlocks(3);
-        Account bob = Account.getAccount(BOB.getId());
+        Account bob = Account.getAccount(BOB.getFullId());
         Assert.assertEquals(1000100, bob.getEffectiveBalanceMTR());
     }
 
@@ -195,7 +195,7 @@ public class AccountTest extends BlockchainTest {
         for (int i = 0; i < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS; i++) {
             Assert.assertNotNull(mineBlock());
         }
-        Account bob = Account.getAccount(BOB.getId());
+        Account bob = Account.getAccount(BOB.getFullId());
         Assert.assertEquals(1000100, bob.getEffectiveBalanceMTR());
     }
 
@@ -219,7 +219,7 @@ public class AccountTest extends BlockchainTest {
         for (int i = 0; i < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS; i++) {
             Assert.assertNotNull(mineBlock());
         }
-        Account bob = Account.getAccount(BOB.getId());
+        Account bob = Account.getAccount(BOB.getFullId());
         // TODO why Actual 1000000 now?
         Assert.assertEquals(1999999, bob.getEffectiveBalanceMTR());
     }
@@ -247,7 +247,7 @@ public class AccountTest extends BlockchainTest {
             Assert.assertNotNull(lastMined);
         }
         Assert.assertFalse("forgersMerkle must change (from the initial one) after the 3rd key block", Arrays.equals(forgersMerkle1, lastMined.getForgersMerkleRoot()));
-        Account bob = Account.getAccount(BOB.getId());
+        Account bob = Account.getAccount(BOB.getFullId());
         Assert.assertEquals(1000100, bob.getEffectiveBalanceMTR());
         blockchainProcessor.scan(0, true);
         Assert.assertEquals("scan failed to preserve block records", 23, blockchain.getHeight());

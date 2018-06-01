@@ -17,6 +17,9 @@
 
 package metro.db;
 
+import metro.Account;
+import org.apache.commons.lang3.tuple.Pair;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -149,10 +152,13 @@ public interface DbKey {
             return new LinkKey(rs.getLong(idColumnA), rs.getInt(idColumnB));
         }
 
+        public DbKey newKey(Account.FullId fullId) {
+            return new PairKey(fullId.getLeft(), fullId.getRight());
+        }
+
         public DbKey newKey(long idA, int idB) {
             return new PairKey(idA, idB);
         }
-
     }
 
     final class LongKey implements DbKey {

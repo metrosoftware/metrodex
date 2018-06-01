@@ -21,6 +21,7 @@ import metro.Account;
 import metro.MetroException;
 import metro.db.DbIterator;
 import metro.util.Convert;
+import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONStreamAware;
@@ -38,9 +39,9 @@ public final class GetAccountProperties extends APIServlet.APIRequestHandler {
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
 
-        long recipientId = ParameterParser.getAccountId(req, "recipient", false);
-        long setterId = ParameterParser.getAccountId(req, "setter", false);
-        if (recipientId == 0 && setterId == 0) {
+        Account.FullId recipientId = ParameterParser.getAccountFullId(req, "recipient", false);
+        Account.FullId setterId = ParameterParser.getAccountFullId(req, "setter", false);
+        if (recipientId == null && setterId == null) {
             return JSONResponses.missing("recipient", "setter");
         }
         String property = Convert.emptyToNull(req.getParameter("property"));
@@ -50,15 +51,15 @@ public final class GetAccountProperties extends APIServlet.APIRequestHandler {
         JSONObject response = new JSONObject();
         JSONArray propertiesJSON = new JSONArray();
         response.put("properties", propertiesJSON);
-        if (recipientId != 0) {
+        if (recipientId != null) {
             JSONData.putAccount(response, "recipient", recipientId);
         }
-        if (setterId != 0) {
+        if (setterId != null) {
             JSONData.putAccount(response, "setter", setterId);
         }
         try (DbIterator<Account.AccountProperty> iterator = Account.getProperties(recipientId, setterId, property, firstIndex, lastIndex)) {
             while (iterator.hasNext()) {
-                propertiesJSON.add(JSONData.accountProperty(iterator.next(), recipientId == 0, setterId == 0));
+                propertiesJSON.add(JSONData.accountProperty(iterator.next(), recipientId == null, setterId == null));
             }
         }
         return response;

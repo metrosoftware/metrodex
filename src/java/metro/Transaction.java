@@ -18,6 +18,7 @@
 package metro;
 
 import metro.util.Filter;
+import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONObject;
 
 import java.util.List;
@@ -26,9 +27,7 @@ public interface Transaction {
 
     interface Builder {
 
-        Builder recipientId(long recipientId);
-
-        Builder recipientId2(long recipientId2);
+        Builder recipientFullId(Account.FullId recipientFullId);
 
         Builder referencedTransactionFullHash(String referencedTransactionFullHash);
 
@@ -64,9 +63,17 @@ public interface Transaction {
 
     long getSenderId();
 
+    int getSenderId2();
+
     byte[] getSenderPublicKey();
 
+    Account.FullId getSenderFullId();
+
     long getRecipientId();
+
+    int getRecipientId2();
+
+    Account.FullId getRecipientFullId();
 
     int getHeight();
 

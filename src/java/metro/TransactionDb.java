@@ -181,6 +181,7 @@ final class TransactionDb {
             int height = rs.getInt("height");
             long id = rs.getLong("id");
             long senderId = rs.getLong("sender_id");
+            int senderId2 = rs.getInt("sender_id2");
             byte[] attachmentBytes = rs.getBytes("attachment_bytes");
             long blockTimestamp = rs.getLong("block_timestamp");
             byte[] fullHash = rs.getBytes("full_hash");
@@ -203,15 +204,17 @@ final class TransactionDb {
                     .height(height)
                     .id(id)
                     .senderId(senderId)
+                    .senderId2(senderId2)
                     .blockTimestamp(blockTimestamp)
                     .fullHash(fullHash)
                     .ecBlockHeight(ecBlockHeight)
                     .ecBlockId(ecBlockId)
                     .index(transactionIndex);
             if (transactionType.canHaveRecipient()) {
+                int recipientId2 = rs.getInt("recipient_id2");
                 long recipientId = rs.getLong("recipient_id");
                 if (! rs.wasNull()) {
-                    builder.recipientId(recipientId);
+                    builder.recipientFullId(recipientId, recipientId2);
                 }
             }
             if (rs.getBoolean("has_message")) {
@@ -311,8 +314,8 @@ final class TransactionDb {
             short index = 0;
             for (TransactionImpl transaction : transactions) {
                 try (PreparedStatement pstmt = con.prepareStatement("INSERT INTO transaction (id, deadline, "
-                        + "recipient_id, amount, fee, referenced_transaction_full_hash, height, "
-                        + "block_id, signature, timestamp, type, subtype, sender_id, attachment_bytes, "
+                        + "recipient_id, recipient_id2, amount, fee, referenced_transaction_full_hash, height, "
+                        + "block_id, signature, timestamp, type, subtype, sender_id, sender_id2, attachment_bytes, "
                         + "block_timestamp, full_hash, version, has_message, has_encrypted_message, has_public_key_announcement, "
                         + "has_encrypttoself_message, phased, has_prunable_message, has_prunable_encrypted_message, "
                         + "has_prunable_attachment, ec_block_height, ec_block_id, transaction_index) "
@@ -321,6 +324,7 @@ final class TransactionDb {
                     pstmt.setLong(++i, transaction.getId());
                     pstmt.setShort(++i, transaction.getDeadline());
                     DbUtils.setLongZeroToNull(pstmt, ++i, transaction.getRecipientId());
+                    DbUtils.setIntZeroToNull(pstmt, ++i, transaction.getRecipientId2());
                     pstmt.setLong(++i, transaction.getAmountMQT());
                     pstmt.setLong(++i, transaction.getFeeMQT());
                     DbUtils.setBytes(pstmt, ++i, transaction.referencedTransactionFullHash());
@@ -331,6 +335,7 @@ final class TransactionDb {
                     pstmt.setByte(++i, transaction.getType().getType());
                     pstmt.setByte(++i, transaction.getType().getSubtype());
                     pstmt.setLong(++i, transaction.getSenderId());
+                    pstmt.setInt(++i, transaction.getSenderId2());
                     int bytesLength = 0;
                     for (Appendix appendage : transaction.getAppendages()) {
                         bytesLength += appendage.getSize();

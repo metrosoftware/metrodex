@@ -30,6 +30,7 @@ import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -1160,11 +1161,11 @@ public interface Appendix {
             if (!Crypto.isCanonicalPublicKey(publicKey)) {
                 throw new MetroException.NotValidException("Invalid recipient public key: " + Convert.toHexString(publicKey));
             }
-            long recipientId = transaction.getRecipientId();
-            if (Account.getId(this.publicKey) != recipientId) {
+            Account.FullId recipientId = transaction.getRecipientFullId();
+            if (!Account.FullId.fromPublicKey(this.publicKey).equals(recipientId)) {
                 throw new MetroException.NotValidException("Announced public key does not match recipient accountId");
             }
-            byte[] recipientPublicKey = Account.getPublicKey(recipientId);
+            byte[] recipientPublicKey = Account.getPublicKey(recipientId.getLeft());
             if (recipientPublicKey != null && ! Arrays.equals(publicKey, recipientPublicKey)) {
                 throw new MetroException.NotCurrentlyValidException("A different public key for this account has already been announced");
             }
@@ -1172,7 +1173,7 @@ public interface Appendix {
 
         @Override
         void apply(Transaction transaction, Account senderAccount, Account recipientAccount) {
-            if (Account.setOrVerify(recipientAccount.getId1(), publicKey)) {
+            if (Account.setOrVerify(recipientAccount.getId(), publicKey)) {
                 recipientAccount.apply(this.publicKey);
             }
         }
@@ -1467,7 +1468,7 @@ public interface Appendix {
             return params.getQuorum();
         }
 
-        public long[] getWhitelist() {
+        public List<Account.FullId> getWhitelist() {
             return params.getWhitelist();
         }
 

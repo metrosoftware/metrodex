@@ -86,8 +86,8 @@ public class ACTestUtils {
         Assert.assertTrue(errorMsg.contains("metro.MetroException$AccountControlException"));
     }
     
-    public static long getAccountBalance(long account, String balance) {
-        APICall.Builder builder = new APICall.Builder("getBalance").param("account", Long.toUnsignedString(account));
+    public static long getAccountBalance(String account, String balance) {
+        APICall.Builder builder = new APICall.Builder("getBalance").param("account", account);
         JSONObject response = builder.build().invoke();
         
         Logger.logMessage("getBalance response: " + response.toJSONString());

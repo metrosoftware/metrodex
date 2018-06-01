@@ -39,9 +39,9 @@ public final class LeaseBalance extends CreateTransaction {
 
         int period = ParameterParser.getInt(req, "period", Constants.LEASING_DELAY, 65535, true);
         Account account = ParameterParser.getSenderAccount(req);
-        long recipient = ParameterParser.getAccountId(req, "recipient", true);
+        Account.FullId recipient = ParameterParser.getAccountFullId(req, "recipient", true);
         Account recipientAccount = Account.getAccount(recipient);
-        if (recipientAccount == null || Account.getPublicKey(recipientAccount.getId1()) == null) {
+        if (recipientAccount == null || Account.getPublicKey(recipientAccount.getId()) == null) {
             JSONObject response = new JSONObject();
             response.put("errorCode", 8);
             response.put("errorDescription", "recipient account does not have public key");

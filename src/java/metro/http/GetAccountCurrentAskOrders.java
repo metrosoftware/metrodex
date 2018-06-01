@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.MetroException;
 import metro.Order;
 import metro.db.DbIterator;
@@ -37,16 +38,16 @@ public final class GetAccountCurrentAskOrders extends APIServlet.APIRequestHandl
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
 
-        long accountId = ParameterParser.getAccountId(req, true);
+        Account.FullId accountId = ParameterParser.getAccountFullId(req, true);
         long assetId = ParameterParser.getUnsignedLong(req, "asset", false);
         int firstIndex = ParameterParser.getFirstIndex(req);
         int lastIndex = ParameterParser.getLastIndex(req);
 
         DbIterator<Order.Ask> askOrders;
         if (assetId == 0) {
-            askOrders = Order.Ask.getAskOrdersByAccount(accountId, firstIndex, lastIndex);
+            askOrders = Order.Ask.getAskOrdersByAccount(accountId.getLeft(), firstIndex, lastIndex);
         } else {
-            askOrders = Order.Ask.getAskOrdersByAccountAsset(accountId, assetId, firstIndex, lastIndex);
+            askOrders = Order.Ask.getAskOrdersByAccountAsset(accountId.getLeft(), assetId, firstIndex, lastIndex);
         }
         JSONArray orders = new JSONArray();
         try {

@@ -38,14 +38,14 @@ public final class GetAccountAssets extends APIServlet.APIRequestHandler {
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
 
-        long accountId = ParameterParser.getAccountId(req, true);
+        Account.FullId accountId = ParameterParser.getAccountFullId(req, true);
         int height = ParameterParser.getHeight(req);
         long assetId = ParameterParser.getUnsignedLong(req, "asset", false);
         boolean includeAssetInfo = "true".equalsIgnoreCase(req.getParameter("includeAssetInfo"));
 
         if (assetId == 0) {
             JSONObject response = new JSONObject();
-            try (DbIterator<Account.AccountAsset> accountAssets = Account.getAccountAssets(accountId, height, 0, -1)) {
+            try (DbIterator<Account.AccountAsset> accountAssets = Account.getAccountAssets(accountId.getLeft(), height, 0, -1)) {
                 JSONArray assetJSON = new JSONArray();
                 while (accountAssets.hasNext()) {
                     assetJSON.add(JSONData.accountAsset(accountAssets.next(), false, includeAssetInfo));
@@ -54,7 +54,7 @@ public final class GetAccountAssets extends APIServlet.APIRequestHandler {
                 return response;
             }
         } else {
-            Account.AccountAsset accountAsset = Account.getAccountAsset(accountId, assetId, height);
+            Account.AccountAsset accountAsset = Account.getAccountAsset(accountId.getLeft(), assetId, height);
             if (accountAsset != null) {
                 return JSONData.accountAsset(accountAsset, false, includeAssetInfo);
             }

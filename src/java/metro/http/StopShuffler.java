@@ -38,27 +38,27 @@ public final class StopShuffler extends APIServlet.APIRequestHandler {
     protected JSONStreamAware processRequest(HttpServletRequest req) throws ParameterException {
         String secretPhrase = ParameterParser.getSecretPhrase(req, false);
         byte[] shufflingFullHash = ParameterParser.getBytes(req, "shufflingFullHash", false);
-        long accountId = ParameterParser.getAccountId(req, false);
+        Account.FullId accountId = ParameterParser.getAccountFullId(req, false);
         JSONObject response = new JSONObject();
         if (secretPhrase != null) {
-            if (accountId != 0 && Account.getId(Crypto.getPublicKey(secretPhrase)) != accountId) {
+            if (accountId != null && !Account.FullId.fromSecretPhrase(secretPhrase).equals(accountId)) {
                 return JSONResponses.INCORRECT_ACCOUNT;
             }
-            accountId = Account.getId(Crypto.getPublicKey(secretPhrase));
+            accountId = Account.FullId.fromSecretPhrase(secretPhrase);
             if (shufflingFullHash.length == 0) {
                 return JSONResponses.missing("shufflingFullHash");
             }
-            Shuffler shuffler = Shuffler.stopShuffler(accountId, shufflingFullHash);
+            Shuffler shuffler = Shuffler.stopShuffler(accountId.getLeft(), shufflingFullHash);
             response.put("stoppedShuffler", shuffler != null);
         } else {
             API.verifyPassword(req);
-            if (accountId != 0 && shufflingFullHash.length != 0) {
-                Shuffler shuffler = Shuffler.stopShuffler(accountId, shufflingFullHash);
+            if (accountId != null && shufflingFullHash.length != 0) {
+                Shuffler shuffler = Shuffler.stopShuffler(accountId.getLeft(), shufflingFullHash);
                 response.put("stoppedShuffler", shuffler != null);
-            } else if (accountId == 0 && shufflingFullHash.length == 0) {
+            } else if (accountId == null && shufflingFullHash.length == 0) {
                 Shuffler.stopAllShufflers();
                 response.put("stoppedAllShufflers", true);
-            } else if (accountId != 0) {
+            } else if (accountId != null) {
                 return JSONResponses.missing("shufflingFullHash");
             } else if (shufflingFullHash.length != 0) {
                 return JSONResponses.missing("account");

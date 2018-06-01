@@ -7,6 +7,8 @@
 package metro.crypto;
 
 
+import metro.Account;
+import metro.util.Convert;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -24,14 +26,11 @@ final class ReedSolomon {
     private static final int base_10_length = 29;
 
     static String encode(long id1, int id2) {
-        return encode(new ImmutablePair<Long, Integer>(id1,id2));
+        return encode(new Account.FullId(id1,id2));
     }
 
-    static String encode(Pair<Long, Integer> plain) {
-        BigInteger bigPlain = new BigInteger(Long.toUnsignedString(plain.getLeft()));
-        bigPlain = bigPlain.multiply(BigInteger.valueOf((long)Math.pow(2,32)));
-        bigPlain = bigPlain.add(new BigInteger(Integer.toUnsignedString(plain.getRight())));
-        String plain_string = bigPlain.toString();
+    static String encode(Account.FullId plain) {
+        String plain_string = plain.toString();
         int length = plain_string.length();
         int[] plain_string_10 = new int[ReedSolomon.base_10_length];
         for (int i = 0; i < length; i++) {
@@ -84,7 +83,7 @@ final class ReedSolomon {
         return cypher_string_builder.toString();
     }
 
-    static Pair<Long, Integer> decode(String cypher_string) throws DecodeException {
+    static Account.FullId decode(String cypher_string) throws DecodeException {
 
         int[] codeword = new int[ReedSolomon.initial_codeword.length];
         System.arraycopy(ReedSolomon.initial_codeword, 0, codeword, 0, ReedSolomon.initial_codeword.length);
@@ -140,7 +139,7 @@ final class ReedSolomon {
         BigInteger result = new BigInteger(plain_string_builder.reverse().toString());
         long id1 = result.divide(two32).longValue();
         int id2 = result.subtract(result.divide(two32).multiply(two32)).intValue();
-        return new ImmutablePair<Long, Integer>(id1,id2);
+        return new Account.FullId(id1, id2);
     }
 
     private static int gmult(int a, int b) {

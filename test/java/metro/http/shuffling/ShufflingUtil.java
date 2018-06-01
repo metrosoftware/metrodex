@@ -17,6 +17,7 @@
 
 package metro.http.shuffling;
 
+import metro.Account;
 import metro.Constants;
 import metro.HoldingType;
 import metro.Tester;
@@ -128,18 +129,18 @@ class ShufflingUtil {
         return response;
     }
 
-    static JSONObject cancel(String shufflingId, Tester tester, String shufflingStateHash, long cancellingAccountId) {
+    static JSONObject cancel(String shufflingId, Tester tester, String shufflingStateHash, Account.FullId cancellingAccountId) {
         return cancel(shufflingId, tester, shufflingStateHash, cancellingAccountId, true);
     }
 
-    static JSONObject cancel(String shufflingId, Tester tester, String shufflingStateHash, long cancellingAccountId, boolean broadcast) {
+    static JSONObject cancel(String shufflingId, Tester tester, String shufflingStateHash, Account.FullId cancellingAccountId, boolean broadcast) {
         APICall.Builder builder = new APICall.Builder("shufflingCancel").
                 param("shuffling", shufflingId).
                 param("secretPhrase", tester.getSecretPhrase()).
                 param("shufflingStateHash", shufflingStateHash).
                 feeMQT(10 * Constants.ONE_MTR);
-        if (cancellingAccountId != 0) {
-            builder.param("cancellingAccount", Long.toUnsignedString(cancellingAccountId));
+        if (cancellingAccountId != null) {
+            builder.param("cancellingAccount", cancellingAccountId.toString());
         }
         if (!broadcast) {
             builder.param("broadcast", "false");

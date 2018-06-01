@@ -66,6 +66,7 @@ public final class BlockImpl implements Block {
     private volatile long id;
     private volatile String stringId = null;
     private volatile long generatorId;
+    private volatile Account.FullId generatorFullId;
     private volatile byte[] bytes = null;
 
     /**
@@ -312,9 +313,17 @@ public final class BlockImpl implements Block {
     @Override
     public long getGeneratorId() {
         if (generatorId == 0) {
-            generatorId = Account.getId(getGeneratorPublicKey());
+            generatorId = getGeneratorFullId().getLeft();
         }
         return generatorId;
+    }
+
+    @Override
+    public Account.FullId getGeneratorFullId() {
+        if (generatorFullId == null) {
+            generatorFullId = Account.FullId.fromPublicKey(getGeneratorPublicKey());
+        }
+        return generatorFullId;
     }
 
     @Override
@@ -478,7 +487,7 @@ public final class BlockImpl implements Block {
                 return false;
             }
             if (!isKeyBlock()) {
-                Account account = Account.getAccount(getGeneratorId());
+                Account account = Account.getAccount(getGeneratorFullId());
                 long effectiveBalance = account == null ? 0 : account.getEffectiveBalanceMTR();
                 if (effectiveBalance <= 0) {
                     return false;
@@ -494,7 +503,8 @@ public final class BlockImpl implements Block {
     }
 
     void apply() {
-        Account generatorAccount = Account.addOrGetAccount(getGeneratorId(),null);
+        Account.FullId generatorFullId = Account.FullId.fromPublicKey(getGeneratorPublicKey());
+        Account generatorAccount = Account.addOrGetAccount(generatorFullId);
         generatorAccount.apply(getGeneratorPublicKey());
     }
 

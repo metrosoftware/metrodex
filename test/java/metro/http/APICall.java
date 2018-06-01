@@ -17,7 +17,9 @@
 
 package metro.http;
 
+import metro.util.Convert;
 import metro.util.Logger;
+import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.junit.Assert;
@@ -109,8 +111,12 @@ public class APICall {
             return param("feeMQT", "" + value);
         }
 
-        public Builder recipient(long id) {
-            return param("recipient", Long.toUnsignedString(id));
+//        public Builder recipient(long id) {
+//            return param("recipient", Long.toUnsignedString(id));
+//        }
+
+        public Builder recipient(Pair<Long, Integer> id) {
+            return param("recipient", id.toString());
         }
 
         public String getParam(String key) {

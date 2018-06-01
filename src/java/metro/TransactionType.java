@@ -23,6 +23,8 @@ import metro.Attachment.AbstractAttachment;
 import metro.MetroException.ValidationException;
 import metro.VoteWeighting.VotingModel;
 import metro.util.Convert;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONObject;
 
 import java.nio.ByteBuffer;
@@ -405,7 +407,7 @@ public abstract class TransactionType {
         @Override
         final void applyAttachment(Transaction transaction, Account senderAccount, Account recipientAccount) {
             Attachment.CoinbaseRecipientsAttachment attachment = (Attachment.CoinbaseRecipientsAttachment) transaction.getAttachment();
-            for (Long recipientId: attachment.getRecipients().keySet()) {
+            for (Account.FullId recipientId: attachment.getRecipients().keySet()) {
                 Account recipient = Account.getAccount(recipientId);
                 recipient.addToBalanceAndUnconfirmedBalanceMQT(LedgerEvent.ORDINARY_COINBASE, transaction.getBlockId(), attachment.getRecipients().get(recipientId));
             }
@@ -524,7 +526,8 @@ public abstract class TransactionType {
                 if (transaction.getAmountMQT() != 0) {
                     throw new MetroException.NotValidException("Invalid arbitrary message: " + attachment.getJSONObject());
                 }
-                if (transaction.getRecipientId() == Genesis.CREATOR_ID) {
+
+                if (Genesis.CREATOR_ID.equals(new Account.FullId(transaction.getRecipientId(), transaction.getRecipientId2()))) {
                     throw new MetroException.NotValidException("Sending messages to Genesis not allowed.");
                 }
             }
@@ -692,7 +695,7 @@ public abstract class TransactionType {
                     throw new MetroException.NotValidException("Invalid alias sell price: " + priceMQT);
                 }
                 if (priceMQT == 0) {
-                    if (Genesis.CREATOR_ID == transaction.getRecipientId()) {
+                    if (Genesis.CREATOR_ID.equals(new Account.FullId(transaction.getRecipientId(), transaction.getRecipientId2()))) {
                         throw new MetroException.NotValidException("Transferring aliases to Genesis account not allowed");
                     } else if (transaction.getRecipientId() == 0) {
                         throw new MetroException.NotValidException("Missing alias transfer recipient");
@@ -704,7 +707,7 @@ public abstract class TransactionType {
                 } else if (alias.getAccountId() != transaction.getSenderId()) {
                     throw new MetroException.NotCurrentlyValidException("Alias doesn't belong to sender: " + aliasName);
                 }
-                if (transaction.getRecipientId() == Genesis.CREATOR_ID) {
+                if (Genesis.CREATOR_ID.equals(new Account.FullId(transaction.getRecipientId(), transaction.getRecipientId2()))) {
                     throw new MetroException.NotValidException("Selling alias to Genesis not allowed");
                 }
             }
@@ -1158,7 +1161,7 @@ public abstract class TransactionType {
                     throw new MetroException.NotValidException("No more than " + Constants.MAX_PHASING_VOTE_TRANSACTIONS + " votes allowed for two-phased multi-voting");
                 }
 
-                long voterId = transaction.getSenderId();
+                Account.FullId voterId = transaction.getSenderFullId();
                 for (byte[] hash : hashes) {
                     long phasedTransactionId = Convert.fullHashToId(hash);
                     if (phasedTransactionId == 0) {
@@ -1173,8 +1176,8 @@ public abstract class TransactionType {
                     if (! poll.getVoteWeighting().acceptsVotes()) {
                         throw new MetroException.NotValidException("This phased transaction does not require or accept voting");
                     }
-                    long[] whitelist = poll.getWhitelist();
-                    if (whitelist.length > 0 && Arrays.binarySearch(whitelist, voterId) < 0) {
+                    List<Account.FullId> whitelist = poll.getWhitelist();
+                    if (whitelist.size() > 0 && !whitelist.contains(voterId)) {
                         throw new MetroException.NotValidException("Voter is not in the phased transaction whitelist");
                     }
                     if (revealedSecret.length > 0) {
@@ -1344,7 +1347,7 @@ public abstract class TransactionType {
                 if (transaction.getAmountMQT() != 0) {
                     throw new MetroException.NotValidException("Account property transaction cannot be used to send " + Constants.COIN_SYMBOL);
                 }
-                if (transaction.getRecipientId() == Genesis.CREATOR_ID) {
+                if (Genesis.CREATOR_ID.equals(new Account.FullId(transaction.getRecipientId(), transaction.getRecipientId2()))) {
                     throw new MetroException.NotValidException("Setting Genesis account properties not allowed");
                 }
             }
@@ -1412,7 +1415,7 @@ public abstract class TransactionType {
                 if (transaction.getAmountMQT() != 0) {
                     throw new MetroException.NotValidException("Account property transaction cannot be used to send " + Constants.COIN_SYMBOL);
                 }
-                if (transaction.getRecipientId() == Genesis.CREATOR_ID) {
+                if (Genesis.CREATOR_ID.equals(new Account.FullId(transaction.getRecipientId(), transaction.getRecipientId2()))) {
                     throw new MetroException.NotValidException("Deleting Genesis account properties not allowed");
                 }
             }
@@ -1601,7 +1604,7 @@ public abstract class TransactionType {
                 Attachment.ColoredCoinsAssetTransfer attachment = (Attachment.ColoredCoinsAssetTransfer) transaction.getAttachment();
                 senderAccount.addToAssetBalanceQNT(getLedgerEvent(), transaction.getId(), attachment.getAssetId(),
                         -attachment.getQuantityQNT());
-                if (recipientAccount.getId1() == Genesis.CREATOR_ID) {
+                if (Genesis.CREATOR_ID.equals(new Account.FullId(transaction.getRecipientId(), transaction.getRecipientId2()))) {
                     Asset.deleteAsset(transaction, attachment.getAssetId(), attachment.getQuantityQNT());
                 } else {
                     recipientAccount.addToAssetAndUnconfirmedAssetBalanceQNT(getLedgerEvent(), transaction.getId(),
@@ -1623,7 +1626,7 @@ public abstract class TransactionType {
                 if (transaction.getAmountMQT() != 0 || attachment.getAssetId() == 0) {
                     throw new MetroException.NotValidException("Invalid asset transfer amount or asset: " + attachment.getJSONObject());
                 }
-                if (transaction.getRecipientId() == Genesis.CREATOR_ID) {
+                if (Genesis.CREATOR_ID.equals(new Account.FullId(transaction.getRecipientId(), transaction.getRecipientId2()))) {
                     throw new MetroException.NotValidException("Asset transfer to Genesis not allowed, "
                             + "use asset delete attachment instead");
                 }
@@ -2184,7 +2187,7 @@ public abstract class TransactionType {
                     throw new MetroException.NotCurrentlyValidException("Invalid effective balance leasing: "
                             + " recipient account " + Long.toUnsignedString(transaction.getRecipientId()) + " not found or no public key published");
                 }
-                if (transaction.getRecipientId() == Genesis.CREATOR_ID) {
+                if (Genesis.CREATOR_ID.equals(new Account.FullId(transaction.getRecipientId(), transaction.getRecipientId2()))) {
                     throw new MetroException.NotValidException("Leasing to Genesis account not allowed");
                 }
             }

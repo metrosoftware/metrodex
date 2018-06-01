@@ -31,7 +31,7 @@ public class TestGetVoterPhasedTransactions extends BlockchainTest {
 
     static APICall getVoterPhasedTransactions() {
         return new APICall.Builder("getVoterPhasedTransactions")
-                .param("account", Long.toUnsignedString(CHUCK.getId()))
+                .param("account", CHUCK.getFullId().toString())
                 .param("firstIndex", 0)
                 .param("lastIndex", 10)
                 .build();

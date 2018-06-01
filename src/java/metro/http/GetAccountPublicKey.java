@@ -37,8 +37,8 @@ public final class GetAccountPublicKey extends APIServlet.APIRequestHandler {
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
 
-        long accountId = ParameterParser.getAccountId(req, true);
-        byte[] publicKey = Account.getPublicKey(accountId);
+        Account.FullId accountId = ParameterParser.getAccountFullId(req, true);
+        byte[] publicKey = Account.getPublicKey(accountId.getLeft());
         if (publicKey != null) {
             JSONObject response = new JSONObject();
             response.put("publicKey", Convert.toHexString(publicKey));

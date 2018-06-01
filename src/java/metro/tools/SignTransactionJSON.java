@@ -62,7 +62,8 @@ public final class SignTransactionJSON {
             try (BufferedReader reader = new BufferedReader(new FileReader(unsigned));
                  BufferedWriter writer = new BufferedWriter(new FileWriter(signed))) {
                 JSONObject json = (JSONObject) JSONValue.parseWithException(reader);
-                String senderRS = Convert.rsAccount(Convert.publicKeyToId(Convert.parseHexString((String) json.get("senderPublicKey"))));
+                byte[] publicKeyHash = Crypto.sha256().digest(Convert.parseHexString((String) json.get("senderPublicKey")));
+                String senderRS = Account.FullId.fromFullHash(publicKeyHash).toRS();
                 String secretPhrase;
                 Console console = System.console();
                 if (console == null) {

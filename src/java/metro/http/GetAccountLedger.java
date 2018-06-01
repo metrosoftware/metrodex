@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.AccountLedger;
 import metro.AccountLedger.LedgerEntry;
 import metro.AccountLedger.LedgerEvent;
@@ -237,7 +238,8 @@ public class GetAccountLedger extends APIServlet.APIRequestHandler {
         //
         // Process the request parameters
         //
-        long accountId = ParameterParser.getAccountId(req, "account", false);
+        Account.FullId accountFullId = ParameterParser.getAccountFullId(req, "account", false);
+        long accountId = accountFullId != null ? accountFullId.getLeft() : 0;
         int firstIndex = ParameterParser.getFirstIndex(req);
         int lastIndex = ParameterParser.getLastIndex(req);
         String eventType = Convert.emptyToNull(req.getParameter("eventType"));

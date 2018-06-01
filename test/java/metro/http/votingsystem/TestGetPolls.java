@@ -31,7 +31,7 @@ public class TestGetPolls extends BlockchainTest {
     public void accountPollsIncrease() {
         APICall apiCall = new APICall.Builder("getPolls")
                 .param("includeVoters", "false")
-                .param("account", Long.toUnsignedString(DAVE.getId()))
+                .param("account", DAVE.getFullId().toString())
                 .param("firstIndex", 0)
                 .param("lastIndex", 100)
                 .build();

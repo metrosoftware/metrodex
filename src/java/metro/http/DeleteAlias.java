@@ -41,7 +41,7 @@ public final class DeleteAlias extends CreateTransaction {
         final Alias alias = ParameterParser.getAlias(req);
         final Account owner = ParameterParser.getSenderAccount(req);
 
-        if (alias.getAccountId() != owner.getId1()) {
+        if (alias.getAccountId() != owner.getId()) {
             return INCORRECT_ALIAS_OWNER;
         }
 

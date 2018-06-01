@@ -44,9 +44,9 @@ public final class GetAccount extends APIServlet.APIRequestHandler {
         boolean includeEffectiveBalance = "true".equalsIgnoreCase(req.getParameter("includeEffectiveBalance"));
 
         JSONObject response = JSONData.accountBalance(account, includeEffectiveBalance);
-        JSONData.putAccount(response, "account", account.getId1(), account.getId2());
+        JSONData.putAccount(response, "account", account.getId(), account.getId2());
 
-        byte[] publicKey = Account.getPublicKey(account.getId1());
+        byte[] publicKey = Account.getPublicKey(account.getId());
         if (publicKey != null) {
             response.put("publicKey", Convert.toHexString(publicKey));
         }
@@ -57,11 +57,15 @@ public final class GetAccount extends APIServlet.APIRequestHandler {
         }
         Account.AccountLease accountLease = account.getAccountLease();
         if (accountLease != null) {
-            JSONData.putAccount(response, "currentLessee", accountLease.getCurrentLesseeId());
+            //FIXME #220 optimize
+            Account.FullId leaseFullId = Account.getAccount(accountLease.getCurrentLesseeId()).getFullId();
+            JSONData.putAccount(response, "currentLessee", leaseFullId);
             response.put("currentLeasingHeightFrom", accountLease.getCurrentLeasingHeightFrom());
             response.put("currentLeasingHeightTo", accountLease.getCurrentLeasingHeightTo());
             if (accountLease.getNextLesseeId() != 0) {
-                JSONData.putAccount(response, "nextLessee", accountLease.getNextLesseeId());
+                //FIXME #220 optimize
+                Account.FullId nextLeaseFullId = Account.getAccount(accountLease.getNextLesseeId()).getFullId();
+                JSONData.putAccount(response, "nextLessee", nextLeaseFullId);
                 response.put("nextLeasingHeightFrom", accountLease.getNextLeasingHeightFrom());
                 response.put("nextLeasingHeightTo", accountLease.getNextLeasingHeightTo());
             }
@@ -81,8 +85,8 @@ public final class GetAccount extends APIServlet.APIRequestHandler {
                     JSONArray lessorInfo = new JSONArray();
                     while (lessors.hasNext()) {
                         Account lessor = lessors.next();
-                        lessorIds.add(Long.toUnsignedString(lessor.getId1()));
-                        lessorIdsRS.add(Convert.rsAccount(lessor.getId1()));
+                        lessorIds.add(Long.toUnsignedString(lessor.getId()));
+                        lessorIdsRS.add(Convert.rsAccount(lessor.getId(), lessor.getId2()));
                         lessorInfo.add(JSONData.lessor(lessor, includeEffectiveBalance));
                     }
                     response.put("lessors", lessorIds);

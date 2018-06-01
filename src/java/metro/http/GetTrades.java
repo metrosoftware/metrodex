@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.MetroException;
 import metro.Trade;
 import metro.db.DbIterator;
@@ -39,8 +40,8 @@ public final class GetTrades extends APIServlet.APIRequestHandler {
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
 
         long assetId = ParameterParser.getUnsignedLong(req, "asset", false);
-        long accountId = ParameterParser.getAccountId(req, false);
-        if (assetId == 0 && accountId == 0) {
+        Account.FullId accountId = ParameterParser.getAccountFullId(req, false);
+        if (assetId == 0 && accountId == null) {
             return JSONResponses.MISSING_ASSET_ACCOUNT;
         }
 
@@ -53,12 +54,12 @@ public final class GetTrades extends APIServlet.APIRequestHandler {
         JSONArray tradesData = new JSONArray();
         DbIterator<Trade> trades = null;
         try {
-            if (accountId == 0) {
+            if (accountId == null) {
                 trades = Trade.getAssetTrades(assetId, firstIndex, lastIndex);
             } else if (assetId == 0) {
-                trades = Trade.getAccountTrades(accountId, firstIndex, lastIndex);
+                trades = Trade.getAccountTrades(accountId.getLeft(), firstIndex, lastIndex);
             } else {
-                trades = Trade.getAccountAssetTrades(accountId, assetId, firstIndex, lastIndex);
+                trades = Trade.getAccountAssetTrades(accountId.getLeft(), assetId, firstIndex, lastIndex);
             }
             while (trades.hasNext()) {
                 Trade trade = trades.next();

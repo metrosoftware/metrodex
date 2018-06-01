@@ -23,6 +23,7 @@ import metro.Metro;
 import metro.crypto.Crypto;
 import metro.util.Convert;
 import metro.util.Logger;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -205,9 +206,9 @@ public final class PassphraseRecovery {
                 } else {
                     String secretPhrase = new String(wildcard);
                     byte[] publicKey = Crypto.getPublicKey(secretPhrase);
-                    long id = Account.getId(publicKey);
-                    if (publicKeys.keySet().contains(id)) {
-                        return new Solution(secretPhrase, publicKeys.get(id), id, Convert.rsAccount(id));
+                    Account.FullId id = Account.FullId.fromPublicKey(publicKey);
+                    if (publicKeys.keySet().contains(id.getLeft())) {
+                        return new Solution(secretPhrase, publicKeys.get(id.getLeft()), id.getLeft(), id.toRS());
                     }
                 }
             }

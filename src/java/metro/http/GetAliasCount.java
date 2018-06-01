@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.Alias;
 import metro.MetroException;
 import org.json.simple.JSONObject;
@@ -34,9 +35,9 @@ public final class GetAliasCount extends APIServlet.APIRequestHandler {
 
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
-        final long accountId = ParameterParser.getAccountId(req, true);
+        final Account.FullId accountId = ParameterParser.getAccountFullId(req, true);
         JSONObject response = new JSONObject();
-        response.put("numberOfAliases", Alias.getAccountAliasCount(accountId));
+        response.put("numberOfAliases", Alias.getAccountAliasCount(accountId.getLeft()));
         return response;
     }
 

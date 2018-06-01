@@ -36,7 +36,7 @@ public final class GetAccountId extends APIServlet.APIRequestHandler {
     protected JSONStreamAware processRequest(HttpServletRequest req) throws ParameterException {
 
         byte[] publicKey = ParameterParser.getPublicKey(req);
-        long accountId = Account.getId(publicKey);
+        Account.FullId accountId = Account.FullId.fromPublicKey(publicKey);
         JSONObject response = new JSONObject();
         JSONData.putAccount(response, "account", accountId);
         response.put("publicKey", Convert.toHexString(publicKey));

@@ -21,6 +21,7 @@ import metro.Account;
 import metro.Alias;
 import metro.Attachment;
 import metro.MetroException;
+import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONStreamAware;
 
 import javax.servlet.http.HttpServletRequest;
@@ -45,7 +46,8 @@ public final class BuyAlias extends CreateTransaction {
             return INCORRECT_ALIAS_NOTFORSALE;
         }
         long sellerId = alias.getAccountId();
+        Account.FullId sellerFullId = Account.getAccount(sellerId).getFullId();
         Attachment attachment = new Attachment.MessagingAliasBuy(alias.getAliasName());
-        return createTransaction(req, buyer, sellerId, amountMQT, attachment);
+        return createTransaction(req, buyer, sellerFullId, amountMQT, attachment);
     }
 }

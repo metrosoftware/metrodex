@@ -28,13 +28,13 @@ import metro.Transaction;
 import metro.TransactionType;
 import metro.crypto.Crypto;
 import metro.util.Convert;
-import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONStreamAware;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.stream.IntStream;
+import java.util.List;
 
 import static metro.http.JSONResponses.*;
 
@@ -76,12 +76,12 @@ abstract class CreateTransaction extends APIServlet.APIRequestHandler {
 
     final JSONStreamAware createTransaction(HttpServletRequest req, Account senderAccount, Attachment attachment)
             throws MetroException {
-        return createTransaction(req, senderAccount, 0, 0, attachment);
+        return createTransaction(req, senderAccount, null, 0, attachment);
     }
 
-    final JSONStreamAware createTransaction(HttpServletRequest req, Account senderAccount, long recipientId, long amountMQT)
-            throws MetroException {
-        return createTransaction(req, senderAccount, recipientId, amountMQT, Attachment.ORDINARY_PAYMENT);
+    final JSONStreamAware createTransaction(HttpServletRequest req, Account senderAccount,
+                                            Account.FullId recipientFullId, long amountMQT) throws MetroException {
+        return createTransaction(req, senderAccount, recipientFullId, amountMQT, Attachment.ORDINARY_PAYMENT);
     }
 
     private Appendix.Phasing parsePhasing(HttpServletRequest req) throws ParameterException {
@@ -116,13 +116,14 @@ abstract class CreateTransaction extends APIServlet.APIRequestHandler {
         long minBalance = ParameterParser.getLong(req, parameterPrefix + "MinBalance", 0, Long.MAX_VALUE, false);
         byte minBalanceModel = ParameterParser.getByte(req, parameterPrefix + "MinBalanceModel", (byte)0, (byte)3, false);
         long holdingId = ParameterParser.getUnsignedLong(req, parameterPrefix + "Holding", false);
-        long[] whitelist = null;
+        List<Account.FullId> whitelist = null;
         String[] whitelistValues = req.getParameterValues(parameterPrefix + "Whitelisted");
         if (whitelistValues != null && whitelistValues.length > 0) {
-            whitelist = new long[whitelistValues.length];
+            whitelist = new ArrayList<>();
             for (int i = 0; i < whitelistValues.length; i++) {
-                whitelist[i] = Convert.parseAccountIdToId1(whitelistValues[i]);
-                if (whitelist[i] == 0) {
+                Account.FullId fullId = Account.FullId.fromStrId(whitelistValues[i]);
+                whitelist.add(fullId);
+                if (fullId == null) {
                     throw new ParameterException(INCORRECT_WHITELIST);
                 }
             }
@@ -131,20 +132,18 @@ abstract class CreateTransaction extends APIServlet.APIRequestHandler {
     }
 
 
-    final JSONStreamAware createTransaction(HttpServletRequest req, Account senderAccount, long recipientId,
+    final JSONStreamAware createTransaction(HttpServletRequest req, Account senderAccount, Account.FullId recipientFullId,
                                             long amountMQT, Attachment attachment) throws MetroException {
         String deadlineValue = req.getParameter("deadline");
         String referencedTransactionFullHash = Convert.emptyToNull(req.getParameter("referencedTransactionFullHash"));
         String secretPhrase = ParameterParser.getSecretPhrase(req, false);
         String publicKeyValue = Convert.emptyToNull(req.getParameter("publicKey"));
-        String recipientString = Convert.emptyToNull(req.getParameter("recipient"));
-        //FIXME
-        //long recipientExtraId = Convert.parseAccountExtraId(recipientString);
         boolean broadcast = !"false".equalsIgnoreCase(req.getParameter("broadcast")) && secretPhrase != null;
         Appendix.EncryptedMessage encryptedMessage = null;
         Appendix.PrunableEncryptedMessage prunableEncryptedMessage = null;
-        if (attachment.getTransactionType().canHaveRecipient() && recipientId != 0) {
-            Account recipient = Account.getAccount(recipientId);
+        if (attachment.getTransactionType().canHaveRecipient() && recipientFullId != null) {
+            Account recipient = Account.getAccount(recipientFullId);
+            //FIXME #220
 //            if (IntStream.of(RECIPIENT_PUBKEY_VERIFY_TRANSACTION_TYPES).anyMatch(value -> value == attachment.getTransactionType().getType())) {
 //                byte[] recipientPubKey = Account.getPublicKey(recipientId);
 //                if (recipientPubKey == null && recipientExtraId == 0) {
@@ -212,8 +211,7 @@ abstract class CreateTransaction extends APIServlet.APIRequestHandler {
             Transaction.Builder builder = Metro.newTransactionBuilder(publicKey, amountMQT, feeMQT,
                     deadline, attachment).referencedTransactionFullHash(referencedTransactionFullHash);
             if (attachment.getTransactionType().canHaveRecipient()) {
-                builder.recipientId(recipientId);
-                builder.recipientId2(recipientExtraId);
+                builder.recipientFullId(recipientFullId);
             }
             builder.appendix(encryptedMessage);
             builder.appendix(message);

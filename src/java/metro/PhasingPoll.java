@@ -36,6 +36,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class PhasingPoll extends AbstractPoll {
 
@@ -397,9 +398,10 @@ public final class PhasingPoll extends AbstractPoll {
     static void addPoll(Transaction transaction, Appendix.Phasing appendix) {
         PhasingPoll poll = new PhasingPoll(transaction, appendix);
         phasingPollTable.insert(poll);
-        long[] voters = poll.whitelist;
-        if (voters.length > 0) {
-            votersTable.insert(poll, Convert.toList(voters));
+        List<Account.FullId> voters = poll.whitelist;
+        if (voters.size() > 0) {
+            //FIXME #220 optimize (should we save only left?)
+            votersTable.insert(poll, voters.stream().map(Account.FullId::getLeft).collect(Collectors.toList()));
         }
         if (appendix.getLinkedFullHashes().length > 0) {
             List<byte[]> linkedFullHashes = new ArrayList<>(appendix.getLinkedFullHashes().length);
@@ -412,7 +414,7 @@ public final class PhasingPoll extends AbstractPoll {
     }
 
     private final DbKey dbKey;
-    private final long[] whitelist;
+    private final List<Account.FullId> whitelist;
     private final long quorum;
     private final byte[] hashedSecret;
     private final byte algorithm;
@@ -430,7 +432,9 @@ public final class PhasingPoll extends AbstractPoll {
         super(rs);
         this.dbKey = dbKey;
         this.quorum = rs.getLong("quorum");
-        this.whitelist = rs.getByte("whitelist_size") == 0 ? Convert.EMPTY_LONG : Convert.toArray(votersTable.get(votersDbKeyFactory.newKey(this)));
+        //FIXME #220 optimize
+        this.whitelist = rs.getByte("whitelist_size") == 0 ? new ArrayList<>() :
+                votersTable.get(votersDbKeyFactory.newKey(this)).stream().map(voter -> Account.getAccount(voter).getFullId()).collect(Collectors.toList());
         hashedSecret = rs.getBytes("hashed_secret");
         algorithm = rs.getByte("algorithm");
     }
@@ -440,7 +444,7 @@ public final class PhasingPoll extends AbstractPoll {
         resultTable.insert(phasingPollResult);
     }
 
-    public long[] getWhitelist() {
+    public List<Account.FullId> getWhitelist() {
         return whitelist;
     }
 
@@ -497,7 +501,7 @@ public final class PhasingPoll extends AbstractPoll {
     }
 
     boolean allowEarlyFinish() {
-        return voteWeighting.isBalanceIndependent() && (whitelist.length > 0 || voteWeighting.getVotingModel() != VoteWeighting.VotingModel.ACCOUNT);
+        return voteWeighting.isBalanceIndependent() && (whitelist.size() > 0 || voteWeighting.getVotingModel() != VoteWeighting.VotingModel.ACCOUNT);
     }
 
     private void save(Connection con) throws SQLException {
@@ -508,7 +512,7 @@ public final class PhasingPoll extends AbstractPoll {
             pstmt.setLong(++i, id);
             pstmt.setLong(++i, accountId);
             pstmt.setInt(++i, finishHeight);
-            pstmt.setByte(++i, (byte) whitelist.length);
+            pstmt.setByte(++i, (byte) whitelist.size());
             pstmt.setByte(++i, voteWeighting.getVotingModel().getCode());
             DbUtils.setLongZeroToNull(pstmt, ++i, quorum);
             DbUtils.setLongZeroToNull(pstmt, ++i, voteWeighting.getMinBalance());

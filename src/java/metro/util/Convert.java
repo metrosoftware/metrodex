@@ -17,13 +17,12 @@
 
 package metro.util;
 
+import metro.Account;
 import metro.Consensus;
 import metro.Constants;
 import metro.Genesis;
 import metro.MetroException;
 import metro.crypto.Crypto;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -52,6 +51,7 @@ public final class Convert {
 
     public static final BigInteger two64 = new BigInteger("18446744073709551616");
     public static final long[] EMPTY_LONG = new long[0];
+    public static final Account.FullId[] EMPTY_FULL_ID = new Account.FullId[0];
     public static final byte[] EMPTY_BYTE = new byte[0];
     public static final byte[][] EMPTY_BYTES = new byte[0][];
     public static final String[] EMPTY_STRING = new String[0];
@@ -117,36 +117,12 @@ public final class Convert {
         }
     }
 
-    public static Pair<Long, Integer> parseAccountId(String account) {
-        if (account == null || (account = account.trim()).isEmpty()) {
-            return null;
-        }
-        account = account.toUpperCase();
-        int prefixEnd = account.indexOf('-');
-        if (prefixEnd > 0) {
-            return Crypto.rsDecode(account.substring(prefixEnd + 1));
-        } else if (prefixEnd == 0) {
-            //TODO there was convertion for signed id. Should we have this case?
-            return stringNumericToPairId(account);
-        } else {
-            return stringNumericToPairId(account);
-        }
+    public static String rsAccount(long id1, int id2) {
+        return Constants.ACCOUNT_PREFIX + "-" + Crypto.rsEncode(id1, id2);
     }
 
-    public static long parseAccountIdToId1(String account) {
-        return parseAccountId(account).getLeft();
-    }
-
-    public static Pair<Long, Integer> stringNumericToPairId(String account) {
-        BigInteger two32 = BigInteger.valueOf((long) Math.pow(2, 32));
-        BigInteger result = new BigInteger(account);
-        long id1 = result.divide(two32).longValue();
-        int id2 = result.subtract(result.divide(two32).multiply(two32)).intValue();
-        return new ImmutablePair<>(id1, id2);
-    }
-
-    public static String rsAccount(Pair<Long, Integer> accountId) {
-        return Constants.ACCOUNT_PREFIX + "-" + Crypto.rsEncode(accountId);
+    public static String rsAccount(Account.FullId accountId) {
+        return accountId.toRS();
     }
 
     public static long fullHashToId(byte[] hash) {
@@ -155,15 +131,6 @@ public final class Convert {
         }
         BigInteger bigInteger = new BigInteger(1, new byte[] {hash[7], hash[6], hash[5], hash[4], hash[3], hash[2], hash[1], hash[0]});
         return bigInteger.longValue();
-    }
-
-    public static Pair<Long, Integer> fullHashToFullId(byte[] hash) {
-        if (hash == null || hash.length < 8) {
-            throw new IllegalArgumentException("Invalid hash: " + Arrays.toString(hash));
-        }
-        BigInteger bigInteger = new BigInteger(1, new byte[] {hash[7], hash[6], hash[5], hash[4], hash[3], hash[2], hash[1], hash[0]});
-        BigInteger bigInteger2 = new BigInteger(1, new byte[] {hash[11], hash[10], hash[9], hash[8]});
-        return Pair.of(bigInteger.longValue(), bigInteger2.intValue());
     }
 
     public static BigInteger fullHashToBigInteger(byte[] hash) {
@@ -250,16 +217,15 @@ public final class Convert {
         return result;
     }
 
-    public static Set<Long> toSet(long[] array) {
+    public static <T> Set<T> toSet(T[] array) {
         if (array == null || array.length == 0) {
             return Collections.emptySet();
         }
-        Set<Long> set = new HashSet<>(array.length);
-        for (long elem : array) {
-            set.add(elem);
-        }
+        Set<T> set = new HashSet<>(array.length);
+        Collections.addAll(set, array);
         return set;
     }
+
 
     public static byte[] toBytes(String s) {
         try {

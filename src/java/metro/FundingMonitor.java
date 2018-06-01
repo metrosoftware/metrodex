@@ -23,7 +23,6 @@ import metro.util.Convert;
 import metro.util.Filter;
 import metro.util.Listener;
 import metro.util.Logger;
-import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
@@ -68,7 +67,7 @@ public final class FundingMonitor {
     private static final List<FundingMonitor> monitors = new ArrayList<>();
 
     /** Monitored accounts */
-    private static final Map<Long, List<MonitoredAccount>> accounts = new HashMap<>();
+    private static final Map<Account.FullId, List<MonitoredAccount>> accounts = new HashMap<>();
 
     /** Process semaphore */
     private static final Semaphore processSemaphore = new Semaphore(0);
@@ -95,7 +94,7 @@ public final class FundingMonitor {
     private final int interval;
 
     /** Fund account identifier */
-    private final Pair<Long, Integer> accountId;
+    private final Account.FullId accountId;
 
     /** Fund account name */
     private final String accountName;
@@ -120,7 +119,7 @@ public final class FundingMonitor {
      */
     private FundingMonitor(HoldingType holdingType, long holdingId, String property,
                            long amount, long threshold, int interval,
-                           Pair<Long, Integer> accountId, String secretPhrase) {
+                           Account.FullId accountId, String secretPhrase) {
         this.holdingType = holdingType;
         this.holdingId = (holdingType != HoldingType.MTR ? holdingId : 0);
         this.property = property;
@@ -128,7 +127,7 @@ public final class FundingMonitor {
         this.threshold = threshold;
         this.interval = interval;
         this.accountId = accountId;
-        this.accountName = Convert.rsAccount(accountId);
+        this.accountName = accountId.toRS();
         this.secretPhrase = secretPhrase;
         this.publicKey = Crypto.getPublicKey(secretPhrase);
     }
@@ -192,7 +191,7 @@ public final class FundingMonitor {
      *
      * @return                      Account identifier
      */
-    public Pair<Long, Integer> getAccountId() {
+    public Account.FullId getAccountId() {
         return accountId;
     }
 
@@ -228,7 +227,7 @@ public final class FundingMonitor {
         // won't be used.
         //
         init();
-        Pair<> accountId = Account.getFullId(Crypto.getPublicKey(secretPhrase));
+        Account.FullId accountId = Account.FullId.fromSecretPhrase(secretPhrase);
         //
         // Create the monitor
         //
@@ -240,11 +239,11 @@ public final class FundingMonitor {
             // Locate monitored accounts based on the account property and the setter identifier
             //
             List<MonitoredAccount> accountList = new ArrayList<>();
-            try (DbIterator<Account.AccountProperty> it = Account.getProperties(0, accountId, property, 0, Integer.MAX_VALUE)) {
+            try (DbIterator<Account.AccountProperty> it = Account.getProperties(null, accountId, property, 0, Integer.MAX_VALUE)) {
                 while (it.hasNext()) {
                     Account.AccountProperty accountProperty = it.next();
-                    MonitoredAccount account = createMonitoredAccount(accountProperty.getRecipientId(),
-                            monitor, accountProperty.getValue());
+                    Account.FullId recipientId = Account.getAccount(accountProperty.getRecipientId()).getFullId();
+                    MonitoredAccount account = createMonitoredAccount(recipientId, monitor, accountProperty.getValue());
                     accountList.add(account);
                 }
             }
@@ -295,7 +294,7 @@ public final class FundingMonitor {
      * @param   propertyValue       Account property value
      * @return                      Monitored account
      */
-    private static MonitoredAccount createMonitoredAccount(long accountId, FundingMonitor monitor, String propertyValue) {
+    private static MonitoredAccount createMonitoredAccount(Account.FullId accountId, FundingMonitor monitor, String propertyValue) {
         long monitorAmount = monitor.amount;
         long monitorThreshold = monitor.threshold;
         int monitorInterval = monitor.interval;
@@ -311,7 +310,7 @@ public final class FundingMonitor {
                 monitorInterval = (int)getValue(jsonValue.get("interval"), monitorInterval);
             } catch (IllegalArgumentException | ParseException exc) {
                 String errorMessage = String.format("Account %s, property '%s', value '%s' is not valid",
-                            Convert.rsAccount(accountId), monitor.property, propertyValue);
+                            accountId, monitor.property, propertyValue);
                 throw new IllegalArgumentException(errorMessage, exc);
             }
         }
@@ -373,7 +372,7 @@ public final class FundingMonitor {
                 monitor = monitorIt.next();
                 if (monitor.holdingType == holdingType && monitor.property.equals(property) &&
                         (holdingType == HoldingType.MTR || monitor.holdingId == holdingId) &&
-                        monitor.accountId == accountId) {
+                        monitor.accountId.getLeft() == accountId) {
                     monitorIt.remove();
                     wasStopped = true;
                     break;
@@ -506,7 +505,7 @@ public final class FundingMonitor {
      */
     @Override
     public int hashCode() {
-        return holdingType.hashCode() + (int)holdingId + property.hashCode() + (int)accountId;
+        return holdingType.hashCode() + (int)holdingId + property.hashCode() + accountId.getLeft().intValue();
     }
 
     /**
@@ -608,7 +607,7 @@ public final class FundingMonitor {
         if (targetAccount.getBalanceMQT() < monitoredAccount.threshold) {
             Transaction.Builder builder = Metro.newTransactionBuilder(monitor.publicKey,
                     monitoredAccount.amount, 0, (short)1440, Attachment.ORDINARY_PAYMENT);
-            builder.recipientId(monitoredAccount.accountId)
+            builder.recipientFullId(monitoredAccount.accountId)
                    .timestamp(Metro.getBlockchain().getLastBlockTimestamp());
             Transaction transaction = builder.build(monitor.secretPhrase);
             if (Math.addExact(monitoredAccount.amount, transaction.getFeeMQT()) > fundingAccount.getUnconfirmedBalanceMQT()) {
@@ -635,8 +634,8 @@ public final class FundingMonitor {
     private static void processAssetEvent(MonitoredAccount monitoredAccount, Account targetAccount, Account fundingAccount)
                                             throws MetroException {
         FundingMonitor monitor = monitoredAccount.monitor;
-        Account.AccountAsset targetAsset = Account.getAccountAsset(targetAccount.getId1(), monitor.holdingId);
-        Account.AccountAsset fundingAsset = Account.getAccountAsset(fundingAccount.getId1(), monitor.holdingId);
+        Account.AccountAsset targetAsset = Account.getAccountAsset(targetAccount.getId(), monitor.holdingId);
+        Account.AccountAsset fundingAsset = Account.getAccountAsset(fundingAccount.getId(), monitor.holdingId);
         if (fundingAsset == null || fundingAsset.getUnconfirmedQuantityQNT() < monitoredAccount.amount) {
             Logger.logWarningMessage(
                     String.format("Funding account %s has insufficient quantity for asset %s; funding transaction discarded",
@@ -645,7 +644,7 @@ public final class FundingMonitor {
             Attachment attachment = new Attachment.ColoredCoinsAssetTransfer(monitor.holdingId, monitoredAccount.amount);
             Transaction.Builder builder = Metro.newTransactionBuilder(monitor.publicKey,
                     0, 0, (short)1440, attachment);
-            builder.recipientId(monitoredAccount.accountId)
+            builder.recipientFullId(monitoredAccount.accountId)
                    .timestamp(Metro.getBlockchain().getLastBlockTimestamp());
             Transaction transaction = builder.build(monitor.secretPhrase);
             if (transaction.getFeeMQT() > fundingAccount.getUnconfirmedBalanceMQT()) {
@@ -667,7 +666,7 @@ public final class FundingMonitor {
     public static final class MonitoredAccount {
 
         /** Account identifier */
-        private final long accountId;
+        private final Account.FullId accountId;
 
         /** Account name */
         private final String accountName;
@@ -696,7 +695,7 @@ public final class FundingMonitor {
          * @param   threshold           Fund threshold
          * @param   interval            Fund interval
          */
-        private MonitoredAccount(long accountId, FundingMonitor monitor, long amount, long threshold, int interval) {
+        private MonitoredAccount(Account.FullId accountId, FundingMonitor monitor, long amount, long threshold, int interval) {
             if (amount < MIN_FUND_AMOUNT) {
                 throw new IllegalArgumentException("Minimum fund amount is " + MIN_FUND_AMOUNT);
             }
@@ -707,7 +706,7 @@ public final class FundingMonitor {
                 throw new IllegalArgumentException("Minimum fund interval is " + MIN_FUND_INTERVAL);
             }
             this.accountId = accountId;
-            this.accountName = Convert.rsAccount(accountId);
+            this.accountName = accountId.toRS();
             this.monitor = monitor;
             this.amount = amount;
             this.threshold = threshold;
@@ -719,7 +718,7 @@ public final class FundingMonitor {
          *
          * @return                      Account identifier
          */
-        public long getAccountId() {
+        public Account.FullId getAccountId() {
             return accountId;
         }
 
@@ -780,7 +779,7 @@ public final class FundingMonitor {
             // Check the MTR balance for monitored accounts
             //
             synchronized(monitors) {
-                List<MonitoredAccount> accountList = accounts.get(account.getId1());
+                List<MonitoredAccount> accountList = accounts.get(account.getId());
                 if (accountList != null) {
                     accountList.forEach((maccount) -> {
                        if (maccount.monitor.holdingType == HoldingType.MTR && balance < maccount.threshold &&
@@ -844,7 +843,7 @@ public final class FundingMonitor {
             if (stopped) {
                 return;
             }
-            long accountId = property.getRecipientId();
+            Account.FullId accountId = Account.getAccount(property.getRecipientId()).getFullId();
             try {
                 boolean addMonitoredAccount = true;
                 synchronized(monitors) {
@@ -896,7 +895,7 @@ public final class FundingMonitor {
                     }
                 }
             } catch (Exception exc) {
-                Logger.logErrorMessage("Unable to process SET_PROPERTY event for account " + Convert.rsAccount(accountId), exc);
+                Logger.logErrorMessage("Unable to process SET_PROPERTY event for account " + accountId.toRS(), exc);
             }
         }
     }

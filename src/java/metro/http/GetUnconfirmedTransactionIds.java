@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.Metro;
 import metro.Transaction;
 import metro.db.DbIterator;
@@ -40,7 +41,7 @@ public final class GetUnconfirmedTransactionIds extends APIServlet.APIRequestHan
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws ParameterException {
 
-        Set<Long> accountIds = Convert.toSet(ParameterParser.getAccountIds(req, false));
+        Set<Account.FullId> accountIds = Convert.toSet(ParameterParser.getAccountIds(req, false));
         int firstIndex = ParameterParser.getFirstIndex(req);
         int lastIndex = ParameterParser.getLastIndex(req);
 
@@ -55,7 +56,7 @@ public final class GetUnconfirmedTransactionIds extends APIServlet.APIRequestHan
         } else {
             try (FilteringIterator<? extends Transaction> transactionsIterator = new FilteringIterator<> (
                     Metro.getTransactionProcessor().getAllUnconfirmedTransactions(0, -1),
-                    transaction -> accountIds.contains(transaction.getSenderId()) || accountIds.contains(transaction.getRecipientId()),
+                    transaction -> accountIds.contains(transaction.getSenderFullId()) || accountIds.contains(transaction.getRecipientFullId()),
                     firstIndex, lastIndex)) {
                 while (transactionsIterator.hasNext()) {
                     Transaction transaction = transactionsIterator.next();

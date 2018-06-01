@@ -42,28 +42,28 @@ public final class GetShufflers extends APIServlet.APIRequestHandler {
 
         String secretPhrase = ParameterParser.getSecretPhrase(req, false);
         byte[] shufflingFullHash = ParameterParser.getBytes(req, "shufflingFullHash", false);
-        long accountId = ParameterParser.getAccountId(req, false);
+        Account.FullId accountId = ParameterParser.getAccountFullId(req, false);
         boolean includeParticipantState = "true".equalsIgnoreCase(req.getParameter("includeParticipantState"));
         List<Shuffler> shufflers;
         if (secretPhrase != null) {
-            if (accountId != 0 && Account.getId(Crypto.getPublicKey(secretPhrase)) != accountId) {
+            if (accountId != null && Account.FullId.fromSecretPhrase(secretPhrase) != accountId) {
                 return JSONResponses.INCORRECT_ACCOUNT;
             }
-            accountId = Account.getId(Crypto.getPublicKey(secretPhrase));
+            accountId = Account.FullId.fromSecretPhrase(secretPhrase);
             if (shufflingFullHash.length == 0) {
-                shufflers = Shuffler.getAccountShufflers(accountId);
+                shufflers = Shuffler.getAccountShufflers(accountId.getLeft());
             } else {
-                Shuffler shuffler = Shuffler.getShuffler(accountId, shufflingFullHash);
+                Shuffler shuffler = Shuffler.getShuffler(accountId.getLeft(), shufflingFullHash);
                 shufflers = shuffler == null ? Collections.emptyList() : Collections.singletonList(shuffler);
             }
         } else {
             API.verifyPassword(req);
-            if (accountId != 0 && shufflingFullHash.length == 0) {
-                shufflers = Shuffler.getAccountShufflers(accountId);
-            } else if (accountId == 0 && shufflingFullHash.length > 0) {
+            if (accountId != null && shufflingFullHash.length == 0) {
+                shufflers = Shuffler.getAccountShufflers(accountId.getLeft());
+            } else if (accountId == null && shufflingFullHash.length > 0) {
                 shufflers = Shuffler.getShufflingShufflers(shufflingFullHash);
-            } else if (accountId != 0 && shufflingFullHash.length > 0) {
-                Shuffler shuffler = Shuffler.getShuffler(accountId, shufflingFullHash);
+            } else if (accountId != null && shufflingFullHash.length > 0) {
+                Shuffler shuffler = Shuffler.getShuffler(accountId.getLeft(), shufflingFullHash);
                 shufflers = shuffler == null ? Collections.emptyList() : Collections.singletonList(shuffler);
             } else {
                 shufflers = Shuffler.getAllShufflers();

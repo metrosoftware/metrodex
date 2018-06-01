@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.Metro;
 import metro.MetroException;
 import metro.Poll;
@@ -37,9 +38,9 @@ public class GetPollVote extends APIServlet.APIRequestHandler  {
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws MetroException {
         Poll poll = ParameterParser.getPoll(req);
-        long accountId = ParameterParser.getAccountId(req, true);
+        Account.FullId accountId = ParameterParser.getAccountFullId(req, true);
         boolean includeWeights = "true".equalsIgnoreCase(req.getParameter("includeWeights"));
-        Vote vote = Vote.getVote(poll.getId(), accountId);
+        Vote vote = Vote.getVote(poll.getId(), accountId.getLeft());
         if (vote != null) {
             int countHeight;
             JSONData.VoteWeighter weighter = null;

@@ -76,7 +76,7 @@ public final class Generator implements Comparable<Generator> {
                     fakeForgingPublicKeys = new HashSet<>(arrayRs.size());
                     Iterator iter = arrayRs.iterator();
                     while (iter.hasNext()) {
-                        fakeForgingPublicKeys.add(Convert.toHexString(Account.getPublicKey(Convert.parseAccountId(iter.next().toString()))));
+                        fakeForgingPublicKeys.add(Convert.toHexString(Account.getPublicKey(Account.FullId.fromStrId(iter.next().toString()).getLeft())));
                     }
                 }
             }
@@ -292,7 +292,7 @@ public final class Generator implements Comparable<Generator> {
     }
 
 
-    private final long accountId;
+    private final Account.FullId accountFullId;
     private final String secretPhrase;
     private final byte[] publicKey;
     private volatile long hitTime;
@@ -303,7 +303,7 @@ public final class Generator implements Comparable<Generator> {
     private Generator(String secretPhrase) {
         this.secretPhrase = secretPhrase;
         this.publicKey = Crypto.getPublicKey(secretPhrase);
-        this.accountId = Account.getId(publicKey);
+        this.accountFullId = Account.FullId.fromPublicKey(publicKey);
         Metro.getBlockchain().updateLock();
         try {
             if (Metro.getBlockchain().getHeight() >= Constants.LAST_KNOWN_BLOCK) {
@@ -319,8 +319,8 @@ public final class Generator implements Comparable<Generator> {
         return publicKey;
     }
 
-    public long getAccountId() {
-        return accountId;
+    public Account.FullId getAccountFullId() {
+        return accountFullId;
     }
 
     public long getDeadline() {
@@ -337,17 +337,17 @@ public final class Generator implements Comparable<Generator> {
         if (i != 0) {
             return i;
         }
-        return Long.compare(accountId, g.accountId);
+        return Long.compare(accountFullId.getLeft(), g.accountFullId.getLeft());
     }
 
     @Override
     public String toString() {
-        return "Forger " + Long.toUnsignedString(accountId) + " deadline " + getDeadline() + " hit " + hitTime;
+        return "Forger " + Long.toUnsignedString(accountFullId.getLeft()) + " deadline " + getDeadline() + " hit " + hitTime;
     }
 
     private void setLastBlock(Block lastBlock) {
         int height = lastBlock.getHeight();
-        Account account = Account.getAccount(accountId, height);
+        Account account = Account.getAccount(accountFullId, height);
         if (account == null) {
             effectiveBalance = BigInteger.ZERO;
         } else {
@@ -393,7 +393,7 @@ public final class Generator implements Comparable<Generator> {
     private static long activeBlockId;
 
     /** Map generatorId->ActiveGenerator of generators for the next block */
-    private static final Map<Long, ActiveGenerator> activeGenerators = new HashMap<>();
+    private static final Map<Account.FullId, ActiveGenerator> activeGenerators = new HashMap<>();
 
     /** Generator list has been initialized */
     private static boolean generatorsInitialized = false;
@@ -408,11 +408,11 @@ public final class Generator implements Comparable<Generator> {
                 activeGenerators.values().forEach(gen -> gen.recalculateEffectiveBalance(block.getHeight()));
                 return;
             }
-            long generatorId = block.getGeneratorId();
+            Account.FullId generatorId = Account.FullId.fromPublicKey(block.getGeneratorPublicKey());
             synchronized(activeGenerators) {
                 ActiveGenerator generator = activeGenerators.get(generatorId);
                 if (generator == null) {
-                    activeGenerators.put(generatorId, new ActiveGenerator(generatorId, 1));
+                    activeGenerators.put(generatorId, new ActiveGenerator(Account.getAccount(generatorId).getFullId(), 1));
                 } else {
                     generator.rollBackOrForward(1);
                 }
@@ -424,7 +424,7 @@ public final class Generator implements Comparable<Generator> {
                 activeGenerators.values().forEach(gen -> gen.recalculateEffectiveBalance(block.getHeight() - 1));
                 return;
             }
-            long generatorId = block.getGeneratorId();
+            Account.FullId generatorId = Account.FullId.fromPublicKey(block.getGeneratorPublicKey());
             synchronized(activeGenerators) {
                 ActiveGenerator activeGenerator = activeGenerators.get(generatorId);
                 if (activeGenerator != null && activeGenerator.rollBackOrForward(-1)) {
@@ -448,7 +448,8 @@ public final class Generator implements Comparable<Generator> {
         synchronized(activeGenerators) {
             if (!generatorsInitialized) {
                 BlockDb.getBlockGenerators(Math.max(1, blockchain.getHeight() - Consensus.FORGER_ACTIVITY_SNAPSHOT_INTERVAL), blockchain.getHeight()).forEach(genIdAndCount -> {
-                    activeGenerators.put(genIdAndCount.getLeft(), new ActiveGenerator(genIdAndCount.getLeft(), genIdAndCount.getRight()));
+                    activeGenerators.put(genIdAndCount.getLeft(),
+                            new ActiveGenerator(genIdAndCount.getLeft(), genIdAndCount.getRight()));
                 });
                 Logger.logDebugMessage(activeGenerators.size() + " block generators found");
                 generatorsInitialized = true;
@@ -511,21 +512,21 @@ public final class Generator implements Comparable<Generator> {
      */
     public static class ActiveGenerator implements Comparable<ActiveGenerator> {
         // TODO #188
-        private final long accountId;
+        private final Account.FullId accountFullId;
         private Account account;
         private long hitTime;
         private Long effectiveBalanceMTR;
         private byte[] publicKey;
         private int blockCounter;
 
-        public ActiveGenerator(long accountId, int blockCounter) {
-            this.accountId = accountId;
+        public ActiveGenerator(Account.FullId accountFullId, int blockCounter) {
+            this.accountFullId = accountFullId;
             this.hitTime = Long.MAX_VALUE;
             this.blockCounter = blockCounter;
         }
 
-        public long getAccountId() {
-            return accountId;
+        public Account.FullId getAccountFullId() {
+            return accountFullId;
         }
 
         public boolean rollBackOrForward(int blocks) {
@@ -538,7 +539,7 @@ public final class Generator implements Comparable<Generator> {
         }
 
         public void recalculateEffectiveBalance(int height) {
-            account = Account.getAccount(accountId, height);
+            account = Account.getAccount(accountFullId, height);
             if (account != null) {
                 effectiveBalanceMTR = Math.max(account.getEffectiveBalanceMTR(height), 0);
             }
@@ -550,7 +551,7 @@ public final class Generator implements Comparable<Generator> {
 
         private void setLastBlock(Block lastBlock) {
             if (publicKey == null) {
-                publicKey = Account.getPublicKey(accountId);
+                publicKey = Account.getPublicKey(accountFullId.getLeft());
                 if (publicKey == null) {
                     hitTime = Long.MAX_VALUE;
                     return;
@@ -570,12 +571,12 @@ public final class Generator implements Comparable<Generator> {
 
         @Override
         public int hashCode() {
-            return Long.hashCode(accountId);
+            return Long.hashCode(accountFullId.getLeft());
         }
 
         @Override
         public boolean equals(Object obj) {
-            return (obj != null && (obj instanceof ActiveGenerator) && accountId == ((ActiveGenerator)obj).accountId);
+            return (obj != null && (obj instanceof ActiveGenerator) && accountFullId == ((ActiveGenerator)obj).accountFullId);
         }
 
         @Override

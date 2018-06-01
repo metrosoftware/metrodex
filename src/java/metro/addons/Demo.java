@@ -28,8 +28,8 @@ public final class Demo implements AddOn {
     @Override
     public void init() {
         Metro.getBlockchainProcessor().addListener(block -> Logger.logInfoMessage("Block " + block.getStringId()
-                + " has been forged by account " + Convert.rsAccount(block.getGeneratorId()) + " having effective balance of "
-                + Account.getAccount(block.getGeneratorId()).getEffectiveBalanceMTR()),
+                + " has been forged by account " + block.getGeneratorFullId().toString() + " having effective balance of "
+                + Account.getAccount(block.getGeneratorFullId()).getEffectiveBalanceMTR()),
                 BlockchainProcessor.Event.BEFORE_BLOCK_APPLY);
     }
 

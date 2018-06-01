@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.Constants;
 import metro.HoldingType;
 import metro.util.Convert;
@@ -401,12 +402,12 @@ public final class JSONResponses {
         return JSON.prepare(response);
     }
 
-    static JSONStreamAware unknownAccount(long id) {
+    static JSONStreamAware unknownAccount(Account.FullId id) {
         JSONObject response = new JSONObject();
         response.put("errorCode", 5);
         response.put("errorDescription", "Unknown account");
-        response.put("account", Long.toUnsignedString(id));
-        response.put("accountRS", Convert.rsAccount(id));
+        response.put("account", id.toString());
+        response.put("accountRS", id.toRS());
         return JSON.prepare(response);
     }
 

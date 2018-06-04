@@ -179,8 +179,8 @@ public class TestShuffling extends BlockchainTest {
         shufflingAssignee = (String) getShufflingResponse.get("assignee");
         Assert.assertNull(shufflingAssignee);
 
-        Assert.assertEquals(-(Constants.SHUFFLING_DEPOSIT_MQT + 12 * Constants.ONE_MTR + 4 * Constants.ONE_MTR), ALICE.getBalanceDiff());
-        Assert.assertEquals(-(Constants.SHUFFLING_DEPOSIT_MQT + 12 * Constants.ONE_MTR + 4 * Constants.ONE_MTR), ALICE.getUnconfirmedBalanceDiff());
+        Assert.assertEquals(-(Constants.SHUFFLING_DEPOSIT_MQT + 1015 * Constants.ONE_MTR), ALICE.getBalanceDiff());
+        Assert.assertEquals(-(Constants.SHUFFLING_DEPOSIT_MQT + 1015 * Constants.ONE_MTR), ALICE.getUnconfirmedBalanceDiff());
         Assert.assertEquals(-(Constants.SHUFFLING_DEPOSIT_MQT + 12 * Constants.ONE_MTR), BOB.getBalanceDiff());
         Assert.assertEquals(-(Constants.SHUFFLING_DEPOSIT_MQT + 12 * Constants.ONE_MTR), BOB.getUnconfirmedBalanceDiff());
         Assert.assertEquals(-(Constants.SHUFFLING_DEPOSIT_MQT + 12 * Constants.ONE_MTR), CHUCK.getBalanceDiff());
@@ -197,7 +197,7 @@ public class TestShuffling extends BlockchainTest {
         Assert.assertEquals(Constants.SHUFFLING_DEPOSIT_MQT, DAVE_RECIPIENT.getBalanceDiff());
         Assert.assertEquals(Constants.SHUFFLING_DEPOSIT_MQT, DAVE_RECIPIENT.getUnconfirmedBalanceDiff());
 
-        Assert.assertEquals((4 * 12 + 4) * Constants.ONE_MTR, FORGY.getBalanceDiff());
+        Assert.assertEquals((4 * 12 + 4 + 999) * Constants.ONE_MTR, FORGY.getBalanceDiff());
         Assert.assertEquals(0, FORGY.getUnconfirmedBalanceDiff());
 
         Assert.assertEquals(defaultHoldingShufflingAmount, ALICE_RECIPIENT.getAssetQuantityDiff(assetId));
@@ -278,9 +278,9 @@ public class TestShuffling extends BlockchainTest {
         Assert.assertEquals(2, participants.size());
         String shufflingAssignee = (String) getShufflingResponse.get("assignee");
         Assert.assertNull(shufflingAssignee);
-
-        Assert.assertEquals(- 3 * Constants.ONE_MTR, ALICE.getBalanceDiff());
-        Assert.assertEquals(- 3 * Constants.ONE_MTR, ALICE.getUnconfirmedBalanceDiff());
+        // we set Asset issuance fee for tests in metro.http.accountControl.ACTestUtils.AssetBuilder
+        Assert.assertEquals(- 1002 * Constants.ONE_MTR, ALICE.getBalanceDiff());
+        Assert.assertEquals(- 1002 * Constants.ONE_MTR, ALICE.getUnconfirmedBalanceDiff());
         Assert.assertEquals(-Constants.ONE_MTR, BOB.getBalanceDiff());
         Assert.assertEquals(-Constants.ONE_MTR, BOB.getUnconfirmedBalanceDiff());
 
@@ -292,7 +292,7 @@ public class TestShuffling extends BlockchainTest {
         Assert.assertEquals(0, BOB.getAssetQuantityDiff(shufflingAsset));
         Assert.assertEquals(0, BOB.getUnconfirmedAssetQuantityDiff(shufflingAsset));
 
-        Assert.assertEquals(4 * Constants.ONE_MTR, FORGY.getBalanceDiff());
+        Assert.assertEquals(1003 * Constants.ONE_MTR, FORGY.getBalanceDiff());
         Assert.assertEquals(0, FORGY.getUnconfirmedBalanceDiff());
 
     }
@@ -713,7 +713,7 @@ public class TestShuffling extends BlockchainTest {
         Assert.assertEquals(Long.toUnsignedString(CHUCK.getId()), shufflingAssignee);
 
         Assert.assertEquals(-22 * Constants.ONE_MTR, ALICE.getBalanceDiff());
-        Assert.assertEquals(-Constants.SHUFFLING_DEPOSIT_MQT, ALICE.getUnconfirmedBalanceDiff());
+        Assert.assertEquals(-22 * Constants.ONE_MTR, ALICE.getUnconfirmedBalanceDiff());
         Assert.assertEquals(-22 * Constants.ONE_MTR, BOB.getBalanceDiff());
         Assert.assertEquals(-22 * Constants.ONE_MTR, BOB.getUnconfirmedBalanceDiff());
         Assert.assertEquals(-(Constants.SHUFFLING_DEPOSIT_MQT + 21 * Constants.ONE_MTR), CHUCK.getBalanceDiff());

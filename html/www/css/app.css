@@ -95,12 +95,12 @@ body > .header {
 /*right side - contins main content*/
 .right-side {
   background-color: #f9f9f9;
-  margin-left: 220px;
+  margin-left: 290px;
 }
 /*left side - contains sidebar*/
 .left-side {
   position: absolute;
-  width: 220px;
+  width: 290px;
   height: 100%;
   min-height: inherit !important;
   top: 0;
@@ -116,7 +116,7 @@ body > .header {
   }
   /* Left side collapse */
   .left-side.collapse-left {
-    margin-left: -220px;
+    margin-left: -290px;
   }
   .sidebar {
     margin-top: 50px;
@@ -402,7 +402,7 @@ body > .header .navbar {
   height: 50px;
   margin-bottom: 0;
   padding-bottom:0;
-  margin-left: 220px;
+  margin-left: 290px;
 }
 body > .header .navbar .sidebar-toggle {
   float: left;
@@ -462,7 +462,7 @@ body > .header .logo {
   line-height: 50px;
   text-align: center;
   padding: 0 10px;
-  width: 220px;
+  width: 290px;
   font-family: sans-serif;
   height: 50px;
   display: block;
@@ -685,26 +685,26 @@ body > .header .logo .icon {
     position: relative;
   }
   .row-offcanvas-right .sidebar-offcanvas {
-    right: -220px;
+    right: -290px;
   }
   .row-offcanvas-left .sidebar-offcanvas {
-    left: -220px;
+    left: -290px;
   }
   .row-offcanvas-right.active {
-    right: 220px;
+    right: 290px;
   }
   .row-offcanvas-left.active {
-    left: 220px;
+    left: 290px;
   }
   .sidebar-offcanvas {
     left: 0;
   }
   body.fixed .sidebar-offcanvas {
     margin-top: 0px;
-    left: -220px;
+    left: -290px;
   }
   body.fixed .row-offcanvas-left.active .navbar {
-    left: 220px !important;
+    left: 290px !important;
     right: 0;
   }
   body.fixed .row-offcanvas-left.active .sidebar-offcanvas {

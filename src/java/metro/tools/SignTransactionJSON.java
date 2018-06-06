@@ -17,6 +17,7 @@
 
 package metro.tools;
 
+import metro.Account;
 import metro.Metro;
 import metro.Transaction;
 import metro.crypto.Crypto;

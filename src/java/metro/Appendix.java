@@ -1398,8 +1398,8 @@ public interface Appendix {
         }
 
         private void release(TransactionImpl transaction) {
-            Account senderAccount = Account.getAccount(transaction.getSenderId());
-            Account recipientAccount = transaction.getRecipientId() == 0 ? null : Account.getAccount(transaction.getRecipientId());
+            Account senderAccount = Account.getAccount(transaction.getSenderFullId());
+            Account recipientAccount = transaction.getRecipientId() == 0 ? null : Account.getAccount(transaction.getRecipientFullId());
             transaction.getAppendages().forEach(appendage -> {
                 if (appendage.isPhasable()) {
                     appendage.apply(transaction, senderAccount, recipientAccount);
@@ -1410,7 +1410,7 @@ public interface Appendix {
         }
 
         void reject(TransactionImpl transaction) {
-            Account senderAccount = Account.getAccount(transaction.getSenderId());
+            Account senderAccount = Account.getAccount(transaction.getSenderFullId());
             transaction.getType().undoAttachmentUnconfirmed(transaction, senderAccount);
             senderAccount.addToUnconfirmedBalanceMQT(LedgerEvent.REJECT_PHASED_TRANSACTION, transaction.getId(),
                                                      transaction.getAmountMQT());

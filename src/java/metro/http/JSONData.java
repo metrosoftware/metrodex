@@ -279,8 +279,8 @@ public final class JSONData {
         JSONObject json = new JSONObject();
         json.put("shuffling", Long.toUnsignedString(participant.getShufflingId()));
         //FIXME #220 optimize
-        putAccount(json, "account", Account.getAccount(participant.getAccountId()).getFullId());
-        putAccount(json, "nextAccount", Account.getAccount(participant.getNextAccountId()).getFullId());
+        putAccount(json, "account", Account.getAccountFullId(participant.getAccountId()));
+        putAccount(json, "nextAccount", Account.getAccountFullId(participant.getNextAccountId()));
         json.put("state", participant.getState().getCode());
         return json;
     }
@@ -700,6 +700,8 @@ public final class JSONData {
             json.put("signature", Convert.toHexString(signature));
             json.put("signatureHash", Convert.toHexString(Consensus.HASH_FUNCTION.hash(signature)));
             json.put("fullHash", transaction.getFullHash());
+        }
+        if (signature != null || transaction.getType().isCoinbase()) {
             json.put("transaction", transaction.getStringId());
         }
         JSONObject attachmentJSON = new JSONObject();
@@ -868,8 +870,8 @@ public final class JSONData {
     }
 
     static void putAccount(JSONObject json, String name, Account.FullId accountId) {
-        json.put(name, accountId.toString());
-        json.put(name + "RS", accountId.toRS());
+        json.put(name, accountId != null ? accountId.toString() : "0");
+        json.put(name + "RS", accountId != null ? accountId.toRS() : "");
     }
 
     static void putAccount(JSONObject json, String name, long accountId, int extraId) {

@@ -38,14 +38,15 @@ public class GetAssetPhasedTransactions extends APIServlet.APIRequestHandler {
     @Override
     protected JSONStreamAware processRequest(HttpServletRequest req) throws ParameterException {
         long assetId = ParameterParser.getUnsignedLong(req, "asset", true);
-        Account.FullId accountId = ParameterParser.getAccountFullId(req, false);
+        Account.FullId accountFullId = ParameterParser.getAccountFullId(req, false);
+        long accountId = accountFullId != null ? accountFullId.getLeft() : 0;
         int firstIndex = ParameterParser.getFirstIndex(req);
         int lastIndex = ParameterParser.getLastIndex(req);
         boolean withoutWhitelist = "true".equalsIgnoreCase(req.getParameter("withoutWhitelist"));
 
         JSONArray transactions = new JSONArray();
         try (DbIterator<? extends Transaction> iterator = PhasingPoll.getHoldingPhasedTransactions(assetId, VoteWeighting.VotingModel.ASSET,
-                accountId.getLeft(), withoutWhitelist, firstIndex, lastIndex)) {
+                accountId, withoutWhitelist, firstIndex, lastIndex)) {
             while (iterator.hasNext()) {
                 Transaction transaction = iterator.next();
                 transactions.add(JSONData.transaction(transaction));

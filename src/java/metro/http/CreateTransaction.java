@@ -35,6 +35,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static metro.http.JSONResponses.*;
 
@@ -143,13 +144,6 @@ abstract class CreateTransaction extends APIServlet.APIRequestHandler {
         Appendix.PrunableEncryptedMessage prunableEncryptedMessage = null;
         if (attachment.getTransactionType().canHaveRecipient() && recipientFullId != null) {
             Account recipient = Account.getAccount(recipientFullId);
-            //FIXME #220
-//            if (IntStream.of(RECIPIENT_PUBKEY_VERIFY_TRANSACTION_TYPES).anyMatch(value -> value == attachment.getTransactionType().getType())) {
-//                byte[] recipientPubKey = Account.getPublicKey(recipientId);
-//                if (recipientPubKey == null && recipientExtraId == 0) {
-//                    return MISSING_RECIPIENT_PUBLIC_KEY_IN_CHAIN;
-//                }
-//            }
             if ("true".equalsIgnoreCase(req.getParameter("encryptedMessageIsPrunable"))) {
                 prunableEncryptedMessage = (Appendix.PrunableEncryptedMessage) ParameterParser.getEncryptedMessage(req, recipient, true);
             } else {

@@ -161,7 +161,7 @@ public class TransactionalDb extends BasicDb {
         callbacks.add(callback);
     }
 
-    Map<DbKey,Object> getCache(String tableName) {
+    public Map<DbKey,Object> getCache(String tableName) {
         if (!isInTransaction()) {
             throw new IllegalStateException("Not in transaction");
         }

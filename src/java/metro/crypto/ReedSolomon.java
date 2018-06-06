@@ -135,11 +135,8 @@ final class ReedSolomon {
             length = new_length;
             plain_string_builder.append((char)(digit_10 + (int)'0'));
         } while (length > 0);
-        BigInteger two32 = BigInteger.valueOf((long) Math.pow(2, 32));
         BigInteger result = new BigInteger(plain_string_builder.reverse().toString());
-        long id1 = result.divide(two32).longValue();
-        int id2 = result.subtract(result.divide(two32).multiply(two32)).intValue();
-        return new Account.FullId(id1, id2);
+        return new Account.FullId(result);
     }
 
     private static int gmult(int a, int b) {

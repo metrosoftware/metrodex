@@ -166,7 +166,7 @@ public interface Attachment extends Appendix {
 
         @Override
         int getMySize() {
-            return 1 + recipients.size() * 16;
+            return 1 + recipients.size() * 20;
         }
 
         @Override

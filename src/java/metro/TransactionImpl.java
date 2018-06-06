@@ -1073,16 +1073,16 @@ public final class TransactionImpl implements Transaction {
 
     // returns false iff double spending
     boolean applyUnconfirmed() {
-        Account senderAccount = Account.getAccount(getSenderId());
+        Account senderAccount = Account.getAccount(getSenderFullId());
         return senderAccount != null && type.applyUnconfirmed(this, senderAccount);
     }
 
     void apply() {
-        Account senderAccount = Account.getAccount(getSenderId());
+        Account senderAccount = Account.getAccount(getSenderFullId());
         senderAccount.apply(getSenderPublicKey());
         Account recipientAccount = null;
         if (recipientId != 0) {
-            recipientAccount = Account.getAccount(recipientId);
+            recipientAccount = Account.getAccount(getRecipientFullId());
             if (recipientAccount == null) {
                 recipientAccount = Account.addOrGetAccount(new Account.FullId(recipientId, recipientId2));
             }
@@ -1103,7 +1103,7 @@ public final class TransactionImpl implements Transaction {
     }
 
     void undoUnconfirmed() {
-        Account senderAccount = Account.getAccount(getSenderId());
+        Account senderAccount = Account.getAccount(getSenderFullId());
         type.undoUnconfirmed(this, senderAccount);
     }
 

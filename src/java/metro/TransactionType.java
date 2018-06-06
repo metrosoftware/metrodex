@@ -39,10 +39,10 @@ public abstract class TransactionType {
 
     private static final byte TYPE_PAYMENT = 0;
     private static final byte TYPE_MESSAGING = 1;
-    private static final byte TYPE_COLORED_COINS = 2;
-    static final byte TYPE_SHUFFLING = 3;
-    private static final byte TYPE_ACCOUNT_CONTROL = 4;
-    private static final byte TYPE_COINBASE = 5;
+    static final byte TYPE_SHUFFLING = 2;
+    private static final byte TYPE_ACCOUNT_CONTROL = 3;
+    private static final byte TYPE_COINBASE = 4;
+    private static final byte TYPE_COLORED_COINS = 5;
 
     private static final int[] KEYBLOCK_TRANSACTION_TYPES = {TYPE_COINBASE};
     private static final int[] POSBLOCK_TRANSACTION_TYPES = {TYPE_PAYMENT, TYPE_MESSAGING, TYPE_COLORED_COINS, TYPE_SHUFFLING,
@@ -2167,7 +2167,7 @@ public abstract class TransactionType {
             @Override
             void applyAttachment(Transaction transaction, Account senderAccount, Account recipientAccount) {
                 Attachment.AccountControlEffectiveBalanceLeasing attachment = (Attachment.AccountControlEffectiveBalanceLeasing) transaction.getAttachment();
-                Account.getAccount(transaction.getSenderId()).leaseEffectiveBalance(transaction.getRecipientId(), attachment.getPeriod());
+                Account.getAccount(transaction.getSenderFullId()).leaseEffectiveBalance(transaction.getRecipientId(), attachment.getPeriod());
             }
 
             @Override
@@ -2232,7 +2232,7 @@ public abstract class TransactionType {
                 VotingModel votingModel = attachment.getPhasingParams().getVoteWeighting().getVotingModel();
                 attachment.getPhasingParams().validate();
                 if (votingModel == VotingModel.NONE) {
-                    Account senderAccount = Account.getAccount(transaction.getSenderId());
+                    Account senderAccount = Account.getAccount(transaction.getSenderFullId());
                     if (senderAccount == null || !senderAccount.getControls().contains(ControlType.PHASING_ONLY)) {
                         throw new MetroException.NotCurrentlyValidException("Phasing only account control is not currently enabled");
                     }

@@ -202,9 +202,9 @@ public final class AccountRestrictions {
     }
 
     static void checkTransaction(Transaction transaction) throws MetroException.NotCurrentlyValidException {
-        Account senderAccount = Account.getAccount(transaction.getSenderId());
+        Account senderAccount = Account.getAccount(transaction.getSenderFullId());
         if (senderAccount == null) {
-            throw new MetroException.NotCurrentlyValidException("Account " + Long.toUnsignedString(transaction.getSenderId()) + " does not exist yet");
+            throw new MetroException.NotCurrentlyValidException("Account " + transaction.getSenderFullId().toString() + " does not exist yet");
         }
         if (senderAccount.getControls().contains(Account.ControlType.PHASING_ONLY)) {
             PhasingOnly phasingOnly = PhasingOnly.get(transaction.getSenderId());
@@ -213,7 +213,7 @@ public final class AccountRestrictions {
     }
 
     static boolean isBlockDuplicate(Transaction transaction, Map<TransactionType, Map<String, Integer>> duplicates) {
-        Account senderAccount = Account.getAccount(transaction.getSenderId());
+        Account senderAccount = Account.getAccount(transaction.getSenderFullId());
         if (!senderAccount.getControls().contains(Account.ControlType.PHASING_ONLY)) {
             return false;
         }

@@ -297,9 +297,8 @@ public final class Crypto {
         rsString = rsString.toUpperCase();
         try {
             Account.FullId id = ReedSolomon.decode(rsString);
-            if (! rsString.equals(ReedSolomon.encode(id))) {
-                throw new RuntimeException("ERROR: Reed-Solomon decoding of " + rsString
-                        + " not reversible, decoded to " + id);
+            if (!rsString.equals(ReedSolomon.encode(id))) {
+                throw new RuntimeException("ERROR: Reed-Solomon decoding of " + rsString + " not reversible, decoded to " + id);
             }
             return id;
         } catch (ReedSolomon.DecodeException e) {

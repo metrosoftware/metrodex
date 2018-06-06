@@ -189,8 +189,6 @@ public class CpuMiner {
     }
 
     private JSONObject submitSolution(byte[] data, int nonce) {
-        Map<String, String> urlParams = new HashMap<>();
-        urlParams.put("requestType", "getWork");
         JSONObject requestBody = new JSONObject();
         JSONArray paramsArray = new JSONArray();
         ByteBuffer buffer = ByteBuffer.allocate(NONCE_BYTE_SIZE + data.length);
@@ -200,18 +198,23 @@ public class CpuMiner {
         String solution = Convert.toHexString(buffer.array());
         paramsArray.add(solution);
         requestBody.put("params", paramsArray);
-        return getJsonResponse(urlParams, requestBody);
+        return getJsonResponse(requestBody);
     }
 
     private JSONObject getWork() {
-        Map<String, String> params = new HashMap<>();
-        params.put("requestType", "getWork");
-        return getJsonResponse(params, null);
+        return getJsonResponse(null);
     }
 
-    private JSONObject getJsonResponse(Map<String, String> params, JSONObject requestBody) {
-        JSONObject response;
-        HttpURLConnection connection = null;
+    private static final URL GET_WORK_URL = initUrl();
+
+    private static URL initUrl() {
+        String protocol = "http";
+        boolean useHttps = Metro.getBooleanProperty("metro.mine.useHttps");
+        if (useHttps) {
+            protocol = "https";
+            HttpsURLConnection.setDefaultSSLSocketFactory(TrustAllSSLProvider.getSslSocketFactory());
+            HttpsURLConnection.setDefaultHostnameVerifier(TrustAllSSLProvider.getHostNameVerifier());
+        }
         String host = Convert.emptyToNull(Metro.getStringProperty("metro.mine.serverAddress"));
         if (host == null) {
             try {
@@ -220,26 +223,22 @@ public class CpuMiner {
                 host = "localhost";
             }
         }
-        String protocol = "http";
-        boolean useHttps = Metro.getBooleanProperty("metro.mine.useHttps");
-        if (useHttps) {
-            protocol = "https";
-            HttpsURLConnection.setDefaultSSLSocketFactory(TrustAllSSLProvider.getSslSocketFactory());
-            HttpsURLConnection.setDefaultHostnameVerifier(TrustAllSSLProvider.getHostNameVerifier());
-        }
         int port = Constants.isTestnet ? API.TESTNET_API_PORT : Metro.getIntProperty("metro.mine.serverPort", Metro.getIntProperty("metro.apiServerPort"));
-        String urlParams = getUrlParams(params);
-        Authenticator.setDefault (new Authenticator() {
-            protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(Metro.getStringProperty("metro.mine.user"), Metro.getStringProperty("metro.mine.password").toCharArray());
-            }
-        });
-        URL url;
+        Map<String, String> params = new HashMap<>();
+        params.put("requestType", "getWork");
+
         try {
-            url = new URL(protocol, host, port, "/metro?" + urlParams);
+            return new URL(protocol, host, port, "/metro?" + getUrlParams(params));
         } catch (MalformedURLException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    private JSONObject getJsonResponse(JSONObject requestBody) {
+        JSONObject response;
+        HttpURLConnection connection = null;
+        URL url = GET_WORK_URL;
+
         try {
             Logger.logDebugMessage("Sending request to server: " + url.toString());
             connection = (HttpURLConnection) url.openConnection();

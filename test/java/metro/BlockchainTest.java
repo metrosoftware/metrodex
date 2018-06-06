@@ -50,7 +50,7 @@ public abstract class BlockchainTest extends AbstractBlockchainTest {
     protected static int baseHeight;
 
     protected static String forgerSecretPhrase = "aSykrgKGZNlSVOMDxkZZgbTvQqJPGtsBggb";
-    protected static final List<String> forgerAccountIds = Arrays.asList("MTR-9KZM-KNYY-QBXZ-5TD8V","MTR-XK4R-7VJU-6EQG-7R335");
+    protected static final List<String> forgerAccountIds = Arrays.asList("MTR-MNNV-YGWV-88HM-9YSV-TEH2-BLNC","MTR-MNNV-YGWV-88HM-9YSV-TEH2-BLNC");
 
     public static final String aliceSecretPhrase = "hope peace happen touch easy pretend worthless talk them indeed wheel state";
     private static final String bobSecretPhrase2 = "rshw9abtpsa2";

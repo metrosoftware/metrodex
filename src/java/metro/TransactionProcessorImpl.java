@@ -715,7 +715,7 @@ final class TransactionProcessorImpl implements TransactionProcessor {
                 }
 
                 if (! transaction.verifySignature()) {
-                    if (Account.getAccount(transaction.getSenderId()) != null) {
+                    if (Account.getAccount(transaction.getSenderFullId()) != null) {
                         throw new MetroException.NotValidException("Transaction signature verification failed");
                     } else {
                         throw new MetroException.NotCurrentlyValidException("Unknown transaction sender");

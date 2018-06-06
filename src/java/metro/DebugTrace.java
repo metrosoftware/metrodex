@@ -122,12 +122,10 @@ public final class DebugTrace {
         this.log(headers);
     }
 
-    //FIXME #220 get rid of
     private boolean include(long accountId) {
         return accountId != 0 && (accountIds.isEmpty() || accountIds.contains(accountId));
     }
 
-    //FIXME #220 accountIds should be FullIds
     private boolean include(Account.FullId accountId) {
         return accountId != null && accountId.getLeft() != 0 && (accountIds.isEmpty() || accountIds.contains(accountId.getLeft()));
     }
@@ -145,8 +143,8 @@ public final class DebugTrace {
     }
 
     private void trace(Account account, boolean unconfirmed) {
-        if (include(account.getId())) {
-            log(getValues(account.getId(), unconfirmed));
+        if (include(account.getFullId())) {
+            log(getValues(account.getFullId(), unconfirmed));
         }
     }
 
@@ -183,20 +181,20 @@ public final class DebugTrace {
 
     private void trace(Block block) {
         for (Transaction transaction : block.getTransactions()) {
-            long senderId = transaction.getSenderId();
+            Account.FullId senderFullId = transaction.getSenderFullId();
             if (((TransactionImpl)transaction).attachmentIsPhased()) {
-                if (include(senderId)) {
-                    log(getValues(senderId, transaction, false, true, false));
+                if (include(senderFullId)) {
+                    log(getValues(senderFullId, transaction, false, true, false));
                 }
                 continue;
             }
-            if (include(senderId)) {
-                log(getValues(senderId, transaction, false, true, true));
-                log(getValues(senderId, transaction, transaction.getAttachment(), false));
+            if (include(senderFullId)) {
+                log(getValues(senderFullId, transaction, false, true, true));
+                log(getValues(senderFullId, transaction, transaction.getAttachment(), false));
             }
-            long recipientId = transaction.getRecipientId();
-            if (transaction.getAmountMQT() > 0 && recipientId == 0) {
-                recipientId = Genesis.CREATOR_ID.getLeft();
+            Account.FullId recipientId = transaction.getRecipientFullId();
+            if (transaction.getAmountMQT() > 0 && recipientId == null) {
+                recipientId = Genesis.CREATOR_ID;
             }
             if (include(recipientId)) {
                 log(getValues(recipientId, transaction, true, true, true));
@@ -206,12 +204,12 @@ public final class DebugTrace {
     }
 
     private void traceRelease(Transaction transaction) {
-        long senderId = transaction.getSenderId();
+        Account.FullId senderId = transaction.getSenderFullId();
         if (include(senderId)) {
             log(getValues(senderId, transaction, false, false, true));
             log(getValues(senderId, transaction, transaction.getAttachment(), false));
         }
-        long recipientId = transaction.getRecipientId();
+        Account.FullId recipientId = transaction.getRecipientFullId();
         if (include(recipientId)) {
             log(getValues(recipientId, transaction, true, false, true));
             log(getValues(recipientId, transaction, transaction.getAttachment(), true));
@@ -242,7 +240,7 @@ public final class DebugTrace {
             long fee = Constants.SHUFFLING_DEPOSIT_MQT / 4;
             int height = Metro.getBlockchain().getHeight();
             for (int i = 0; i < 3; i++) {
-                long generatorId = BlockDb.findBlockAtHeight(height - i - 1).getGeneratorId();
+                Account.FullId generatorId = BlockDb.findBlockAtHeight(height - i - 1).getGeneratorFullId();
                 if (include(generatorId)) {
                     Map<String, String> generatorMap = getValues(generatorId, false);
                     generatorMap.put("generation fee", String.valueOf(fee));
@@ -251,7 +249,7 @@ public final class DebugTrace {
                 }
             }
             fee = Constants.SHUFFLING_DEPOSIT_MQT - 3 * fee;
-            long generatorId = Metro.getBlockchain().getLastBlock().getGeneratorId();
+            Account.FullId generatorId = Metro.getBlockchain().getLastBlock().getGeneratorFullId();
             if (include(generatorId)) {
                 Map<String,String> generatorMap = getValues(generatorId, false);
                 generatorMap.put("generation fee", String.valueOf(fee));
@@ -273,9 +271,16 @@ public final class DebugTrace {
     }
 
     private Map<String,String> getValues(long accountId, boolean unconfirmed) {
+        return getValues(Account.getAccount(accountId), unconfirmed);
+    }
+
+    private Map<String,String> getValues(Account.FullId accountFullId, boolean unconfirmed) {
+        return getValues(Account.getAccount(accountFullId), unconfirmed);
+    }
+
+    private Map<String,String> getValues(Account account, boolean unconfirmed) {
         Map<String,String> map = new HashMap<>();
-        Account account = Account.getAccount(accountId);
-        map.put("account", account.getFullId().toString());
+        map.put("account", account != null ? account.getFullId().toString() : "0");
         map.put("balance", String.valueOf(account != null ? account.getBalanceMQT() : 0));
         map.put("unconfirmed balance", String.valueOf(account != null ? account.getUnconfirmedBalanceMQT() : 0));
         map.put("timestamp", String.valueOf(Metro.getBlockchain().getLastBlock().getTimestamp()));
@@ -313,7 +318,7 @@ public final class DebugTrace {
         return map;
     }
 
-    private Map<String,String> getValues(long accountId, Transaction transaction, boolean isRecipient, boolean logFee, boolean logAmount) {
+    private Map<String,String> getValues(Account.FullId accountId, Transaction transaction, boolean isRecipient, boolean logFee, boolean logAmount) {
         long amount = transaction.getAmountMQT();
         long fee = transaction.getFeeMQT();
         if (isRecipient) {
@@ -335,9 +340,9 @@ public final class DebugTrace {
         }
         map.put("transaction", transaction.getStringId());
         if (isRecipient) {
-            map.put("sender", Long.toUnsignedString(transaction.getSenderId()));
+            map.put("sender", transaction.getSenderFullId().toString());
         } else {
-            map.put("recipient", Long.toUnsignedString(transaction.getRecipientId()));
+            map.put("recipient", transaction.getRecipientFullId().toString());
         }
         map.put("event", "transaction");
         return map;
@@ -410,7 +415,7 @@ public final class DebugTrace {
         return map;
     }
 
-    private Map<String,String> getValues(long accountId, Transaction transaction, Attachment attachment, boolean isRecipient) {
+    private Map<String,String> getValues(Account.FullId accountId, Transaction transaction, Attachment attachment, boolean isRecipient) {
         Map<String,String> map = getValues(accountId, false);
         if (attachment instanceof Attachment.ColoredCoinsOrderPlacement) {
             if (isRecipient) {
@@ -465,14 +470,14 @@ public final class DebugTrace {
             map.put("event", "order cancel");
         } else if (attachment == Attachment.ARBITRARY_MESSAGE) {
             map = new HashMap<>();
-            map.put("account", Long.toUnsignedString(accountId));
+            map.put("account", accountId.toString());
             map.put("timestamp", String.valueOf(Metro.getBlockchain().getLastBlock().getTimestamp()));
             map.put("height", String.valueOf(Metro.getBlockchain().getHeight()));
             map.put("event", attachment == Attachment.ARBITRARY_MESSAGE ? "message" : "encrypted message");
             if (isRecipient) {
-                map.put("sender", Long.toUnsignedString(transaction.getSenderId()));
+                map.put("sender", transaction.getSenderFullId().toString());
             } else {
-                map.put("recipient", Long.toUnsignedString(transaction.getRecipientId()));
+                map.put("recipient", transaction.getRecipientFullId().toString());
             }
         } else if (attachment instanceof Attachment.ColoredCoinsDividendPayment) {
             Attachment.ColoredCoinsDividendPayment dividendPayment = (Attachment.ColoredCoinsDividendPayment)attachment;
@@ -481,7 +486,7 @@ public final class DebugTrace {
             try (DbIterator<Account.AccountAsset> iterator = Account.getAssetAccounts(dividendPayment.getAssetId(), dividendPayment.getHeight(), 0, -1)) {
                 while (iterator.hasNext()) {
                     Account.AccountAsset accountAsset = iterator.next();
-                    if (accountAsset.getAccountId() != accountId && accountAsset.getQuantityQNT() != 0) {
+                    if (accountAsset.getAccountId() != accountId.getLeft() && accountAsset.getQuantityQNT() != 0) {
                         long dividend = Math.multiplyExact(accountAsset.getQuantityQNT(), dividendPayment.getAmountMQTPerQNT());
                         Map recipient = getValues(accountAsset.getAccountId(), false);
                         recipient.put("dividend", String.valueOf(dividend));

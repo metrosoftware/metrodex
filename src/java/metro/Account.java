@@ -47,11 +47,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import static metro.Consensus.COINBASE_MATURITY_PERIOD;
+import static metro.Db.db;
 
 @SuppressWarnings({"UnusedDeclaration", "SuspiciousNameCombination"})
 public final class Account {
@@ -560,14 +562,14 @@ public final class Account {
 
         @Override
         public void trim(int height) {
-            try (Connection con = Db.db.getConnection();
+            try (Connection con = db.getConnection();
                  PreparedStatement pstmtDelete = con.prepareStatement("DELETE FROM account_guaranteed_balance "
                          + "WHERE height < ? AND height >= 0 LIMIT " + Constants.BATCH_COMMIT_SIZE)) {
                 pstmtDelete.setInt(1, Metro.getBlockchain().getGuaranteedBalanceHeight(height));
                 int count;
                 do {
                     count = pstmtDelete.executeUpdate();
-                    Db.db.commitTransaction();
+                    db.commitTransaction();
                 } while (count >= Constants.BATCH_COMMIT_SIZE);
             } catch (SQLException e) {
                 throw new RuntimeException(e.toString(), e);
@@ -716,7 +718,23 @@ public final class Account {
 
     public static Account getAccount(long id) {
         DbClause dbClause = new DbClause.LongClause("id", id);
-        return accountTable.getBy(dbClause);
+        Account account = accountTable.getBy(dbClause);
+        if (account == null) {
+            Map<DbKey, Object> cache = db.getCache(accountTable.toString());
+            for (DbKey key: cache.keySet()) {
+                DbKey.PairKey fullId = (DbKey.PairKey)key;
+                if (fullId.getIdA() == id) {
+                    return (Account) cache.get(key);
+                }
+            }
+        }
+        return account;
+    }
+
+    public static Account.FullId getAccountFullId(long id) {
+        DbClause dbClause = new DbClause.LongClause("id", id);
+        Account account = accountTable.getBy(dbClause);
+        return account != null ? account.getFullId() : null;
     }
 
     public static Account getAccount(FullId fullId) {
@@ -819,7 +837,7 @@ public final class Account {
     private static DbIterator<AccountLease> getLeaseChangingAccounts(final int height) {
         Connection con = null;
         try {
-            con = Db.db.getConnection();
+            con = db.getConnection();
             PreparedStatement pstmt = con.prepareStatement(
                     "SELECT * FROM account_lease WHERE current_leasing_height_from = ? AND latest = TRUE "
                             + "UNION ALL SELECT * FROM account_lease WHERE current_leasing_height_to = ? AND latest = TRUE "
@@ -921,16 +939,16 @@ public final class Account {
         if (publicKeyCache != null) {
 
             Metro.getBlockchainProcessor().addListener(block -> {
-                publicKeyCache.remove(accountDbKeyFactory.newKey(FullId.fromPublicKey(block.getGeneratorPublicKey())));
+                publicKeyCache.remove(publicKeyDbKeyFactory.newKey(FullId.fromPublicKey(block.getGeneratorPublicKey()).getLeft()));
                 block.getTransactions().forEach(transaction -> {
-                    publicKeyCache.remove(accountDbKeyFactory.newKey(transaction.getSenderFullId()));
+                    publicKeyCache.remove(publicKeyDbKeyFactory.newKey(transaction.getSenderId()));
                     if (!transaction.getAppendages(appendix -> (appendix instanceof Appendix.PublicKeyAnnouncement), false).isEmpty()) {
-                        publicKeyCache.remove(accountDbKeyFactory.newKey(transaction.getRecipientFullId()));
+                        publicKeyCache.remove(publicKeyDbKeyFactory.newKey(transaction.getRecipientId()));
                     }
                     if (transaction.getType() == ShufflingTransaction.SHUFFLING_RECIPIENTS) {
                         Attachment.ShufflingRecipients shufflingRecipients = (Attachment.ShufflingRecipients) transaction.getAttachment();
                         for (byte[] publicKey : shufflingRecipients.getRecipientPublicKeys()) {
-                            publicKeyCache.remove(accountDbKeyFactory.newKey(FullId.fromPublicKey(publicKey)));
+                            publicKeyCache.remove(publicKeyDbKeyFactory.newKey(FullId.fromPublicKey(publicKey).getLeft()));
                         }
                     }
                 });
@@ -956,7 +974,7 @@ public final class Account {
     private Set<ControlType> controls;
 
     private Account(FullId id) {
-        if (id != Crypto.rsDecode(Crypto.rsEncode(id))) {
+        if (!Crypto.rsDecode(Crypto.rsEncode(id)).equals(id)) {
             Logger.logMessage("CRITICAL ERROR: Reed-Solomon encoding fails for " + id);
         }
         this.id = id.getLeft();
@@ -1019,7 +1037,7 @@ public final class Account {
     }
 
     public AccountInfo getAccountInfo() {
-        return accountInfoTable.get(accountDbKeyFactory.newKey(this));
+        return accountInfoTable.get(accountInfoDbKeyFactory.newKey(this.getId()));
     }
 
     void setAccountInfo(String name, String description) {
@@ -1036,7 +1054,7 @@ public final class Account {
     }
 
     public AccountLease getAccountLease() {
-        return accountLeaseTable.get(accountDbKeyFactory.newKey(this));
+        return accountLeaseTable.get(accountLeaseDbKeyFactory.newKey(this.getId()));
     }
 
     public EncryptedData encryptTo(byte[] data, String senderSecretPhrase, boolean compress) {
@@ -1087,7 +1105,7 @@ public final class Account {
         int currentHeight = Metro.getBlockchain().getHeight();
         int guaranteedBalanceHeight = Metro.getBlockchain().getAvailableBalanceHeight(currentHeight, COINBASE_MATURITY_PERIOD);
         long rawUnlockedBalance = Math.max(Math.subtractExact(unconfirmedBalanceMQT, getTimeLockedGenesisBalance()), 0);
-        try (Connection con = Db.db.getConnection();
+        try (Connection con = db.getConnection();
              PreparedStatement pstmt = con.prepareStatement("SELECT SUM (additions) AS additions "
                      + "FROM account_guaranteed_balance WHERE account_id = ? AND coinbase AND height > ? AND height <= ?")) {
             pstmt.setLong(1, this.id);
@@ -1164,7 +1182,7 @@ public final class Account {
             balances[i] = lessors.get(i).getBalanceMQT();
         }
         int blockchainHeight = Metro.getBlockchain().getHeight();
-        try (Connection con = Db.db.getConnection();
+        try (Connection con = db.getConnection();
              PreparedStatement pstmt = con.prepareStatement("SELECT account_id, SUM (additions) AS additions "
                      + "FROM account_guaranteed_balance, TABLE (id BIGINT=?) T WHERE account_id = T.id AND NOT coinbase AND height > ? "
                      + (height < blockchainHeight ? " AND height <= ? " : "")
@@ -1217,7 +1235,7 @@ public final class Account {
                     || height > Metro.getBlockchain().getHeight()) {
                 throw new IllegalArgumentException("Height " + height + " not available for guaranteed balance calculation");
             }
-            try (Connection con = Db.db.getConnection();
+            try (Connection con = db.getConnection();
                  PreparedStatement pstmt = con.prepareStatement("SELECT SUM (additions) AS additions "
                          + "FROM account_guaranteed_balance WHERE account_id = ? AND NOT coinbase AND height > ? AND height <= ?")) {
                 pstmt.setLong(1, this.id);
@@ -1588,7 +1606,7 @@ public final class Account {
             return;
         }
         int blockchainHeight = Metro.getBlockchain().getHeight();
-        try (Connection con = Db.db.getConnection();
+        try (Connection con = db.getConnection();
              // TODO need to know whether it was coinbase
              PreparedStatement pstmtSelect = con.prepareStatement("SELECT additions FROM account_guaranteed_balance "
                      + "WHERE account_id = ? AND coinbase = ? AND height = ?");
@@ -1641,8 +1659,10 @@ public final class Account {
         return "Account " + Long.toUnsignedString(getId());
     }
 
+
     public static class FullId extends Pair<Long, Integer> {
         public static final int BYTES_SIZE = 12;
+        private static final BigInteger TWO64 = BigInteger.valueOf((long)Math.pow(2,32)).multiply(BigInteger.valueOf((long)Math.pow(2,32)));
         private final long id1;
         private final int id2;
 
@@ -1652,9 +1672,8 @@ public final class Account {
         }
 
         public FullId(BigInteger bigId) {
-            BigInteger two32 = BigInteger.valueOf((long) Math.pow(2, 32));
-            this.id1 = bigId.divide(two32).longValue();
-            this.id2 = bigId.subtract(bigId.divide(two32).multiply(two32)).intValue();
+            this.id2 = bigId.divide(TWO64).intValue();
+            this.id1 = bigId.subtract(bigId.divide(TWO64).multiply(TWO64)).longValue();
         }
 
         public static FullId fromPublicKey(byte[] publicKey) {
@@ -1674,11 +1693,15 @@ public final class Account {
                     new BigInteger(1, new byte[]{hash[11], hash[10], hash[9], hash[8]}).intValue());
         }
 
-        public byte[] putMyBytes(ByteBuffer byteBuffer) {
-            ByteBuffer buffer = ByteBuffer.allocate(BYTES_SIZE);
+        public void putMyBytes(ByteBuffer buffer) {
             buffer.order(ByteOrder.LITTLE_ENDIAN);
             buffer.putLong(id1);
             buffer.putInt(id2);
+        }
+
+        public byte[] getBytes() {
+            ByteBuffer buffer = ByteBuffer.allocate(BYTES_SIZE);
+            putMyBytes(buffer);
             return buffer.array();
         }
 
@@ -1707,9 +1730,8 @@ public final class Account {
         }
 
         public BigInteger toNumber() {
-            BigInteger big = new BigInteger(Long.toUnsignedString(getLeft()));
-            big = big.multiply(BigInteger.valueOf((long)Math.pow(2,32)));
-            return big.add(new BigInteger(Integer.toUnsignedString(getRight())));
+            BigInteger big = TWO64.multiply(new BigInteger(Integer.toUnsignedString(getRight())));
+            return big.add(new BigInteger(Long.toUnsignedString(getLeft())));
         }
 
         public String toString() {

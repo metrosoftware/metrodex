@@ -31,8 +31,6 @@ function MetroAddress() {
 	var cwmap = [3, 2, 1, 0, 7, 6, 5, 4, 13, 14, 15, 12, 8, 9, 10, 11, 16, 17, 18, 19, 23, 22, 21, 20];
 
 	var alphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-	//var alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ345679';
-	var extraId;
 
 	this.guess = [];
 
@@ -169,7 +167,7 @@ function MetroAddress() {
 	function encode() {
 		var p = [0, 0, 0, 0];
 
-		for (var i = 12; i >= 0; i--) {
+		for (var i = 19; i >= 0; i--) {
 			var fb = codeword[i] ^ p[3];
 
 			p[3] = p[2] ^ gmult(30, fb);
@@ -282,20 +280,6 @@ function MetroAddress() {
 			if ((i & 3) == 3 && i < 21) out += '-';
 		}
 
-		if (extraId) {
-            out += '#';
-            var sha256 = CryptoJS.algo.SHA256.create();
-            sha256.update(converters.byteArrayToWordArrayEx(extraId));
-            var hash = sha256.finalize();
-            hash = converters.wordArrayToByteArrayImpl(hash, false);
-            var hashLength = hash.length;
-            hash.slice(hashLength-5, hashLength);
-            hash.slice(hashLength-9, hashLength -5);
-            out += alphabet[hash & 992 >>5];
-            out += alphabet[hash & 32];
-            out += extraId;
-		}
-
 		return out;
 	} //__________________________
 
@@ -401,11 +385,6 @@ function MetroAddress() {
 		reset();
 
 		return false;
-	}
-
-	this.setExtraId = function(eid) {
-		extraId = eid;
-		return true;
 	}
 
 	this.format_guess = function(s, org) {

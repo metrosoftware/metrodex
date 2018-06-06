@@ -523,7 +523,7 @@ var MRS = (function (MRS, $, undefined) {
                         incorrect = true;
                         break;
                 }
-            } else if (transaction.type == 2) {
+            } else if (transaction.type == 5) {
                 switch (transaction.subtype) {
                     case 0:
                         MRS.sendRequest("getAsset", {
@@ -696,7 +696,7 @@ var MRS = (function (MRS, $, undefined) {
                         incorrect = true;
                         break;
                 }
-            } else if (transaction.type == 4) {
+            } else if (transaction.type == 3) {
                 switch (transaction.subtype) {
                     case 0:
                         data = {
@@ -725,7 +725,7 @@ var MRS = (function (MRS, $, undefined) {
                         incorrect = true;
                         break;
                 }
-            } else if (transactionDetails.type == 5) {
+            } else if (transaction.type == 4) {
                 data = {
 
                 };

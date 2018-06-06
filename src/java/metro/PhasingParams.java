@@ -75,7 +75,6 @@ public final class PhasingParams {
     
     public PhasingParams(byte votingModel, long holdingId, long quorum, long minBalance, byte minBalanceModel, List<Account.FullId> whitelist) {
         this.quorum = quorum;
-        //FIXME #220
         this.whitelist = whitelist == null ? new ArrayList<>() : whitelist;
         if (this.whitelist.size() > 0) {
             Collections.sort(this.whitelist);

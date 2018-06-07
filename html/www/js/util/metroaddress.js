@@ -213,10 +213,10 @@ function MetroAddress() {
 
 		for (var i = 1; i < 5; i++) {
 			for (var j = 0, t = 0; j < 31; j++) {
-				if (j > 12 && j < 27) continue;
+				if (j > 19 && j < 27) continue;
 
 				var pos = j;
-				if (j > 26) pos -= 14;
+				if (j > 26) pos -= 7;
 
 				t ^= gmult(codeword[pos], gexp[(i * j) % 31]);
 			}

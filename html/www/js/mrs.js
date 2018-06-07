@@ -1123,6 +1123,11 @@ var MRS = (function(MRS, $, undefined) {
 				}
                 MRS.updateDashboardMessage();
                 $("#account_balance, #account_balance_sidebar").html(MRS.formatStyledAmount(response.unconfirmedBalanceMQT));
+                $("#account_balance_sidebar").attr('title', $.t("spendable_balance_sidebar"));
+                if (response.balanceMQT && response.balanceMQT != response.unconfirmedBalanceMQT) {
+                    $("#account_full_balance_sidebar").html("(" + MRS.formatStyledAmount(response.balanceMQT) + ")");
+                    $("#account_full_balance_sidebar").attr('title', $.t("balance_sidebar"));
+                }
                 $("#account_forged_balance").html(MRS.formatStyledAmount(response.forgedBalanceMQT));
 
                 if (MRS.isDisplayOptionalDashboardTiles()) {

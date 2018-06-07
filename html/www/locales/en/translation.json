@@ -132,6 +132,8 @@
   "balance_leasing_help": "Remember: Once submitted the lease cannot be cancelled.",
   "balance_not_leased_out": "Your account effective balance is not leased out.",
   "balance_will_be_leased_out": "Your account effective balance will be leased out in __blocks__ blocks (block range __start__ to __end__) to account __account__",
+  "spendable_balance_sidebar": "Spendable Balance",
+  "balance_sidebar": "Balance",
   "base_target": "Base Target",
   "basic": "Basic",
   "bid_order_cancellation": "Bid Order Cancellation",

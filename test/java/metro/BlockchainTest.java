@@ -17,7 +17,6 @@
 
 package metro;
 
-import metro.util.BitcoinJUtils;
 import metro.crypto.Crypto;
 import metro.util.BitcoinJUtils;
 import metro.util.Convert;
@@ -50,7 +49,7 @@ public abstract class BlockchainTest extends AbstractBlockchainTest {
     protected static int baseHeight;
 
     protected static String forgerSecretPhrase = "aSykrgKGZNlSVOMDxkZZgbTvQqJPGtsBggb";
-    protected static final List<String> forgerAccountIds = Arrays.asList("MTR-MNNV-YGWV-88HM-9YSV-TEH2-BLNC","MTR-MNNV-YGWV-88HM-9YSV-TEH2-BLNC");
+    protected static final List<String> forgerAccountIds = Arrays.asList("MTR-9KZM-KNYY-FCUM-TD8V-TFG3-5R5U","MTR-XK4R-7VJU-QY97-R335-MKW3-BRH9");
 
     public static final String aliceSecretPhrase = "hope peace happen touch easy pretend worthless talk them indeed wheel state";
     private static final String bobSecretPhrase2 = "rshw9abtpsa2";
@@ -143,7 +142,7 @@ public abstract class BlockchainTest extends AbstractBlockchainTest {
                                 " hash %s meets target",
                         Thread.currentThread().getName(), currentNonce,
                         Arrays.toString(hash));
-                Block keyBlock = Metro.getBlockchain().composeKeyBlock(buffer.array(), preparedBlock.getGeneratorPublicKey(), preparedBlock.getTransactions());
+                Block keyBlock = Metro.getBlockchain().composeKeyBlock(buffer.array(), preparedBlock.getTransactions());
                 return Metro.getBlockchainProcessor().processKeyBlock(keyBlock) ? keyBlock : null;
             }
             currentNonce += poolSize;

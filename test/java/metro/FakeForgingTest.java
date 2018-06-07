@@ -32,7 +32,7 @@ public class FakeForgingTest extends AbstractForgingTest {
         properties.setProperty("metro.disableGenerateBlocksThread", "false");
         properties.setProperty("metro.enableFakeForging", "true");
         properties.setProperty("metro.timeMultiplier", "1");
-        properties.setProperty("metro.fakeForgingAccounts", "{\"rs\":[\"MTR-9KZM-KNYY-QBXZ-5TD8V\",\"MTR-XK4R-7VJU-6EQG-7R335\"]}");
+        properties.setProperty("metro.fakeForgingAccounts", "{\"rs\":[\"MTR-9KZM-KNYY-FCUM-TD8V-TFG3-5R5U\",\"MTR-SZKV-J8TH-AL2R-LKV6-ZW32-APYM\"]}");
 
         AbstractForgingTest.init(properties);
         Assert.assertTrue("metro.fakeForgingAccounts must be defined in metro.properties", Metro.getStringProperty("metro.fakeForgingAccounts") != null);

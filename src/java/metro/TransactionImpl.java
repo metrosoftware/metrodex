@@ -812,7 +812,7 @@ public final class TransactionImpl implements Transaction {
         json.put("deadline", deadline);
         json.put("senderPublicKey", Convert.toHexString(getSenderPublicKey()));
         if (type.canHaveRecipient()) {
-            json.put("recipient", Long.toUnsignedString(recipientId));
+            json.put("recipient", new Account.FullId(recipientId, recipientId2).toString());
         }
         json.put("amountMQT", amountMQT);
         json.put("feeMQT", feeMQT);

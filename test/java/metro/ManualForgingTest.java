@@ -31,7 +31,7 @@ public class ManualForgingTest extends AbstractForgingTest {
         Properties properties = ManualForgingTest.newTestProperties();
         properties.setProperty("metro.enableFakeForging", "true");
         properties.setProperty("metro.timeMultiplier", "1");
-        properties.setProperty("metro.fakeForgingAccounts", "{\"rs\":[\"MTR-MNNV-YGWV-88HM-9YSV-TEH2-BLNC\",\"MTR-MNNV-YGWV-88HM-9YSV-TEH2-BLNC\"]}");
+        properties.setProperty("metro.fakeForgingAccounts", "{\"rs\":[\"MTR-9KZM-KNYY-FCUM-TD8V-TFG3-5R5U\",\"MTR-MNNV-YGWV-88HM-9YSV-TEH2-BLNC\"]}");
         AbstractForgingTest.init(properties);
         Assert.assertTrue("metro.fakeForgingAccounts must be defined in metro.properties", Metro.getStringProperty("metro.fakeForgingAccounts") != null);
         final byte[] testPublicKey = Crypto.getPublicKey(testForgingSecretPhrase);

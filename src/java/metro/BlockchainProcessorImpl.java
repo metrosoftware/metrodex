@@ -681,7 +681,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             try {
                 int count = stop - start;
                 for (JSONObject blockData : nextBlocks) {
-                    blockList.add(BlockImpl.parseBlock(blockData));
+                    blockList.add(BlockImpl.parseBlock(blockData, false));
                     if (--count <= 0)
                         break;
                 }
@@ -1071,9 +1071,30 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         return genesisBlockId;
     }
 
+    private boolean processKeyBlockInternal(BlockImpl block) throws MetroException {
+        BlockImpl lastBlock = blockchain.getLastBlock();
+        if (block.getPreviousBlockId() == lastBlock.getId()) {
+            pushBlock(block);
+            return true;
+        }
+
+        BlockImpl lastKeyBlock = blockchain.getLastKeyBlock();
+        BlockImpl common = blockchain.getBlock(block.getPreviousBlockId());
+
+        if (common == null || (lastKeyBlock != null && lastKeyBlock.getLocalHeight() >= block.getLocalHeight())) {
+            return false;
+        }
+
+        boolean added = processFork(null, Collections.singletonList(block), common);
+        if (added) {
+            Logger.logWarningMessage("Block " + lastBlock.getStringId() + " at height " + lastBlock.getHeight() +
+                    " was replaced by key block " + block.getStringId() + " height " + block.getHeight());
+        }
+        return added;
+    }
+
     @Override
     public boolean processKeyBlock(Block blk) throws MetroException {
-
         if (!(blk instanceof BlockImpl)) {
             throw new BlockNotAcceptedException("Unknown block class " + blk.getClass().getName() + ", should not happen", new BlockImpl(null, null));
         }
@@ -1081,33 +1102,16 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
         blockchain.writeLock();
         try {
-            BlockImpl lastBlock = blockchain.getLastBlock();
-            if (block.getPreviousBlockId() == lastBlock.getId()) {
-                pushBlock(block);
-                return true;
-            }
-
-            BlockImpl lastKeyBlock = blockchain.getLastKeyBlock();
-            BlockImpl common = blockchain.getBlock(block.getPreviousBlockId());
-
-            if (common == null || (lastKeyBlock != null && lastKeyBlock.getLocalHeight() >= block.getLocalHeight())) {
-                return false;
-            }
-
-            boolean added = processFork(null, Collections.singletonList(block), common);
-            if (added) {
-                Logger.logWarningMessage("Block " + lastBlock.getStringId() + " at hight " + lastBlock.getHeight() +
-                        " was replaced by key block " + block.getStringId() + " hight " + block.getHeight());
-            }
-            return added;
+            return processKeyBlockInternal(block);
         } finally {
             blockchain.writeUnlock();
         }
     }
 
-
     /**
-     * The method to process a block submitted by a peer
+     * The method to process a block submitted by a peer.
+     * Key block parsed from JSON lacks previousBlockHash and generationSequence: we must restore them here from our tip,
+     * before passing the new block to pushBlock()
      *
      * @param request
      * @return true if this block was accepted, false if ignored
@@ -1115,17 +1119,27 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
      */
     @Override
     public void processPeerBlock(JSONObject request) throws MetroException {
-        BlockImpl block = BlockImpl.parseBlock(request);
-        if (block.isKeyBlock()) {
-            processKeyBlock(block);
-        }
-
+        BlockImpl block = BlockImpl.parseBlock(request, false);
         blockchain.writeLock();
         try {
             BlockImpl lastBlock = blockchain.getLastBlock();
-            if (block.getPreviousBlockId() == lastBlock.getId()) {
+            final boolean isBlockchainContinuation = block.getPreviousBlockId() == lastBlock.getId();
+            final boolean isTipReplacement = !lastBlock.isKeyBlock() && block.getPreviousBlockId() == lastBlock.getPreviousBlockId() && block.getTimestamp() < lastBlock.getTimestamp();
+            if (block.isKeyBlock()) {
+                if (block.getPreviousBlockHash() == null && (isBlockchainContinuation || isTipReplacement)) {
+                    // received from JSON, prevBlockId checked, we can restore hash from DB or block cache
+                    request.put("previousBlockHash", Convert.toHexString(isTipReplacement ? lastBlock.getPreviousBlockHash() : HASH_FUNCTION.hash(lastBlock.bytes())));
+                    byte[] generationSequenceHash = BlockImpl.advanceGenerationSequenceInKeyBlock(lastBlock);
+                    request.put("generationSequence", Convert.toHexString(generationSequenceHash));
+                    block = BlockImpl.parseBlock(request, true);
+                }
+                processKeyBlockInternal(block);
+                return;
+            }
+
+            if (isBlockchainContinuation) {
                 pushBlock(block);
-            } else if (!lastBlock.isKeyBlock() && block.getPreviousBlockId() == lastBlock.getPreviousBlockId() && block.getTimestamp() < lastBlock.getTimestamp()) {
+            } else if (isTipReplacement) {
                 if (lastBlock.getId() != blockchain.getLastBlock().getId()) {
                     // blockchain changed, ignore the block
                     return;
@@ -1439,12 +1453,12 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         }
         if (keyBlock) {
             if (previousLastKeyBlock == null) {
-                if (!Arrays.equals(Convert.EMPTY_HASH, block.getPreviousKeyBlockHash())) {
-                    throw new BlockNotAcceptedException("Previous keyBlock hash for the 1st ever keyBlock needs to have 32 zeros", block);
+                if (block.getPreviousKeyBlockId() != null) {
+                    throw new BlockNotAcceptedException("Incorrect previousKeyBlockId in the first ever keyBlock, must be null", block);
                 }
             } else {
-                if (!Arrays.equals(HASH_FUNCTION.hash(previousLastKeyBlock.bytes()), block.getPreviousKeyBlockHash())) {
-                    throw new BlockNotAcceptedException("Previous keyBlock hash doesn't match", block);
+                if (!block.getPreviousKeyBlockId().equals(previousLastKeyBlock.getId())) {
+                    throw new BlockNotAcceptedException("Previous keyBlock hashId doesn't match", block);
                 }
             }
             Block.ValidationResult status = validateKeyBlock(block);
@@ -1610,14 +1624,14 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             validateCoinbaseTx(block.getTransactions().get(0), block);
         }
         if ((calculatedReward + (isKeyBlock ? Consensus.getBlockSubsidy(block.getLocalHeight()): 0)) != block.getRewardMQT()) {
-            throw new BlockNotAcceptedException("Reward don't match transaction totals", block);
+            throw new BlockNotAcceptedException("Reward doesn't match transaction totals", block);
         }
         if (!isKeyBlock) {
             if (calculatedTotalAmount != block.getTotalAmountMQT()) {
-                throw new BlockNotAcceptedException("Total amount don't match transaction totals", block);
+                throw new BlockNotAcceptedException("Total amount doesn't match transaction totals", block);
             }
             if (!Arrays.equals(txMerkleRoot, block.getTxMerkleRoot())) {
-                throw new BlockNotAcceptedException("Payload hash doesn't match", block);
+                throw new BlockNotAcceptedException("Tx Merkle root doesn't match block transactions", block);
             }
             if (hasPrunedTransactions ? payloadLength > block.getPayloadLength() : payloadLength != block.getPayloadLength()) {
                 throw new BlockNotAcceptedException("Transaction payload length " + payloadLength + " does not match block payload length "
@@ -1956,8 +1970,6 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         TransactionProcessorImpl.getInstance().processWaitingTransactions();
         SortedSet<UnconfirmedTransaction> sortedTransactions = selectUnconfirmedTransactions(duplicates, previousBlock, blockTimestamp);
         List<TransactionImpl> blockTransactions = new ArrayList<>();
-        long totalAmountMQT = 0;
-        long rewardMQT = 0;
         int payloadLength = 0;
         final byte[] publicKey = Crypto.getPublicKey(secretPhrase);
 
@@ -1968,8 +1980,6 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             for (UnconfirmedTransaction unconfirmedTransaction : sortedTransactions) {
                 TransactionImpl transaction = unconfirmedTransaction.getTransaction();
                 blockTransactions.add(transaction);
-                totalAmountMQT += transaction.getAmountMQT();
-                rewardMQT += transaction.getFeeMQT();
                 payloadLength += transaction.getFullSize();
             }
             TransactionImpl coinbase = buildCoinbase(publicKey, blockTimestamp, blockTransactions, false, prevPosBlock.getLocalHeight() + 1);
@@ -1986,8 +1996,8 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         final byte[] generationSequence = Convert.generationSequence(previousBlock.getGenerationSequence(), publicKey);
         final byte[] previousBlockHash = HASH_FUNCTION.hash(previousBlock.bytes());
 
-        BlockImpl block = new BlockImpl(getPosBlockVersion(previousBlock.getHeight()), blockTimestamp, previousBlock.getId(), 0l, 0, totalAmountMQT, rewardMQT, payloadLength,
-                txMerkleRoot, publicKey, generationSequence, previousBlockHash, null, null, blockTransactions, secretPhrase);
+        BlockImpl block = new BlockImpl(getPosBlockVersion(previousBlock.getHeight()), blockTimestamp, previousBlock.getId(), null, 0, payloadLength,
+                txMerkleRoot, publicKey, generationSequence, previousBlockHash, null, blockTransactions, secretPhrase);
 
         try {
             pushBlock(block);
@@ -2147,7 +2157,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                                         validate(currentBlock, blockchain.getLastBlock(), blockchain.getLastKeyBlock(), curTime);
                                         byte[] blockBytes = currentBlock.bytes();
                                         JSONObject blockJSON = (JSONObject) JSONValue.parse(currentBlock.getJSONObject().toJSONString());
-                                        if (!Arrays.equals(blockBytes, BlockImpl.parseBlock(blockJSON).bytes())) {
+                                        if (!Arrays.equals(blockBytes, BlockImpl.parseBlock(blockJSON, false).bytes())) {
                                             throw new MetroException.NotValidException("Block JSON cannot be parsed back to the same block");
                                         }
                                         validateTransactions(currentBlock, blockchain.getLastBlock(), curTime, duplicates, true);
@@ -2215,10 +2225,9 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         BlockImpl previousBlock = blockchain.getLastBlock();
         BlockImpl previousKeyBlock = blockchain.getLastKeyBlock();
         byte[] previousBlockHash = Consensus.HASH_FUNCTION.hash(previousBlock.bytes());
-        byte[] previousKeyBlockHash = previousKeyBlock == null ? Convert.EMPTY_HASH : Consensus.HASH_FUNCTION.hash(previousKeyBlock.bytes());
         //TODO ticket # get generatorPublicKey from properties
         byte[] generatorPublicKey = Convert.parseHexString(Miner.getPublicKey());
-        long previousKeyBlockId = previousKeyBlock == null ? 0 : previousKeyBlock.getId();
+        Long previousKeyBlockId = previousKeyBlock == null ? null : previousKeyBlock.getId();
         long baseTarget = BitcoinJUtils.encodeCompactBits(Metro.getBlockchain().getNextTarget());
         long blockTimestamp = Metro.getEpochTime();
         byte[] forgersMerkle = Generator.getCurrentForgersMerkleBranches();
@@ -2248,8 +2257,8 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         List<byte[]> tree = BitcoinJUtils.buildMerkleTree(txids);
         byte[] txMerkleRoot = tree.get(tree.size() - 1);
 
-        return new BlockImpl(getKeyBlockVersion(previousBlock.getHeight()), blockTimestamp, baseTarget, previousBlock.getId(), previousKeyBlockId, 0, 0, 0, 0,
-                txMerkleRoot, generatorPublicKey, null, null, previousBlockHash, previousKeyBlockHash, forgersMerkle, blockTransactions);
+        return new BlockImpl(getKeyBlockVersion(previousBlock.getHeight()), blockTimestamp, baseTarget, previousBlock.getId(), previousKeyBlockId, 0, 0,
+                txMerkleRoot, generatorPublicKey, null, null, previousBlockHash, forgersMerkle, blockTransactions);
     }
 
     private SortedSet<UnconfirmedTransaction> getTransactionsForKeyBlockGeneration(Block previousBlock) {

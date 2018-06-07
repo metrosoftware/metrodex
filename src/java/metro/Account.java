@@ -1297,7 +1297,7 @@ public final class Account {
 
     void leaseEffectiveBalance(long lesseeId, int period) {
         int height = Metro.getBlockchain().getHeight();
-        AccountLease accountLease = accountLeaseTable.get(accountDbKeyFactory.newKey(this));
+        AccountLease accountLease = accountLeaseTable.get(accountLeaseDbKeyFactory.newKey(this.getId()));
         if (accountLease == null) {
             accountLease = new AccountLease(id,
                     height + Constants.LEASING_DELAY,

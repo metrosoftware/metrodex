@@ -89,14 +89,13 @@ public final class GetWork extends APIServlet.APIRequestHandler {
                             String blockHeader = (String) params.get(0);
                             String merkle = blockHeader.substring(20, 84);
                             byte[] blockHeaderBytes = Convert.parseHexString(blockHeader.toLowerCase());
-                            byte[] generatorPublicKey = Convert.parseHexString(Miner.getPublicKey());
                             List<TransactionImpl> txs = findTxsByMerkle(merkle);
                             if (txs == null) {
-                                Logger.logErrorMessage("To small get work cache.");
-                                response.put("error", "To small get work cache.");
+                                Logger.logErrorMessage("Too small get work cache.");
+                                response.put("error", "Too small get work cache.");
                                 return JSON.prepare(response);
                             }
-                            Block extra = Metro.getBlockchain().composeKeyBlock(blockHeaderBytes, generatorPublicKey, txs);
+                            Block extra = Metro.getBlockchain().composeKeyBlock(blockHeaderBytes, txs);
                             boolean blockAccepted = Metro.getBlockchainProcessor().processKeyBlock(extra);
                             Logger.logDebugMessage("Solution found. Block Accepted:" + blockAccepted);
                             response.put("result", blockAccepted);

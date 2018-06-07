@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static metro.Consensus.HASH_FUNCTION;
 import static metro.util.Convert.HASH_SIZE;
@@ -41,15 +42,14 @@ public final class BlockImpl implements Block {
     private final short version;
     private final long timestamp;
     private final long previousBlockId;
-    private final long previousKeyBlockId;
+    private final Long previousKeyBlockId;
     private final int nonce;
     private volatile byte[] generatorPublicKey;
     private final byte[] previousBlockHash;
-    private final byte[] previousKeyBlockHash;
     private final byte[] txMerkleRoot;
     private final byte[] forgersMerkleRoot;
-    private final long totalAmountMQT;
-    private final long rewardMQT;
+    private long totalAmountMQT;
+    private long rewardMQT;
     private final int payloadLength;
     private final byte[] generationSequence;
     private volatile List<TransactionImpl> blockTransactions;
@@ -75,8 +75,8 @@ public final class BlockImpl implements Block {
      */
     BlockImpl(byte[] generatorPublicKey, byte[] generationSequence) {
         // the Genesis block is POS with version 0x0000
-        this(Consensus.GENESIS_BLOCK_VERSION, 0, Constants.INITIAL_BASE_TARGET, 0, 0, 0, 0, 0, 0, new byte[HASH_SIZE], generatorPublicKey, generationSequence, new byte[HASH_SIZE * 2],
-                Convert.EMPTY_HASH, null, null, Collections.emptyList());
+        this(Consensus.GENESIS_BLOCK_VERSION, 0, Constants.INITIAL_BASE_TARGET, 0, null, 0, 0, new byte[HASH_SIZE], generatorPublicKey, generationSequence, new byte[HASH_SIZE * 2],
+                Convert.EMPTY_HASH, null, null);
         this.height = 0;
         this.localHeight = 0;
         this.stakeBatchDifficulty = Convert.two64.divide(BigInteger.valueOf(Constants.INITIAL_BASE_TARGET));
@@ -87,10 +87,10 @@ public final class BlockImpl implements Block {
      * Constructs and signs a new block, by passing a secretPhrase
      *
      */
-    BlockImpl(short version, long timestamp, long previousBlockId, long previousKeyBlockId, int nonce, long totalAmountMQT, long rewardMQT, int payloadLength, byte[] txMerkleRoot,
-              byte[] generatorPublicKey, byte[] generationSequence, byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] forgersMerkleRoot, List<TransactionImpl> transactions, String secretPhrase) {
-        this(version, timestamp, 0, previousBlockId, previousKeyBlockId, nonce, totalAmountMQT, rewardMQT, payloadLength, txMerkleRoot,
-                generatorPublicKey, generationSequence, null, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, transactions);
+    BlockImpl(short version, long timestamp, long previousBlockId, Long previousKeyBlockId, int nonce, int payloadLength, byte[] txMerkleRoot,
+              byte[] generatorPublicKey, byte[] generationSequence, byte[] previousBlockHash, byte[] forgersMerkleRoot, List<TransactionImpl> transactions, String secretPhrase) {
+        this(version, timestamp, 0, previousBlockId, previousKeyBlockId, nonce, payloadLength, txMerkleRoot,
+                generatorPublicKey, generationSequence, null, previousBlockHash, forgersMerkleRoot, transactions);
         blockSignature = Crypto.sign(bytes(), secretPhrase);
         bytes = null;
     }
@@ -99,40 +99,54 @@ public final class BlockImpl implements Block {
      * Typical constructor called for a block not yet in DB
      *
      */
-    BlockImpl(short version, long timestamp, long baseTarget, long previousBlockId, long previousKeyBlockId, int nonce, long totalAmountMQT, long rewardMQT, int payloadLength, byte[] txMerkleRoot,
-              byte[] generatorPublicKey, byte[] generationSequence, byte[] blockSignature, byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] forgersMerkleRoot, List<TransactionImpl> transactions) {
+    BlockImpl(short version, long timestamp, long baseTarget, long previousBlockId, Long previousKeyBlockId, int nonce, int payloadLength, byte[] txMerkleRoot,
+              byte[] generatorPublicKey, byte[] generationSequence, byte[] blockSignature, byte[] previousBlockHash, byte[] forgersMerkleRoot, List<TransactionImpl> transactions) {
         this.version = version;
         this.timestamp = timestamp;
         this.baseTarget = baseTarget;
         this.previousBlockId = previousBlockId;
         this.previousKeyBlockId = previousKeyBlockId;
         this.nonce = nonce;
-        this.totalAmountMQT = totalAmountMQT;
-        this.rewardMQT = rewardMQT;
         this.payloadLength = payloadLength;
         this.txMerkleRoot = txMerkleRoot;
         this.generatorPublicKey = generatorPublicKey;
         this.generationSequence = generationSequence;
         this.blockSignature = blockSignature;
         this.previousBlockHash = previousBlockHash;
-        this.previousKeyBlockHash = previousKeyBlockHash;
         this.forgersMerkleRoot = forgersMerkleRoot;
         if (transactions != null) {
             this.blockTransactions = Collections.unmodifiableList(transactions);
+            long calculatedReward = 0, calculatedAmount = 0;
+            if (!transactions.isEmpty()) {
+                for (Transaction transaction : this.blockTransactions) {
+                    calculatedAmount += transaction.getAmountMQT();
+                }
+                TransactionImpl coinbase = transactions.get(0);
+                Attachment.CoinbaseRecipientsAttachment attachment = (Attachment.CoinbaseRecipientsAttachment) coinbase.getAttachment();
+                Map<Account.FullId, Long> coinbaseRewards = attachment.getRecipients();
+                for (Account.FullId id : coinbaseRewards.keySet()) {
+                    calculatedReward += coinbaseRewards.get(id);
+                }
+                this.generatorPublicKey = coinbase.getSenderPublicKey();
+            }
+
+            this.rewardMQT = calculatedReward;
+            this.totalAmountMQT = calculatedAmount;
         }
     }
 
     /**
      * Constructor used after existing block is loaded from DB
-     *
+     * In this constructor, we use totalAmountMQT and rewardMQT that were stored in the DB
+     * since BlockDb.loadBlock with loadTransactions=false will not allow us to re-calculate
      */
-    BlockImpl(short version, long timestamp, long previousBlockId, long previousKeyBlockId, int nonce, long totalAmountMQT, long rewardMQT, int payloadLength,
+    BlockImpl(short version, long timestamp, long previousBlockId, Long previousKeyBlockId, int nonce, long totalAmountMQT, long rewardMQT, int payloadLength,
               byte[] txMerkleRoot, long generatorId, byte[] generationSequence, byte[] blockSignature,
-              byte[] previousBlockHash, byte[] previousKeyBlockHash, byte[] forgersMerkleRoot,
+              byte[] previousBlockHash, byte[] forgersMerkleRoot,
               BigInteger cumulativeDifficulty, BigInteger stakeBatchDifficulty, long baseTarget, long nextBlockId, int height, int localHeight, long id,
               List<TransactionImpl> blockTransactions) {
-        this(version, timestamp, baseTarget, previousBlockId, previousKeyBlockId, nonce, totalAmountMQT, rewardMQT, payloadLength, txMerkleRoot,
-                null, generationSequence, blockSignature, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, null);
+        this(version, timestamp, baseTarget, previousBlockId, previousKeyBlockId, nonce, payloadLength, txMerkleRoot,
+                null, generationSequence, blockSignature, previousBlockHash, forgersMerkleRoot, blockTransactions);
         this.cumulativeDifficulty = cumulativeDifficulty;
         this.stakeBatchDifficulty = stakeBatchDifficulty;
         this.nextBlockId = nextBlockId;
@@ -141,6 +155,8 @@ public final class BlockImpl implements Block {
         this.id = id;
         this.generatorId = generatorId;
         this.blockTransactions = blockTransactions;
+        this.rewardMQT = rewardMQT;
+        this.totalAmountMQT = totalAmountMQT;
     }
 
     @Override
@@ -168,7 +184,7 @@ public final class BlockImpl implements Block {
     }
 
     @Override
-    public long getPreviousKeyBlockId() {
+    public Long getPreviousKeyBlockId() {
         return previousKeyBlockId;
     }
 
@@ -188,11 +204,6 @@ public final class BlockImpl implements Block {
     @Override
     public byte[] getPreviousBlockHash() {
         return previousBlockHash;
-    }
-
-    @Override
-    public byte[] getPreviousKeyBlockHash() {
-        return previousKeyBlockHash;
     }
 
     @Override
@@ -343,60 +354,73 @@ public final class BlockImpl implements Block {
         json.put("timestamp", timestamp);
         json.put("previousBlock", Long.toUnsignedString(previousBlockId));
         if (isKeyBlock()) {
-            json.put("previousKeyBlock", Long.toUnsignedString(previousKeyBlockId));
+            if (previousKeyBlockId != null) {
+                json.put("previousKeyBlock", Long.toUnsignedString(previousKeyBlockId));
+            }
             json.put("nonce", nonce);
             json.put("baseTarget", baseTarget);
-            json.put("previousKeyBlockHash", Convert.toHexString(previousKeyBlockHash));
             json.put("forgersMerkleRoot", Convert.toHexString(forgersMerkleRoot));
         } else {
             json.put("payloadLength", payloadLength);
+            json.put("generatorPublicKey", Convert.toHexString(getGeneratorPublicKey()));
+            json.put("generationSequence", Convert.toHexString(generationSequence));
+            json.put("blockSignature", Convert.toHexString(blockSignature));
+            json.put("previousBlockHash", Convert.toHexString(previousBlockHash));
         }
         json.put("txMerkleRoot", Convert.toHexString(txMerkleRoot));
-        json.put("generationSequence", Convert.toHexString(generationSequence));
-        json.put("totalAmountMQT", totalAmountMQT);
-        json.put("rewardMQT", rewardMQT);
-        json.put("generatorPublicKey", Convert.toHexString(getGeneratorPublicKey()));
 
-        json.put("previousBlockHash", Convert.toHexString(previousBlockHash));
-        json.put("blockSignature", Convert.toHexString(blockSignature));
         JSONArray transactionsData = new JSONArray();
         getTransactions().forEach(transaction -> transactionsData.add(transaction.getJSONObject()));
         json.put("transactions", transactionsData);
         return json;
     }
 
-    static BlockImpl parseBlock(JSONObject blockData) throws MetroException.NotValidException {
+    /**
+     * There is only one place outside of Unit tests where reparse can be set to true:
+     *
+     * @param blockData
+     * @param reparse set to true only for special cases: reconstruct key block after restoring prevhash/gs, get amended fast block to sign again in Unit tests
+     * @return
+     * @throws MetroException.NotValidException
+     */
+    static BlockImpl parseBlock(JSONObject blockData, boolean reparse) throws MetroException.NotValidException {
         try {
             short version = ((Number) blockData.get("version")).shortValue();
             boolean keyBlock = isKeyBlockVersion(version);
             long timestamp = ((Long) blockData.get("timestamp")).longValue();
-            long previousKeyBlock = 0, baseTarget = 0;
+            long previousBlock = Convert.parseUnsignedLong((String) blockData.get("previousBlock"));
+            Long previousKeyBlock = null;
+            long baseTarget = 0;
             int payloadLength = 0, nonce = 0;
-            byte[] previousKeyBlockHash = null, forgersMerkleRoot = null, txMerkleRoot;
+            // these are not present in BOTH fast and key blocks, so may be null
+            // generationSequence for key block is not passed, but re-calculated
+            byte[] forgersMerkleRoot = null, generatorPublicKey = null, blockSignature = null, generationSequence = null, previousBlockHash = null;
             if (keyBlock) {
-                previousKeyBlock = Convert.parseUnsignedLong((String) blockData.get("previousKeyBlock"));
+                String strPrevKeyBlock = (String) blockData.get("previousKeyBlock");
+                if (strPrevKeyBlock != null) {
+                    previousKeyBlock = Convert.parseUnsignedLong(strPrevKeyBlock);
+                }
                 nonce = ((Number) blockData.get("nonce")).intValue();
                 baseTarget = Convert.parseLong(blockData.get("baseTarget"));
-                previousKeyBlockHash = Convert.parseHexString((String) blockData.get("previousKeyBlockHash"));
                 forgersMerkleRoot = Convert.parseHexString((String) blockData.get("forgersMerkleRoot"));
             } else {
                 payloadLength = ((Number) blockData.get("payloadLength")).intValue();
+                generatorPublicKey = Convert.parseHexString((String) blockData.get("generatorPublicKey"));
+                blockSignature = reparse ? null : Convert.parseHexString((String) blockData.get("blockSignature"));
             }
-            txMerkleRoot = Convert.parseHexString((String) blockData.get("txMerkleRoot"));
-            byte[] generationSequence = Convert.parseHexString((String) blockData.get("generationSequence"));
-            long previousBlock = Convert.parseUnsignedLong((String) blockData.get("previousBlock"));
-            long totalAmountMQT = Convert.parseLong(blockData.get("totalAmountMQT"));
-            long rewardMQT = Convert.parseLong(blockData.get("rewardMQT"));
-            byte[] generatorPublicKey = Convert.parseHexString((String) blockData.get("generatorPublicKey"));
-            byte[] blockSignature = Convert.parseHexString((String) blockData.get("blockSignature"));
-            byte[] previousBlockHash = Convert.parseHexString((String) blockData.get("previousBlockHash"));
+            if (!keyBlock || reparse) {
+                previousBlockHash = Convert.parseHexString((String) blockData.get("previousBlockHash"));
+                generationSequence = Convert.parseHexString((String) blockData.get("generationSequence"));
+            }
+            byte[] txMerkleRoot = Convert.parseHexString((String) blockData.get("txMerkleRoot"));
+
             List<TransactionImpl> blockTransactions = new ArrayList<>();
             for (Object transactionData : (JSONArray) blockData.get("transactions")) {
                 blockTransactions.add(TransactionImpl.parseTransaction((JSONObject) transactionData));
             }
-            BlockImpl block = new BlockImpl(version, timestamp, baseTarget, previousBlock, previousKeyBlock, nonce, totalAmountMQT, rewardMQT, payloadLength, txMerkleRoot, generatorPublicKey,
-                    generationSequence, blockSignature, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot, blockTransactions);
-            if (!(keyBlock || block.checkSignature())) {
+            BlockImpl block = new BlockImpl(version, timestamp, baseTarget, previousBlock, previousKeyBlock, nonce, payloadLength, txMerkleRoot, generatorPublicKey,
+                    generationSequence, blockSignature, previousBlockHash, forgersMerkleRoot, blockTransactions);
+            if (!(keyBlock || block.checkSignature()) && !reparse) {
                 throw new MetroException.NotValidException("Invalid block signature");
             }
             return block;
@@ -412,7 +436,7 @@ public final class BlockImpl implements Block {
     }
 
     public static int getHeaderSize(boolean keyBlock, boolean signed) {
-        return 2 + 8 + 32 + 8 + (keyBlock ? (8 + 32 + 4 + 4) : 8 + 32 + 4 + 8 + 4 + 32) + (signed ? 64 : 0);
+        return 2 + 8 + 32 + 8 + (keyBlock ? (8 + 32 + 4 + 4) : 32 + 4 + 32 + 32) + (signed ? 64 : 0);
     }
 
     /**
@@ -440,19 +464,21 @@ public final class BlockImpl implements Block {
 
             if (isKeyBlock) {
                 // Key blocks (starting from the 2nd) have non-null previousKeyBlock reference
-                buffer.putLong(previousKeyBlockId);
+                if (previousKeyBlockId != null) {
+                    buffer.putLong(previousKeyBlockId);
+                } else {
+                    buffer.putLong(0);
+                }
                 // hash the two branches together
                 buffer.put(HASH_FUNCTION.hash(forgersMerkleRoot));
                 // only 4 bytes of target are needed for PoW
                 buffer.putInt((int) (baseTarget & 0xffffffffL));
                 buffer.putInt(nonce);
             } else {
-                buffer.putLong(rewardMQT);
                 buffer.put(previousBlockHash);
-                buffer.putInt(getTransactions().size());
-                buffer.putLong(totalAmountMQT);
                 buffer.putInt(payloadLength);
                 buffer.put(getGeneratorPublicKey());
+                buffer.put(generationSequence);
             }
             if (isSignedPosBlock) {
                 buffer.put(blockSignature);
@@ -479,15 +505,16 @@ public final class BlockImpl implements Block {
     boolean verifyGenerationSequence() throws BlockchainProcessor.BlockOutOfOrderException {
         try {
             BlockImpl previousBlock = BlockchainImpl.getInstance().getBlock(getPreviousBlockId());
+            final boolean isKeyBlock = isKeyBlock();
             if (previousBlock == null) {
                 throw new BlockchainProcessor.BlockOutOfOrderException("Can't verify signature because previous block is missing", this);
             }
-            byte[] generationSequenceHash = Convert.generationSequence(previousBlock.generationSequence, getGeneratorPublicKey());
+            byte[] generationSequenceHash = isKeyBlock ? BlockImpl.advanceGenerationSequenceInKeyBlock(previousBlock) : Convert.generationSequence(previousBlock.generationSequence, getGeneratorPublicKey());
             if (!Arrays.equals(generationSequence, generationSequenceHash)) {
                 return false;
             }
-            if (!isKeyBlock()) {
-                Account account = Account.getAccount(getGeneratorFullId());
+            if (!isKeyBlock) {
+                Account account = Account.getAccount(getGeneratorId());
                 long effectiveBalance = account == null ? 0 : account.getEffectiveBalanceMTR();
                 if (effectiveBalance <= 0) {
                     return false;
@@ -500,6 +527,11 @@ public final class BlockImpl implements Block {
             Logger.logMessage("Error verifying block generation signature", e);
             return false;
         }
+    }
+
+    static byte[] advanceGenerationSequenceInKeyBlock(BlockImpl prevBlock) {
+        BlockImpl lastPos = prevBlock.isKeyBlock() ? BlockDb.findLastPosBlock(prevBlock.getHeight()) : prevBlock;
+        return Convert.generationSequence(prevBlock.getGenerationSequence(), lastPos.getGeneratorPublicKey());
     }
 
     void apply() {

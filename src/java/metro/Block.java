@@ -49,13 +49,11 @@ public interface Block {
 
     long getPreviousBlockId();
 
-    long getPreviousKeyBlockId();
+    Long getPreviousKeyBlockId();
 
     int getNonce();
 
     byte[] getPreviousBlockHash();
-
-    byte[] getPreviousKeyBlockHash();
 
     byte[] getTxMerkleRoot();
 

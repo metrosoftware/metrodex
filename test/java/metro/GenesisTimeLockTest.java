@@ -28,7 +28,7 @@ public class GenesisTimeLockTest extends AbstractBlockchainTest {
     protected static int baseHeight;
 
     protected static String forgerSecretPhrase = "aSykrgKGZNlSVOMDxkZZgbTvQqJPGtsBggb";
-    protected static final List<String> forgerAccountIds = Arrays.asList("MTR-MNNV-YGWV-88HM-9YSV-TEH2-BLNC","MTR-MNNV-YGWV-88HM-9YSV-TEH2-BLNC");
+    protected static final List<String> forgerAccountIds = Arrays.asList("MTR-SZKV-J8TH-AL2R-LKV6-ZW32-APYM","MTR-9KZM-KNYY-FCUM-TD8V-TFG3-5R5U");
 
     public static final String aliceSecretPhrase = "hope peace happen touch easy pretend worthless talk them indeed wheel state";
     private static final String bobSecretPhrase2 = "rshw9abtpsa2";

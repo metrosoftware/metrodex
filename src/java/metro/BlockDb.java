@@ -259,6 +259,22 @@ final class BlockDb {
         }
     }
 
+    static BlockImpl findLastPosBlock(int height) {
+        try (Connection con = Db.db.getConnection();
+             PreparedStatement pstmt = con.prepareStatement("SELECT * FROM block WHERE nonce IS NULL AND (next_block_id <> 0 OR next_block_id IS NULL) AND height <= ? ORDER BY timestamp DESC LIMIT 1")) {
+            pstmt.setInt(1, height);
+            BlockImpl block = null;
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    block = loadBlock(con, rs);
+                }
+            }
+            return block;
+        } catch (SQLException e) {
+            throw new RuntimeException(e.toString(), e);
+        }
+    }
+
     static BlockImpl findLastKeyBlock(long timestamp) {
         try (Connection con = Db.db.getConnection();
              PreparedStatement pstmt = con.prepareStatement("SELECT * FROM block WHERE nonce IS NOT NULL AND timestamp <= ? ORDER BY timestamp DESC LIMIT 1")) {
@@ -322,14 +338,16 @@ final class BlockDb {
             short version = rs.getShort("version");
             long timestamp = rs.getLong("timestamp");
             long previousBlockId = rs.getLong("previous_block_id");
-            long previousKeyBlockId = rs.getLong("previous_key_block_id");
+            Long previousKeyBlockId = rs.getLong("previous_key_block_id");
+            if (previousKeyBlockId == 0 && rs.wasNull()) {
+                previousKeyBlockId = null;
+            }
             int nonce = rs.getInt("nonce");
             long totalAmountMQT = rs.getLong("total_amount");
             long rewardMQT = rs.getLong("reward");
             int payloadLength = rs.getInt("payload_length");
             long generatorId = rs.getLong("generator_id");
             byte[] previousBlockHash = rs.getBytes("previous_block_hash");
-            byte[] previousKeyBlockHash = rs.getBytes("previous_key_block_hash");
             byte[] forgersMerkleRoot = rs.getBytes("forgers_merkle_root");
             BigInteger cumulativeDifficulty = new BigInteger(rs.getBytes("cumulative_difficulty"));
             BigInteger stakeBatchDifficulty = new BigInteger(rs.getBytes("stake_batch_difficulty"));
@@ -345,7 +363,7 @@ final class BlockDb {
             byte[] txMerkleRoot = rs.getBytes("tx_merkle_root");
             long id = rs.getLong("id");
             return new BlockImpl(version, timestamp, previousBlockId, previousKeyBlockId, nonce, totalAmountMQT, rewardMQT, payloadLength, txMerkleRoot,
-                    generatorId, generationSequence, blockSignature, previousBlockHash, previousKeyBlockHash, forgersMerkleRoot,
+                    generatorId, generationSequence, blockSignature, previousBlockHash, forgersMerkleRoot,
                     cumulativeDifficulty, stakeBatchDifficulty, baseTarget, nextBlockId, height, localHeight, id, loadTransactions ? TransactionDb.findBlockTransactions(con, id) : null);
         } catch (SQLException e) {
             throw new RuntimeException(e.toString(), e);
@@ -354,23 +372,21 @@ final class BlockDb {
 
     static void saveBlock(Connection con, BlockImpl block) {
         try {
-            try (PreparedStatement pstmt = con.prepareStatement("INSERT INTO block (id, version, timestamp, previous_block_id, previous_key_block_id, nonce, "
-                    + "previous_key_block_hash, forgers_merkle_root, "
+            try (PreparedStatement pstmt = con.prepareStatement("INSERT INTO block (id, version, timestamp, previous_block_id, previous_key_block_id, nonce, forgers_merkle_root, "
                     + "total_amount, reward, payload_length, previous_block_hash, next_block_id, cumulative_difficulty, stake_batch_difficulty, base_target, "
                     + "height, local_height, generation_sequence, block_signature, tx_merkle_root, generator_id) "
-                    + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
+                    + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
                 int i = 0;
                 pstmt.setLong(++i, block.getId());
                 pstmt.setShort(++i, block.getVersion());
                 pstmt.setLong(++i, block.getTimestamp());
                 DbUtils.setLongZeroToNull(pstmt, ++i, block.getPreviousBlockId());
-                DbUtils.setLongZeroToNull(pstmt, ++i, block.getPreviousKeyBlockId());
+                DbUtils.setLong(pstmt, ++i, block.getPreviousKeyBlockId());
                 if (block.isKeyBlock()) {
                     pstmt.setLong(++i, block.getNonce());
                 } else {
                     pstmt.setNull(++i, Types.BIGINT);
                 }
-                DbUtils.setBytes(pstmt, ++i, block.getPreviousKeyBlockHash());
                 DbUtils.setBytes(pstmt, ++i, block.getForgersMerkleRoot());
                 pstmt.setLong(++i, block.getTotalAmountMQT());
                 pstmt.setLong(++i, block.getRewardMQT());

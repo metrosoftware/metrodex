@@ -419,7 +419,7 @@ final class BlockchainImpl implements Blockchain {
     }
 
     @Override
-    public Block composeKeyBlock(byte[] headerData, byte[] generatorPublicKey, List<TransactionImpl> transactions) {
+    public Block composeKeyBlock(byte[] headerData, List<TransactionImpl> transactions) {
         ByteBuffer header = ByteBuffer.wrap(headerData);
         header.order(ByteOrder.LITTLE_ENDIAN);
         short version = header.getShort();
@@ -440,18 +440,16 @@ final class BlockchainImpl implements Blockchain {
         }
         byte[] previousBlockHash = HASH_FUNCTION.hash(previousBlock.getBytes());
 
-        byte[] generationSignature = Convert.generationSequence(previousBlock.getGenerationSequence(), generatorPublicKey);
+        byte[] generationSequence = BlockImpl.advanceGenerationSequenceInKeyBlock(previousBlock);
 
-        long previousKeyBlockId = header.getLong();
-        byte[] previousKeyBlockHash;
+        Long previousKeyBlockId = header.getLong();
         if (previousKeyBlockId != 0) {
             BlockImpl previousKeyBlock = BlockDb.findBlock(previousKeyBlockId);
             if (previousKeyBlock == null) {
                 throw new IllegalArgumentException("Wrong prev key block id: " + previousKeyBlockId);
             }
-            previousKeyBlockHash = HASH_FUNCTION.hash(previousKeyBlock.getBytes());
         } else {
-            previousKeyBlockHash = Convert.EMPTY_HASH;
+            previousKeyBlockId = null;
         }
 
         byte[] forgersMerkleRoot = new byte[hashSize];
@@ -462,17 +460,11 @@ final class BlockchainImpl implements Blockchain {
         }
         long baseTarget = header.getInt();
         int nonce = header.getInt();
-        long rewardMQT = 0L;
-        TransactionImpl coinbase = transactions.get(0);
-        Attachment.CoinbaseRecipientsAttachment attachment = (Attachment.CoinbaseRecipientsAttachment)coinbase.getAttachment();
-        Map<Account.FullId, Long> coinbaseRewards = attachment.getRecipients();
-        for (Account.FullId id: coinbaseRewards.keySet()) {
-            rewardMQT += coinbaseRewards.get(id);
-        }
 
+        // constructor will restore generator id from transactions.get(0) - coinbase
         return new BlockImpl(version, timestamp, baseTarget, previousBlockId, previousKeyBlockId, nonce,
-                0, rewardMQT, 0, txMerkleRoot, generatorPublicKey,
-                generationSignature, null, previousBlockHash, previousKeyBlockHash, forgersMerkleBranches, transactions);
+                0, txMerkleRoot, null,
+                generationSequence, null, previousBlockHash, forgersMerkleBranches, transactions);
     }
 
     @Override

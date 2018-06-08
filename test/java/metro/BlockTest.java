@@ -384,32 +384,46 @@ public class BlockTest extends BlockchainTest {
     }
     @Test
     public void testPeerPushThreeFastBlocksAndOneKeyOnTopOfGenesis() throws MetroException, InvocationTargetException, IllegalAccessException {
+        Block genesis = Metro.getBlockchain().getLastBlock();
+        emptyPosBlockJSON.put("previousBlockHash", Convert.toHexString(HASH_FUNCTION.hash(genesis.getBytes())));
+        emptyPosBlockJSON.put("previousBlock", "2886809478417845031");
+        emptyPosBlockJSON.remove("blockSignature");
+        BlockImpl block1 = (BlockImpl) blockParser.invoke(null, emptyPosBlockJSON, true);
+        emptyPosBlockJSON.put("blockSignature", Convert.toHexString(Crypto.sign(block1.bytes(), ALICE.getSecretPhrase())));
         Metro.getBlockchainProcessor().processPeerBlock(emptyPosBlockJSON);
         Block posBlock1 = Metro.getBlockchain().getLastBlock();
+
         emptyPosBlockJSON.put("previousBlock", posBlock1.getStringId());
         emptyPosBlockJSON.put("previousBlockHash", Convert.toHexString(HASH_FUNCTION.hash(posBlock1.getBytes())));
         emptyPosBlockJSON.put("timestamp", 2330920110L);
         emptyPosBlockJSON.remove("blockSignature");
-        BlockImpl block1 = (BlockImpl) blockParser.invoke(null, emptyPosBlockJSON, true);
+        block1 = (BlockImpl) blockParser.invoke(null, emptyPosBlockJSON, true);
         emptyPosBlockJSON.put("blockSignature", Convert.toHexString(Crypto.sign(block1.bytes(), ALICE.getSecretPhrase())));
         // 2nd fast block
         Metro.getBlockchainProcessor().processPeerBlock(emptyPosBlockJSON);
         Block posBlock2 = Metro.getBlockchain().getLastBlock();
+        Assert.assertEquals("f94eaab3c8fcdf4cdc03e4b1df64d22b9b99ee26dc6f808180fbe51c10123169", Convert.toHexString(posBlock2.getPreviousBlockHash()));
         emptyPosBlockJSON.put("previousBlock", posBlock2.getStringId());
         emptyPosBlockJSON.put("previousBlockHash", Convert.toHexString(HASH_FUNCTION.hash(posBlock2.getBytes())));
         emptyPosBlockJSON.put("timestamp", 2330920111L);
         emptyPosBlockJSON.remove("blockSignature");
         block1 = (BlockImpl) blockParser.invoke(null, emptyPosBlockJSON, true);
         emptyPosBlockJSON.put("blockSignature", Convert.toHexString(Crypto.sign(block1.bytes(), ALICE.getSecretPhrase())));
-        // 2rd fast block
+        // 3rd fast block
         Metro.getBlockchainProcessor().processPeerBlock(emptyPosBlockJSON);
         Block posBlock3 = Metro.getBlockchain().getLastBlock();
-        Assert.assertEquals("e76df3c6daa584a41ef2d7d1fe3dbc42ae0fce1b2fdb07b8993f799e28befd095b1efe8361d4a1cbe80c3c6664c2bfd7d0fd5e2bde845a372bcaf1a3a0018fed", Convert.toHexString(posBlock3.getBlockSignature()));
+        Assert.assertEquals("9b19f33c06c33c9ef7cf8c99ecc9fa5c15521ffa62a145099d118b5281bf280d530b0228ebcfdb186b5a54fe3b604452a90a6263a46801b850b5b952f4c67097", Convert.toHexString(posBlock3.getBlockSignature()));
         emptyKeyBlockJSON.put("previousBlock", posBlock3.getStringId());
-        emptyKeyBlockJSON.put("nonce", 96617);
+        emptyKeyBlockJSON.put("nonce", 24699);
         emptyKeyBlockJSON.put("timestamp", 2330920112L);
         emptyKeyBlockJSON.put("forgersMerkleRoot", Convert.toHexString(Generator.getCurrentForgersMerkleBranches()));
         // adding key block that finishes cluster consisting of 3 blocks
         Metro.getBlockchainProcessor().processPeerBlock(emptyKeyBlockJSON);
+        Block keyBlock = Metro.getBlockchain().getLastBlock();
+        // #250 with this low difficulty, we get two zero bytes in the elder part of the hash:
+        byte[] hash = HASH_FUNCTION.hash(keyBlock.getBytes());
+        Assert.assertEquals("83acbec3d1ef62ba41aa3ca5781e3d78d63fd8d932671134b44cb87020a80000", Convert.toHexString(hash));
+        // which bytes do we look at when calculate id? ba62efd1c3beac83 - non-zero ones
+        Logger.logDebugMessage(Convert.toHexString(new byte[] {hash[7], hash[6], hash[5], hash[4], hash[3], hash[2], hash[1], hash[0]}));
     }
 }

@@ -1430,10 +1430,9 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     }
 
     private void validate(BlockImpl block, BlockImpl previousLastBlock, BlockImpl previousLastKeyBlock, long curTime) throws BlockNotAcceptedException {
-
         boolean keyBlock = block.isKeyBlock();
-        if (previousLastBlock.getId() != block.getPreviousBlockId()) {
-            throw new BlockOutOfOrderException("Previous block id doesn't match", block);
+        if (block.getId() == 0) {
+            throw new BlockNotAcceptedException("Block hash less significant 8 bytes cannot all be zeros: " + Convert.toHexString(HASH_FUNCTION.hash(block.bytes())), block);
         }
         if (block.getVersion() != (block.isKeyBlock() ? getKeyBlockVersion(previousLastBlock.getHeight()) : getPosBlockVersion(previousLastBlock.getHeight()))) {
             throw new BlockNotAcceptedException("Invalid version " + block.getVersion(), block);

@@ -674,8 +674,7 @@ public final class TransactionImpl implements Transaction {
                 buffer.putLong(timestamp);
                 buffer.putShort(deadline);
                 buffer.put(getSenderPublicKey());
-                buffer.putLong(type.canHaveRecipient() ? recipientId : Genesis.CREATOR_ID.getLeft());
-                buffer.putInt(type.canHaveRecipient() ? recipientId2 : Genesis.CREATOR_ID.getRight());
+                (type.canHaveRecipient() ? getRecipientFullId() : Genesis.CREATOR_ID).putMyBytes(buffer);
                 buffer.putLong(amountMQT);
                 buffer.putLong(feeMQT);
                 if (referencedTransactionFullHash != null) {
@@ -961,7 +960,7 @@ public final class TransactionImpl implements Transaction {
     }
 
     private int signatureOffset() {
-        return 1 + 1 + 8 + 2 + 32 + 8 + 4 + 8 + 8 + 32;
+        return 1 + 1 + 8 + 2 + 32 + 12 + 8 + 8 + 32;
     }
 
     private byte[] zeroSignature(byte[] data) {

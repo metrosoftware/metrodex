@@ -526,7 +526,7 @@ var MRS = (function (MRS, $, undefined) {
                 isSchedule = true;
             }
         }
-        var payload = transactionBytes.substr(0, 192) + signature + transactionBytes.substr(320);
+        var payload = transactionBytes.substr(0, 208) + signature + transactionBytes.substr(336);
         if (data.broadcast == "false" && !isSchedule) {
             response.transactionBytes = payload;
             response.transactionJSON.signature = signature;
@@ -544,23 +544,23 @@ var MRS = (function (MRS, $, undefined) {
         transaction.type = byteArray[0];
         transaction.version = (byteArray[1] & 0xF0) >> 4;
         transaction.subtype = byteArray[1] & 0x0F;
-        transaction.timestamp = String(converters.byteArrayToSignedInt32(byteArray, 2));
-        transaction.deadline = String(converters.byteArrayToSignedShort(byteArray, 6));
-        transaction.publicKey = converters.byteArrayToHexString(byteArray.slice(8, 40));
-        transaction.recipient = String(converters.byteArrayToBigInteger(byteArray, 40));
-        transaction.amountMQT = String(converters.byteArrayToBigInteger(byteArray, 48));
-        transaction.feeMQT = String(converters.byteArrayToBigInteger(byteArray, 56));
+        transaction.timestamp = String(converters.byteArrayToBigInteger(byteArray, 2));
+        transaction.deadline = String(converters.byteArrayToSignedShort(byteArray, 10));
+        transaction.publicKey = converters.byteArrayToHexString(byteArray.slice(12, 44));
+        transaction.recipient = String(converters.byteArrayToVeryBigInteger(byteArray, 44));
+        transaction.amountMQT = String(converters.byteArrayToBigInteger(byteArray, 56));
+        transaction.feeMQT = String(converters.byteArrayToBigInteger(byteArray, 64));
 
-        var refHash = byteArray.slice(64, 96);
+        var refHash = byteArray.slice(72, 104);
         transaction.referencedTransactionFullHash = converters.byteArrayToHexString(refHash);
         if (transaction.referencedTransactionFullHash == "0000000000000000000000000000000000000000000000000000000000000000") {
             transaction.referencedTransactionFullHash = "";
         }
         transaction.flags = 0;
         if (transaction.version > 0) {
-            transaction.flags = converters.byteArrayToSignedInt32(byteArray, 160);
-            transaction.ecBlockHeight = String(converters.byteArrayToSignedInt32(byteArray, 164));
-            transaction.ecBlockId = String(converters.byteArrayToBigInteger(byteArray, 168));
+            transaction.flags = converters.byteArrayToSignedInt32(byteArray, 168);
+            transaction.ecBlockHeight = String(converters.byteArrayToSignedInt32(byteArray, 172));
+            transaction.ecBlockId = String(converters.byteArrayToBigInteger(byteArray, 176));
             if (isVerifyECBlock) {
                 var ecBlock = MRS.constants.LAST_KNOWN_BLOCK;
                 if (ecBlock.id != "0") {
@@ -605,12 +605,12 @@ var MRS = (function (MRS, $, undefined) {
         if (transaction.version > 0) {
             //has empty attachment, so no attachmentVersion byte...
             if (requestType == "sendMoney" || requestType == "sendMessage") {
-                pos = 176;
+                pos = 184;
             } else {
-                pos = 177;
+                pos = 185;
             }
         } else {
-            pos = 160;
+            pos = 168;
         }
         return MRS.verifyTransactionTypes(byteArray, transaction, requestType, data, pos, attachment);
     };

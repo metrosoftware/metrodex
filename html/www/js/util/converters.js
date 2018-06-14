@@ -114,6 +114,21 @@ var converters = function() {
 
 			return value;
 		},
+		byteArrayToVeryBigInteger: function(bytes, opt_startIndex) {
+			var index = this.checkBytesToIntInput(bytes, 12, opt_startIndex);
+
+			var value = new BigInteger("0", 10);
+
+			var temp1, temp2;
+
+			for (var i = 11; i >= 0; i--) {
+				temp1 = value.multiply(new BigInteger("256", 10));
+				temp2 = temp1.add(new BigInteger(bytes[opt_startIndex + i].toString(10), 10));
+				value = temp2;
+			}
+
+			return value;
+		},
 		// create a wordArray that is Big-Endian
 		byteArrayToWordArray: function(byteArray) {
 			var i = 0,

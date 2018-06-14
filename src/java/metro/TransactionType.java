@@ -296,7 +296,7 @@ public abstract class TransactionType {
     }
 
     int getBaselineFeeHeight() {
-        return 1;
+        return 0;
     }
 
     int getNextFeeHeight() {

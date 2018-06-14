@@ -17,6 +17,8 @@
 
 package metro;
 
+import metro.util.Convert;
+
 import java.math.BigInteger;
 
 public final class Constants {
@@ -33,7 +35,7 @@ public final class Constants {
     public static final long ONE_MTR = 100000000;
     public static final long MAX_BALANCE_MQT = Consensus.MAX_BALANCE_MTR * ONE_MTR;
 
-    public static final long INITIAL_BASE_TARGET = BigInteger.valueOf(2).pow(63).divide(BigInteger.valueOf(Consensus.BLOCK_TIME * Consensus.MAX_BALANCE_MTR)).longValue(); //153722867;
+    public static final long INITIAL_BASE_TARGET = Convert.toLong(BigInteger.valueOf(2).pow(63).divide(BigInteger.valueOf(Consensus.BLOCK_TIME * Consensus.MAX_BALANCE_MTR))); //153722867;
     public static final long MAX_BASE_TARGET = INITIAL_BASE_TARGET * (isTestnet ? Consensus.MAX_BALANCE_MTR : 50);
     public static final long MIN_BASE_TARGET = INITIAL_BASE_TARGET * 9 / 10;
     public static final int MIN_BLOCKTIME_LIMIT = Consensus.BLOCK_TIME - 350;

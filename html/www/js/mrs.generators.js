@@ -20,7 +20,7 @@
  */
 var MRS = (function(MRS) {
 
-    var TIME_DRIFT = 20;
+    var TIME_DRIFT = 20000;
     var timer = null;
     var generators = [];
     var lastBlockTime;
@@ -38,6 +38,7 @@ var MRS = (function(MRS) {
             generators.forEach(
                 function(generator) {
                     generator.remaining = generator.deadline - (MRS.toEpochTime() - lastBlockTime) + TIME_DRIFT;
+                    generator.remainingFormatted = Math.round(generator.remaining / 1000);
                 }
             );
             view = MRS.simpleview.get('generators_page', {
@@ -122,7 +123,9 @@ var MRS = (function(MRS) {
             balanceFormatted: MRS.formatAmount(generator.effectiveBalanceMTR),
             hitTimeFormatted: MRS.formatTimestamp(generator.hitTime),
             deadline: generator.deadline,
-            remaining: remaining
+            remaining: remaining,
+            deadlineFormatted: Math.round(generator.deadline / 1000),
+            remainingFormatted : Math.round(remaining / 1000)
         };
     };
 

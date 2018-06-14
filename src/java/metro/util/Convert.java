@@ -381,4 +381,14 @@ public final class Convert {
         }
         return sb.toString();
     }
+
+    public static long toLong(BigInteger big) {
+        if (big.compareTo(BigInteger.valueOf(Long.MAX_VALUE)) > 0) {
+            return Long.MAX_VALUE;
+        }
+        if (big.compareTo(BigInteger.valueOf(Long.MIN_VALUE)) < 0) {
+            return Long.MIN_VALUE;
+        }
+        return big.longValue();
+    }
 }

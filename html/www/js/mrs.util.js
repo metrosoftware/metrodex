@@ -463,7 +463,7 @@ var MRS = (function (MRS, $, undefined) {
         if (MRS.constants.EPOCH_BEGINNING == 0) {
             throw "undefined epoch beginning";
         }
-        return Math.floor((currentTime - MRS.constants.EPOCH_BEGINNING) / 1000);
+        return currentTime - MRS.constants.EPOCH_BEGINNING;
     };
 
     MRS.formatTimestamp = function (timestamp, date_only, isAbsoluteTime) {

@@ -91,7 +91,7 @@ public final class GetNextBlockGeneratorsTemp extends APIServlet.APIRequestHandl
                 JSONData.putAccount(resp, "account", generator.getAccountFullId());
                 resp.put("effectiveBalanceMTR", generator.getEffectiveBalance());
                 resp.put("hitTime", generator.getHitTime());
-                resp.put("deadline", (int)generator.getHitTime() - lastBlock.getTimestamp());
+                resp.put("deadline", generator.getHitTime() - lastBlock.getTimestamp());
                 generators.add(resp);
                 if (generators.size() == limit) {
                     break;

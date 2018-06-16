@@ -159,6 +159,32 @@ public final class BlockImpl implements Block {
         this.totalAmountMQT = totalAmountMQT;
     }
 
+    /**
+     * Constructur to fill previousBlockHash and generationSequence.
+     * Should be used only for key blocks.
+     * @param block
+     * @param previousBlockHash
+     */
+    public BlockImpl(BlockImpl block, byte[] previousBlockHash, byte[] generationSequence) {
+        this.version = block.version;
+        this.timestamp = block.timestamp;
+        this.baseTarget = block.baseTarget;
+        this.previousBlockId = block.previousBlockId;
+        this.previousKeyBlockId = block.previousKeyBlockId;
+        this.nonce = block.nonce;
+        this.payloadLength = block.payloadLength;
+        this.txMerkleRoot = block.txMerkleRoot;
+        this.generatorPublicKey = block.generatorPublicKey;
+        this.blockSignature = block.blockSignature;
+        this.forgersMerkleRoot = block.forgersMerkleRoot;
+        this.generatorPublicKey = block.generatorPublicKey;
+        this.rewardMQT = block.rewardMQT;
+        this.totalAmountMQT = block.totalAmountMQT;
+        this.blockTransactions = block.blockTransactions;
+        this.generationSequence = generationSequence;
+        this.previousBlockHash = previousBlockHash;
+    }
+
     @Override
     public short getVersion() {
         return version;

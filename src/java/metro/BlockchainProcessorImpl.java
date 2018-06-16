@@ -1337,6 +1337,17 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         long curTime = Metro.getEpochTime();
 
         blockchain.writeLock();
+
+        if (block.isKeyBlock() && block.getPreviousBlockHash() == null &&
+                block.getPreviousBlockId() == blockchain.getLastBlock().getId()) {
+            BlockImpl previousBlock = blockchain.getLastBlock();
+            byte[] prevBlockHash = HASH_FUNCTION.hash(previousBlock.bytes());
+            byte[] generationSequence = BlockImpl.advanceGenerationSequenceInKeyBlock(previousBlock);
+            blockchain.writeUnlock();
+            pushBlock(new BlockImpl(block, prevBlockHash, generationSequence));
+            return;
+        }
+
         try {
             BlockImpl previousBlock = null;
             try {

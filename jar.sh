@@ -1,5 +1,5 @@
 #!/bin/sh
-APPLICATION="metro-clone"
+APPLICATION="metro"
 java -cp classes metro.tools.ManifestGenerator
 /bin/rm -f ${APPLICATION}.jar
 jar cfm ${APPLICATION}.jar resource/metro.manifest.mf -C classes . || exit 1

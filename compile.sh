@@ -1,7 +1,7 @@
 #!/bin/sh
 CP="lib/*:classes"
 SP=src/java/
-APPLICATION="metro-clone"
+APPLICATION="metro"
 
 /bin/rm -f ${APPLICATION}.jar
 /bin/rm -f ${APPLICATION}service.jar

@@ -1,5 +1,5 @@
 #!/bin/sh
-APPLICATION="metro-clone"
+APPLICATION="metro"
 if [ -e ~/.${APPLICATION}/metro.pid ]; then
     PID=`cat ~/.${APPLICATION}/metro.pid`
     ps -p $PID > /dev/null

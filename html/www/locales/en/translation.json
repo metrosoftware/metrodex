@@ -1906,5 +1906,6 @@
   "validate_passphrase": "Validate Passphrase",
   "delete_scheduled_transaction": "Delete Scheduled Transaction",
   "reward_recipients": "Reward recipients",
-  "no_matching_recipients": "No reward recipients"
+  "no_matching_recipients": "No reward recipients",
+  "ordinary_coinbase": "Block reward"
 }

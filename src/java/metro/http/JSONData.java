@@ -330,6 +330,9 @@ public final class JSONData {
         json.put("generationSequence", Convert.toHexString(block.getGenerationSequence()));
         json.put("previousBlockHash", Convert.toHexString(block.getPreviousBlockHash()));
         json.put("blockSignature", Convert.toHexString(block.getBlockSignature()));
+        if (block.isKeyBlock()) {
+            json.put("nonce", block.getNonce());
+        }
         JSONArray transactions = new JSONArray();
         if (includeTransactions) {
             block.getTransactions().forEach(transaction -> transactions.add(transaction(transaction)));

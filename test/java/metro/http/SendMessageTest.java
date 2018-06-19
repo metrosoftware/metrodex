@@ -57,7 +57,7 @@ public class SendMessageTest extends BlockchainTest {
                 param("secretPhrase", ALICE.getSecretPhrase()).
                 param("recipient", BOB.getStrId()).
                 param("messageToEncrypt", "hello world").
-                param("feeMQT", Constants.ONE_MTR).
+                param("feeMQT", 2 * Constants.ONE_MTR).
                 build().invoke();
         Logger.logDebugMessage("sendMessage: " + response);
         String transaction = (String) response.get("transaction");
@@ -82,7 +82,7 @@ public class SendMessageTest extends BlockchainTest {
                 param("recipient", BOB.getStrId()).
                 param("encryptedMessageData", Convert.toHexString(encryptedData.getData())).
                 param("encryptedMessageNonce", Convert.toHexString(encryptedData.getNonce())).
-                param("feeMQT", Constants.ONE_MTR).
+                param("feeMQT", 2 * Constants.ONE_MTR).
                 build().invoke();
         Logger.logDebugMessage("sendMessage: " + response);
         String transaction = (String) response.get("transaction");
@@ -105,7 +105,7 @@ public class SendMessageTest extends BlockchainTest {
                 param("secretPhrase", ALICE.getSecretPhrase()).
                 param("recipient", BOB.getStrId()).
                 param("messageToEncryptToSelf", "hello world").
-                param("feeMQT", Constants.ONE_MTR).
+                param("feeMQT", 2 * Constants.ONE_MTR).
                 build().invoke();
         Logger.logDebugMessage("sendMessage: " + response);
         String transaction = (String) response.get("transaction");
@@ -130,7 +130,7 @@ public class SendMessageTest extends BlockchainTest {
                 param("recipient", BOB.getStrId()).
                 param("encryptToSelfMessageData", Convert.toHexString(encryptedData.getData())).
                 param("encryptToSelfMessageNonce", Convert.toHexString(encryptedData.getNonce())).
-                param("feeMQT", Constants.ONE_MTR).
+                param("feeMQT", 2 * Constants.ONE_MTR).
                 build().invoke();
         Logger.logDebugMessage("sendMessage: " + response);
         String transaction = (String) response.get("transaction");

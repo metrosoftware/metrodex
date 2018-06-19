@@ -65,6 +65,8 @@ public interface Blockchain {
 
     DbIterator<? extends Block> getBlocks(int from, int to);
 
+    DbIterator<? extends Block> getBlocks(int from, int to, boolean isKeyBlock);
+
     DbIterator<? extends Block> getBlocks(long accountId, long timestamp);
 
     DbIterator<? extends Block> getBlocks(long accountId, long timestamp, int from, int to, boolean isKeyBlock);

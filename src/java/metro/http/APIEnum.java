@@ -212,7 +212,9 @@ public enum APIEnum {
     GET_NEXT_BLOCK_GENERATORS("getNextBlockGenerators", GetNextBlockGeneratorsTemp.instance),
     GET_SCHEDULED_TRANSACTIONS("getScheduledTransactions", GetScheduledTransactions.instance),
     DELETE_SCHEDULED_TRANSACTION("deleteScheduledTransaction", DeleteScheduledTransaction.instance),
-    MINING_GET_WORK("getWork", GetWork.instance);
+    MINING_GET_WORK("getWork", GetWork.instance),
+    GET_CIRCULATION_SUPPLY("getCirculationSupply", GetCirculationSupply.instance),
+    GET_POW_DIFFICULTY("getPOWDifficulty", GetPOWDifficulty.instance);
 
     private static final Map<String, APIEnum> apiByName = new HashMap<>();
 

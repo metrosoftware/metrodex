@@ -67,6 +67,8 @@ public final class Account {
         PHASING_ONLY
     }
 
+    public static final String ACCOUNT_TABLE_NAME = "account";
+
     public static final class AccountAsset {
 
         private final long accountId;
@@ -407,7 +409,8 @@ public final class Account {
 
     };
 
-    private static final VersionedEntityDbTable<Account> accountTable = new VersionedEntityDbTable<Account>("account", accountDbKeyFactory) {
+
+    private static final VersionedEntityDbTable<Account> accountTable = new VersionedEntityDbTable<Account>(ACCOUNT_TABLE_NAME, accountDbKeyFactory) {
 
         @Override
         protected Account load(Connection con, ResultSet rs, DbKey dbKey) throws SQLException {
@@ -1096,9 +1099,15 @@ public final class Account {
         if (!Consensus.GENESIS_BALANCES_TIME_LOCK) {
             return 0;
         }
+
+        return getLockedGenesisSum(getGenesisAccountBalanceMQT());
+    }
+
+    public static long getLockedGenesisSum(long lockedSumMQT) {
         int h = Metro.getBlockchain().getLastKeyBlock() != null ? Metro.getBlockchain().getLastKeyBlock().getLocalHeight() : -1;
         int i = Consensus.SUBSIDY_HALVING_INTERVAL;
-        return (long) Math.ceil((i - 1 - h) * (1.0 * getGenesisAccountBalanceMQT() / i));
+        BigInteger lockedSum = BigInteger.valueOf(lockedSumMQT).multiply(BigInteger.valueOf(i - 1 - h)).divide(BigInteger.valueOf(i));
+        return Convert.toLong(lockedSum);
     }
 
     public long getUnconfirmedBalanceMQT() {
@@ -1120,6 +1129,33 @@ public final class Account {
         } catch (SQLException e) {
             throw new RuntimeException(e.toString(), e);
         }
+    }
+
+    public static long getCirculationSupply() {
+        if (Metro.getBlockchain().getLastKeyBlock() == null) {
+            return 0;
+        }
+        int currentHeight = Metro.getBlockchain().getHeight();
+        long genesisBalanceSum;
+        try (Connection con = db.getConnection();
+            PreparedStatement pstmt = con.prepareStatement("SELECT SUM (balance) AS genesis_balance_sum " +
+                     " FROM account WHERE height = 0 and id <> " + Genesis.CREATOR_ID.getLeft())) {
+            try (ResultSet rs = pstmt.executeQuery()) {
+                rs.next();
+                genesisBalanceSum = rs.getLong("genesis_balance_sum");
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e.toString(), e);
+        }
+
+        int h = Metro.getBlockchain().getLastKeyBlock() != null ? Metro.getBlockchain().getLastKeyBlock().getLocalHeight() : -1;
+        int i = Consensus.SUBSIDY_HALVING_INTERVAL;
+        long unlockedGenesisBalance = genesisBalanceSum - getLockedGenesisSum(genesisBalanceSum);
+        int matureHeight = Metro.getBlockchain().getLastKeyBlock().getLocalHeight() - Consensus.COINBASE_MATURITY_PERIOD >0 ?
+                Metro.getBlockchain().getLastKeyBlock().getLocalHeight() - Consensus.COINBASE_MATURITY_PERIOD : 0;
+
+        return unlockedGenesisBalance + Consensus.INITIAL_SUBSIDY * matureHeight;
     }
 
     public long getForgedBalanceMQT() {

@@ -215,6 +215,28 @@ final class BlockchainImpl implements Blockchain {
     }
 
     @Override
+    public DbIterator<BlockImpl> getBlocks(int from, int to, boolean isKeyBlock) {
+        Connection con = null;
+        try {
+            con = Db.db.getConnection();
+            PreparedStatement pstmt = con.prepareStatement("SELECT * FROM block WHERE local_height <= ? AND local_height >= ? AND nonce IS " + (isKeyBlock ? "NOT NULL " : "NULL ") + "ORDER BY height DESC");
+            Block lastLocalBlock;
+            if (isKeyBlock) {
+                lastLocalBlock = getLastKeyBlock();
+            } else {
+                lastLocalBlock = getLastPosBlock();
+            }
+            int localHeight = lastLocalBlock.getLocalHeight();
+            pstmt.setInt(1, localHeight - from);
+            pstmt.setInt(2, localHeight - to);
+            return getBlocks(con, pstmt);
+        } catch (SQLException e) {
+            DbUtils.close(con);
+            throw new RuntimeException(e.toString(), e);
+        }
+    }
+
+    @Override
     public DbIterator<BlockImpl> getBlocks(long accountId, long timestamp) {
         return getBlocks(accountId, timestamp, 0, -1, false);
     }

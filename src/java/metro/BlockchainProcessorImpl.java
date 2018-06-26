@@ -1080,8 +1080,10 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
         BlockImpl lastKeyBlock = blockchain.getLastKeyBlock();
         BlockImpl common = blockchain.getBlock(block.getPreviousBlockId());
+        BlockImpl secondKeyBlock = lastKeyBlock == null || lastKeyBlock.getPreviousKeyBlockId() == null ? null :
+                blockchain.getBlock(lastKeyBlock.getPreviousKeyBlockId());
 
-        if (common == null || (lastKeyBlock != null && lastKeyBlock.getLocalHeight() >= block.getLocalHeight())) {
+        if (common == null || (secondKeyBlock != null && secondKeyBlock.getHeight() >= common.getHeight())) {
             return false;
         }
 

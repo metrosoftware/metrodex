@@ -147,7 +147,7 @@ public final class GetWork extends APIServlet.APIRequestHandler {
     private List<TransactionImpl> findTxsByMerkle(String merkle) {
         int i = index.get();
         for (int j = i + CACHE_SIZE; j > i ; j--) {
-            if (merkles[j % CACHE_SIZE].equals(merkle)) {
+            if (merkles[j % CACHE_SIZE] != null && merkles[j % CACHE_SIZE].equals(merkle)) {
                 return transactions[j % CACHE_SIZE];
             }
         }

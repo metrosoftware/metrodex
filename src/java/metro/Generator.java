@@ -476,10 +476,12 @@ public final class Generator implements Comparable<Generator> {
                 if (forgersMerkle != null) {
                     return forgersMerkle;
                 }
+                Comparator<Generator.ActiveGenerator> comparator =
+                        Comparator.comparingLong(Generator.ActiveGenerator::getEffectiveBalance).thenComparing(Generator.ActiveGenerator::getAccountId);
                 MessageDigest mdg = HASH_FUNCTION.messageDigest();
-                byte[] forgersMerkleVotersBranch = Generator.getNextGenerators().stream().filter(gen -> gen.getEffectiveBalance() >= MIN_FORKVOTING_AMOUNT_MTR).
-                        sorted(Comparator.comparingLong(Generator.ActiveGenerator::getEffectiveBalance)).
-                        map(Generator.ActiveGenerator::getMerkleNode).reduce(
+                List<ActiveGenerator> nextGenerators = Generator.getNextGenerators();
+                byte[] forgersMerkleVotersBranch = nextGenerators.stream().filter(gen -> gen.getEffectiveBalance() >= MIN_FORKVOTING_AMOUNT_MTR).
+                        sorted(comparator).map(Generator.ActiveGenerator::getMerkleNode).reduce(
                         new byte[0],
                         (acc, val) -> {
                             mdg.update(acc);
@@ -527,6 +529,10 @@ public final class Generator implements Comparable<Generator> {
 
         public Account.FullId getAccountFullId() {
             return accountFullId;
+        }
+
+        public Long getAccountId() {
+            return accountFullId.getLeft();
         }
 
         public boolean rollBackOrForward(int blocks) {

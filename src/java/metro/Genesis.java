@@ -17,19 +17,22 @@
 
 package metro;
 
-import metro.crypto.Crypto;
 import metro.util.Convert;
 import metro.util.Logger;
+import org.apache.tika.io.IOUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.text.DateFormat;
@@ -71,7 +74,7 @@ public final class Genesis {
     private static byte[] loadGenesisAccountsJSON() {
         MessageDigest digest = HASH_FUNCTION.messageDigest();
         try (InputStreamReader is = new InputStreamReader(new DigestInputStream(
-                ClassLoader.getSystemResourceAsStream("data/genesisAccounts" + (Constants.isTestnet ? "-testnet.json" : ".json")), digest))) {
+                toUnixStream(ClassLoader.getSystemResourceAsStream("data/genesisAccounts" + (Constants.isTestnet ? "-testnet.json" : ".json"))), digest))) {
             genesisAccountsJSON = (JSONObject) JSONValue.parseWithException(is);
         } catch (IOException|ParseException e) {
             throw new RuntimeException("Failed to process genesis recipients accounts", e);
@@ -79,6 +82,14 @@ public final class Genesis {
         digest.update((byte)(Constants.isTestnet ? 1 : 0));
         digest.update(Convert.toBytes(EPOCH_BEGINNING));
         return digest.digest();
+    }
+
+    private static InputStream toUnixStream(InputStream is) throws IOException {
+        StringWriter writer = new StringWriter();
+        IOUtils.copy(is, writer, StandardCharsets.UTF_8.name());
+        String s = writer.toString().replace("\r\n", "\n");
+        byte[] b = s.getBytes(StandardCharsets.UTF_8);
+        return new ByteArrayInputStream(b);
     }
 
     static BlockImpl newGenesisBlock() {

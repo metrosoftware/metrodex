@@ -1,6 +1,7 @@
 package metro.http;
 
 import metro.Block;
+import metro.Consensus;
 import metro.Constants;
 import metro.Metro;
 import metro.MetroException;
@@ -38,7 +39,7 @@ public class GetPOWDifficulty extends APIServlet.APIRequestHandler {
                 JSONObject object = new JSONObject();
                 object.put("height", block.getHeight());
                 object.put("powHeight", block.getLocalHeight());
-                object.put("powDifficulty", BigDecimal.valueOf(Constants.MAX_BASE_TARGET).divide(BigDecimal.valueOf(block.getBaseTarget()), 4, RoundingMode.CEILING));
+                object.put("powDifficulty", new BigDecimal(Consensus.MAX_WORK_TARGET).divide(BigDecimal.valueOf(block.getBaseTarget()), 4, RoundingMode.CEILING));
                 blocks.add(object);
             }
         }

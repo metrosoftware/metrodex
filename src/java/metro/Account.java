@@ -753,7 +753,24 @@ public final class Account {
                 account.publicKey = publicKey;
             }
         }
+        if (account != null && account.balanceMQT == 0) {
+            DbKey genesisDbKey = accountDbKeyFactory.newKey(fullId.getLeft(), 0);
+            Account genesisAccount = accountTable.get(genesisDbKey);
+            if (genesisAccount != null) {
+                account.balanceMQT = genesisAccount.balanceMQT;
+                account.unconfirmedBalanceMQT = genesisAccount.unconfirmedBalanceMQT;
+                account.haveAnotherGenesisAccount = true;
+            }
+        }
         return account;
+    }
+
+    public static Account getAccountMandatory(FullId fullId) {
+        if (fullId == null) {
+            return null;
+        }
+        DbKey dbKey = accountDbKeyFactory.newKey(fullId.getLeft(), fullId.getRight());
+        return accountTable.get(dbKey);
     }
 
     //FIXME should we use it
@@ -975,6 +992,7 @@ public final class Account {
     private long forgedBalanceMQT;
     private long activeLesseeId;
     private Set<ControlType> controls;
+    private boolean haveAnotherGenesisAccount;
 
     private Account(FullId id) {
         if (!Crypto.rsDecode(Crypto.rsEncode(id)).equals(id)) {
@@ -1023,8 +1041,19 @@ public final class Account {
         if (balanceMQT == 0 && unconfirmedBalanceMQT == 0 && forgedBalanceMQT == 0 && activeLesseeId == 0 && controls.isEmpty()) {
             accountTable.delete(this, true);
         } else {
+            if (haveAnotherGenesisAccount) {
+                Account genesis = Account.getAccountMandatory(new Account.FullId(id,0));
+                genesis.replace(getFullId());
+            }
             accountTable.insert(this);
         }
+    }
+
+    public void replace(FullId fullId) {
+        if (this.id2 != 0 || !fullId.getLeft().equals(this.id)) {
+            throw new IllegalStateException(String.format("Can not replace full id for %s to %s", getFullId(), fullId));
+        }
+        accountTable.delete(this, true);
     }
 
     public long getId() {
@@ -1168,7 +1197,7 @@ public final class Account {
 
     private long getGenesisAccountBalanceMQT() {
         try {
-            Account genesisAccount = getAccount(new Account.FullId(id, id2), 0);
+            Account genesisAccount = getAccount(id, 0);
             return genesisAccount == null ? 0 : genesisAccount.getBalanceMQT();
         } catch (IllegalArgumentException iae) {
             return 0;
@@ -1180,17 +1209,20 @@ public final class Account {
     }
 
     public long getEffectiveBalanceMTR(int height) {
+        if (this.publicKey == null) {
+            DbKey keyDbKey = publicKeyDbKeyFactory.newKey(id);
+            this.publicKey = publicKeyTable.get(keyDbKey);
+        }
+        if (this.publicKey == null || this.publicKey.publicKey == null) {
+            return 0;
+        }
         int guaranteedBalanceHeight = Metro.getBlockchain().getGuaranteedBalanceHeight(height);
         int confirmations = height - guaranteedBalanceHeight;
         if (height <= guaranteedBalanceHeight || guaranteedBalanceHeight == 0) {
             return getGenesisAccountBalanceMTR();
         }
-        if (this.publicKey == null) {
-            DbKey keyDbKey = publicKeyDbKeyFactory.newKey(id);
-            this.publicKey = publicKeyTable.get(keyDbKey);
-        }
-        if (this.publicKey == null || this.publicKey.publicKey == null || height - this.publicKey.height <= confirmations) {
-            return 0; // cfb: Accounts with the public key revealed less than 30 block clusters ago are not allowed to generate blocks
+        if (height - this.publicKey.height <= confirmations) {
+            return 0; // Accounts with the public key revealed less than 30 block clusters ago are not allowed to generate blocks
         }
         Metro.getBlockchain().readLock();
         try {

@@ -142,7 +142,7 @@ public interface DbKey {
         public PairKeyFactory(String idColumnA, String idColumnB) {
             super(" WHERE " + idColumnA + " = ? AND " + idColumnB + " = ? ",
                     idColumnA + ", " + idColumnB,
-                    " a." + idColumnA + " = b." + idColumnA + " AND a." + idColumnB + " = b." + idColumnB + " ");
+                    " a." + idColumnA + " = b." + idColumnA + " ");
             this.idColumnA = idColumnA;
             this.idColumnB = idColumnB;
         }

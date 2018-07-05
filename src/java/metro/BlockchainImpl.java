@@ -23,6 +23,7 @@ import metro.util.BitcoinJUtils;
 import metro.util.Convert;
 import metro.util.Filter;
 import metro.util.ReadWriteUpdateLock;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.math.BigInteger;
@@ -477,7 +478,7 @@ final class BlockchainImpl implements Blockchain {
         byte[] forgersMerkleRoot = new byte[hashSize];
         header.get(forgersMerkleRoot);
         byte[] forgersMerkleBranches = Generator.getCurrentForgersMerkleBranches();
-        if (!Arrays.equals(forgersMerkleRoot, HASH_FUNCTION.hash(forgersMerkleBranches))) {
+        if (!Arrays.equals(forgersMerkleRoot, HASH_FUNCTION.hash(ArrayUtils.addAll(previousBlockHash, forgersMerkleBranches)))) {
             throw new IllegalArgumentException("Forgers root: " + Convert.toHexString(forgersMerkleRoot) + ", not matching branches: " + Convert.toHexString(forgersMerkleBranches));
         }
         long baseTarget = header.getInt();

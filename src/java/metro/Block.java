@@ -81,6 +81,8 @@ public interface Block {
 
     byte[] getBytes();
 
+    byte[] getHash();
+
     Account.FullId getGeneratorFullId();
 
     JSONObject getJSONObject();

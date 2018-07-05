@@ -27,6 +27,7 @@ public class BlockTest extends BlockchainTest {
     // bad compressed target example: 2147483647 (Integer.MAX_VALUE)
     private final JSONObject emptyKeyBlockJSON = (JSONObject) JSONValue.parse( "{\n"+
         "\"previousBlock\":\"2886809478417845031\",\n"+
+        "\"previousBlockHash\":\"278b53f7ec01102802d483c4bfceb5052775c4eaed15c8b1b9729bea2b804807\",\n"+
         "\"forgersMerkleRoot\":\"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\",\n"+
         "\"baseTarget\":520159231\n"+
         "\"txMerkleRoot\":\"cf4427e6395500ac14668dc28c5c0fab3c097cb16c77949cdbb76c968a2de5e5\",\n"+
@@ -38,7 +39,7 @@ public class BlockTest extends BlockchainTest {
             "\"subtype\":0,\"recipient\":\"67526593929050481459625094635\",\"ecBlockHeight\":0,\"deadline\":1,\"timestamp\":2330920106" +
         "}],\n"+
         "\"version\":-32767,\n"+
-        "\"nonce\":118434,\n"+
+        "\"nonce\":120145,\n"+
         "\"timestamp\":2330920108\n"+
     "}");
     private final JSONObject emptyPosBlockJSON = (JSONObject) JSONValue.parse( "{\n"+
@@ -123,7 +124,7 @@ public class BlockTest extends BlockchainTest {
         // prev block hash must point to Genesis
         BlockImpl genesis = BlockDb.findBlockAtHeight(0);
         Assert.assertEquals(genesis.getId(), preparedBlock.getPreviousBlockId());
-        Assert.assertArrayEquals(Consensus.HASH_FUNCTION.hash(genesis.bytes()), preparedBlock.getPreviousBlockHash());
+        Assert.assertArrayEquals(genesis.getHash(), preparedBlock.getPreviousBlockHash());
         Assert.assertEquals(1, preparedBlock.getTransactions().size());
         Assert.assertTrue(preparedBlock.getTransactions().get(0).getType().isCoinbase());
         Assert.assertArrayEquals(txHashPrivateAccess(preparedBlock.getTransactions().get(0)), preparedBlock.getTxMerkleRoot());
@@ -294,18 +295,17 @@ public class BlockTest extends BlockchainTest {
 
         BlockImpl block2 = (BlockImpl) blockParser.invoke(null, emptyKeyBlockJSON, false);
         Assert.assertNull(block2.getBlockSignature());
-        // these two will be restored from Blockchain when peer receives JSON
-        Assert.assertNull(block2.getPreviousBlockHash());
+        // will be restored from Blockchain when peer receives JSON
         Assert.assertNull(block2.getGenerationSequence());
 
         Assert.assertEquals((short)0x8001, block2.getVersion());
-        Assert.assertEquals(6507055559632135676L, block2.getId());
+        Assert.assertEquals(7794052885702480634L, block2.getId());
         Assert.assertEquals("2886809478417845031", Long.toUnsignedString(block2.getPreviousBlockId()));
         // This is Bob
         Assert.assertEquals(-1454519625466876437L, block2.getGeneratorId());
         Assert.assertArrayEquals(Convert.parseHexString("0b4e505972149e7ceb51309edc76729795cabe1f2cc42d87688138d0966db436"), block2.getGeneratorPublicKey());
         Assert.assertEquals(520159231, block2.getBaseTarget());
-        Assert.assertEquals(118434, block2.getNonce());
+        Assert.assertEquals(120145, block2.getNonce());
         Assert.assertEquals(1, block2.getTransactions().size());
         Transaction coinbase = block2.getTransactions().get(0);
         Assert.assertEquals(-5050349899876126764L, coinbase.getId());
@@ -334,19 +334,23 @@ public class BlockTest extends BlockchainTest {
     @Test
     public void testPeerPushTwoKeyBlocksAndOneFastOnTopOfGenesis() throws MetroException, InvocationTargetException, IllegalAccessException {
         // 1st key block
+        System.out.println(Convert.toHexString(Metro.getBlockchain().getLastBlock().getHash()));
         Metro.getBlockchainProcessor().processPeerBlock(emptyKeyBlockJSON);
+
         Block keyBlock1 = Metro.getBlockchain().getLastBlock();
         emptyKeyBlockJSON.put("previousBlock", keyBlock1.getStringId());
+        emptyKeyBlockJSON.put("previousBlockHash", Convert.toHexString(keyBlock1.getHash()));
         emptyKeyBlockJSON.put("previousKeyBlock", keyBlock1.getStringId());
-        emptyKeyBlockJSON.put("nonce", 146829);
+        emptyKeyBlockJSON.put("nonce", 154192);
         emptyKeyBlockJSON.put("timestamp", 2330920110L);
         JSONArray transactions = (JSONArray)emptyKeyBlockJSON.get("transactions");
         ((JSONObject)transactions.get(0)).put("timestamp", 2330920107L);
         // adding 2nd key block with no fast in between: new prevBlock, nonce, timestamp and coinbase timestamp set
         Metro.getBlockchainProcessor().processPeerBlock(emptyKeyBlockJSON);
+
         Block keyBlock2 = Metro.getBlockchain().getLastBlock();
         emptyPosBlockJSON.put("previousBlock", keyBlock2.getStringId());
-        emptyPosBlockJSON.put("previousBlockHash", Convert.toHexString(HASH_FUNCTION.hash(keyBlock2.getBytes())));
+        emptyPosBlockJSON.put("previousBlockHash", Convert.toHexString(keyBlock2.getHash()));
         emptyPosBlockJSON.put("timestamp", 2330920111L);
         emptyPosBlockJSON.remove("blockSignature");
         BlockImpl block1 = (BlockImpl) blockParser.invoke(null, emptyPosBlockJSON, true);
@@ -354,7 +358,7 @@ public class BlockTest extends BlockchainTest {
         // re-signed fast block with new timestamp
         Metro.getBlockchainProcessor().processPeerBlock(emptyPosBlockJSON);
         Block block2 = Metro.getBlockchain().getLastBlock();
-        Assert.assertEquals("08bb72739116d13e8a208fe8c5f87bc631b8d5733ca88e603b599ab0885d9d0f5f04936e6051e18474fba164fd40546d1b5aebad461f02c7da043a4fa17d8542", Convert.toHexString(block2.getBlockSignature()));
+        Assert.assertEquals("872a9430b85839bd199eb8b1b7e17a5a0a2389cde66623adaac38ba01d0e4202bbea452aaf6a8f4001f71f50508c9e1bc70da359c687504051a95673d82a691b", Convert.toHexString(block2.getBlockSignature()));
 /*
         BlockImpl preparedBlock = (BlockImpl) blockParser.invoke(null, emptyKeyBlockJSON, false);
         ByteBuffer buffer = ByteBuffer.wrap(preparedBlock.bytes());
@@ -406,7 +410,8 @@ public class BlockTest extends BlockchainTest {
         Block posBlock3 = Metro.getBlockchain().getLastBlock();
         Assert.assertEquals("e76df3c6daa584a41ef2d7d1fe3dbc42ae0fce1b2fdb07b8993f799e28befd095b1efe8361d4a1cbe80c3c6664c2bfd7d0fd5e2bde845a372bcaf1a3a0018fed", Convert.toHexString(posBlock3.getBlockSignature()));
         emptyKeyBlockJSON.put("previousBlock", posBlock3.getStringId());
-        emptyKeyBlockJSON.put("nonce", 96617);
+        emptyKeyBlockJSON.put("previousBlockHash", Convert.toHexString(posBlock3.getHash()));
+        emptyKeyBlockJSON.put("nonce", 212428);
         emptyKeyBlockJSON.put("timestamp", 2330920112L);
         emptyKeyBlockJSON.put("forgersMerkleRoot", Convert.toHexString(Generator.getCurrentForgersMerkleBranches()));
         // adding key block that finishes cluster consisting of 3 blocks

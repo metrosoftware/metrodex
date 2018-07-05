@@ -1098,7 +1098,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     @Override
     public boolean processKeyBlock(Block blk) throws MetroException {
         if (!(blk instanceof BlockImpl)) {
-            throw new BlockNotAcceptedException("Unknown block class " + blk.getClass().getName() + ", should not happen", new BlockImpl(null, null));
+            throw new BlockNotAcceptedException("Unknown block class " + blk.getClass().getName() + ", should not happen", new BlockImpl(new byte[0], null));
         }
         BlockImpl block = (BlockImpl)blk;
 
@@ -1112,7 +1112,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
     /**
      * The method to process a block submitted by a peer.
-     * Key block parsed from JSON lacks previousBlockHash and generationSequence: we must restore them here from our tip,
+     * Key block parsed from JSON lacks generationSequence: we must restore them here from our tip,
      * before passing the new block to pushBlock()
      *
      * @param request
@@ -1128,9 +1128,8 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             final boolean isBlockchainContinuation = block.getPreviousBlockId() == lastBlock.getId();
             final boolean isTipReplacement = !lastBlock.isKeyBlock() && block.getPreviousBlockId() == lastBlock.getPreviousBlockId() && block.getTimestamp() < lastBlock.getTimestamp();
             if (block.isKeyBlock()) {
-                if (block.getPreviousBlockHash() == null && (isBlockchainContinuation || isTipReplacement)) {
+                if (block.getGenerationSequence() == null && (isBlockchainContinuation || isTipReplacement)) {
                     // received from JSON, prevBlockId checked, we can restore hash from DB or block cache
-                    request.put("previousBlockHash", Convert.toHexString(isTipReplacement ? lastBlock.getPreviousBlockHash() : HASH_FUNCTION.hash(lastBlock.bytes())));
                     byte[] generationSequenceHash = BlockImpl.advanceGenerationSequenceInKeyBlock(lastBlock);
                     request.put("generationSequence", Convert.toHexString(generationSequenceHash));
                     block = BlockImpl.parseBlock(request, true);
@@ -1340,13 +1339,12 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
         blockchain.writeLock();
 
-        if (block.isKeyBlock() && block.getPreviousBlockHash() == null &&
+        if (block.isKeyBlock() && block.getGenerationSequence() == null &&
                 block.getPreviousBlockId() == blockchain.getLastBlock().getId()) {
             BlockImpl previousBlock = blockchain.getLastBlock();
-            byte[] prevBlockHash = HASH_FUNCTION.hash(previousBlock.bytes());
             byte[] generationSequence = BlockImpl.advanceGenerationSequenceInKeyBlock(previousBlock);
             blockchain.writeUnlock();
-            pushBlock(new BlockImpl(block, prevBlockHash, generationSequence));
+            pushBlock(new BlockImpl(block, generationSequence));
             return;
         }
 
@@ -1461,7 +1459,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             throw new BlockNotAcceptedException("Block timestamp " + block.getTimestamp() + " is before previous block timestamp "
                     + previousLastBlock.getTimestamp(), block);
         }
-        if (!Arrays.equals(HASH_FUNCTION.hash(previousLastBlock.bytes()), block.getPreviousBlockHash())) {
+        if (!Arrays.equals(previousLastBlock.getHash(), block.getPreviousBlockHash())) {
             throw new BlockNotAcceptedException("Previous block hash doesn't match", block);
         }
         if (keyBlock) {
@@ -2007,7 +2005,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         }
 
         final byte[] generationSequence = Convert.generationSequence(previousBlock.getGenerationSequence(), publicKey);
-        final byte[] previousBlockHash = HASH_FUNCTION.hash(previousBlock.bytes());
+        final byte[] previousBlockHash = previousBlock.getHash();
 
         BlockImpl block = new BlockImpl(getPosBlockVersion(previousBlock.getHeight()), blockTimestamp, previousBlock.getId(), null, 0, payloadLength,
                 txMerkleRoot, publicKey, generationSequence, previousBlockHash, null, blockTransactions, secretPhrase);
@@ -2237,7 +2235,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     public BlockImpl prepareKeyBlock(List<TransactionImpl> transactions) {
         BlockImpl previousBlock = blockchain.getLastBlock();
         BlockImpl previousKeyBlock = blockchain.getLastKeyBlock();
-        byte[] previousBlockHash = Consensus.HASH_FUNCTION.hash(previousBlock.bytes());
+        byte[] previousBlockHash = previousBlock.getHash();
         //TODO ticket # get generatorPublicKey from properties
         byte[] generatorPublicKey = Convert.parseHexString(Miner.getPublicKey());
         Long previousKeyBlockId = previousKeyBlock == null ? null : previousKeyBlock.getId();

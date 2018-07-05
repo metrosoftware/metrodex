@@ -21,6 +21,7 @@ import metro.crypto.Crypto;
 import metro.util.BitcoinJUtils;
 import metro.util.Convert;
 import metro.util.Logger;
+import org.apache.commons.lang3.ArrayUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -163,9 +164,8 @@ public final class BlockImpl implements Block {
      * Constructur to fill previousBlockHash and generationSequence.
      * Should be used only for key blocks.
      * @param block
-     * @param previousBlockHash
      */
-    public BlockImpl(BlockImpl block, byte[] previousBlockHash, byte[] generationSequence) {
+    public BlockImpl(BlockImpl block, byte[] generationSequence) {
         this.version = block.version;
         this.timestamp = block.timestamp;
         this.baseTarget = block.baseTarget;
@@ -182,7 +182,7 @@ public final class BlockImpl implements Block {
         this.totalAmountMQT = block.totalAmountMQT;
         this.blockTransactions = block.blockTransactions;
         this.generationSequence = generationSequence;
-        this.previousBlockHash = previousBlockHash;
+        this.previousBlockHash = block.previousBlockHash;
     }
 
     @Override
@@ -328,7 +328,7 @@ public final class BlockImpl implements Block {
             if (!isKeyBlock() && blockSignature == null) {
                 throw new IllegalStateException("Block is not signed yet");
             }
-            byte[] hash = HASH_FUNCTION.hash(bytes());
+            byte[] hash = getHash();
             BigInteger bigInteger = Convert.fullHashToBigInteger(hash);
             id = bigInteger.longValue();
             stringId = bigInteger.toString();
@@ -379,6 +379,7 @@ public final class BlockImpl implements Block {
         json.put("version", version);
         json.put("timestamp", timestamp);
         json.put("previousBlock", Long.toUnsignedString(previousBlockId));
+        json.put("previousBlockHash", Convert.toHexString(previousBlockHash));
         if (isKeyBlock()) {
             if (previousKeyBlockId != null) {
                 json.put("previousKeyBlock", Long.toUnsignedString(previousKeyBlockId));
@@ -391,7 +392,6 @@ public final class BlockImpl implements Block {
             json.put("generatorPublicKey", Convert.toHexString(getGeneratorPublicKey()));
             json.put("generationSequence", Convert.toHexString(generationSequence));
             json.put("blockSignature", Convert.toHexString(blockSignature));
-            json.put("previousBlockHash", Convert.toHexString(previousBlockHash));
         }
         json.put("txMerkleRoot", Convert.toHexString(txMerkleRoot));
 
@@ -415,12 +415,16 @@ public final class BlockImpl implements Block {
             boolean keyBlock = isKeyBlockVersion(version);
             long timestamp = ((Long) blockData.get("timestamp")).longValue();
             long previousBlock = Convert.parseUnsignedLong((String) blockData.get("previousBlock"));
+            byte[] previousBlockHash = Convert.parseHexString((String) blockData.get("previousBlockHash"));
+            if (Convert.fullHashToId(previousBlockHash) != previousBlock) {
+                throw new MetroException.NotValidException("Invalid previous block hash or id");
+            }
             Long previousKeyBlock = null;
             long baseTarget = 0;
             int payloadLength = 0, nonce = 0;
             // these are not present in BOTH fast and key blocks, so may be null
             // generationSequence for key block is not passed, but re-calculated
-            byte[] forgersMerkleRoot = null, generatorPublicKey = null, blockSignature = null, generationSequence = null, previousBlockHash = null;
+            byte[] forgersMerkleRoot = null, generatorPublicKey = null, blockSignature = null, generationSequence = null;
             if (keyBlock) {
                 String strPrevKeyBlock = (String) blockData.get("previousKeyBlock");
                 if (strPrevKeyBlock != null) {
@@ -435,7 +439,6 @@ public final class BlockImpl implements Block {
                 blockSignature = reparse ? null : Convert.parseHexString((String) blockData.get("blockSignature"));
             }
             if (!keyBlock || reparse) {
-                previousBlockHash = Convert.parseHexString((String) blockData.get("previousBlockHash"));
                 generationSequence = Convert.parseHexString((String) blockData.get("generationSequence"));
             }
             byte[] txMerkleRoot = Convert.parseHexString((String) blockData.get("txMerkleRoot"));
@@ -496,7 +499,7 @@ public final class BlockImpl implements Block {
                     buffer.putLong(0);
                 }
                 // hash the two branches together
-                buffer.put(HASH_FUNCTION.hash(forgersMerkleRoot));
+                buffer.put(HASH_FUNCTION.hash(ArrayUtils.addAll(previousBlockHash, forgersMerkleRoot)));
                 // only 4 bytes of target are needed for PoW
                 buffer.putInt((int) (baseTarget & 0xffffffffL));
                 buffer.putInt(nonce);
@@ -512,6 +515,10 @@ public final class BlockImpl implements Block {
             bytes = buffer.array();
         }
         return bytes;
+    }
+
+    public byte[] getHash() {
+        return HASH_FUNCTION.hash(bytes());
     }
 
     public boolean verifyBlockSignature() {

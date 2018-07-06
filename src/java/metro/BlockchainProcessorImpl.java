@@ -960,10 +960,10 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                     break;
                 }
             }
-            if (Metro.getBooleanProperty("metro.forceScan")) {
-                scan(0, Metro.getBooleanProperty("metro.forceValidate"));
-            } else if (minBadBlockHeight > -1) {
+            if (minBadBlockHeight < Integer.MAX_VALUE) {
                 scan(Math.max(0, minBadBlockHeight - 2), true);
+            } else if (Metro.getBooleanProperty("metro.forceScan")) {
+                scan(0, Metro.getBooleanProperty("metro.forceValidate"));
             } else {
                 boolean rescan;
                 boolean validate;

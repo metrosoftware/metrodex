@@ -105,10 +105,10 @@ For linux:
 Download sgminer from https://github.com/metrosoftware/ccminer/releases
 Running: 
 For windows:
-ccminer -a metro -o http://localhost:6886/metro?requestType=getWork --user= --pass= -i 20
+ccminer -a metro -o http://localhost:7886/metro?requestType=getWork --user= --pass= -i 20
 
 For linux:
-./ccminer -a metro -o http://localhost:6886/metro?requestType=getWork --user= --pass= -i 20
+./ccminer -a metro -o http://localhost:7886/metro?requestType=getWork --user= --pass= -i 20
 
 
 WARNING: use only miners with metro algo support. Now it's only our miners. We forked base ccminer, sgminer and add metro algo support. Base ccminer, sgminer don't support metro algo. 

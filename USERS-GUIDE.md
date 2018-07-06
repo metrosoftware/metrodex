@@ -92,7 +92,7 @@ Add your Metro node address
 
 
 #### AMD #### 
-Download ccminer from https://github.com/metrosoftware/sgminer/releases
+Download sgminer from https://github.com/metrosoftware/sgminer/releases
 Running: 
 For windows:
 sgminer --algorithm metro -o http://127.0.0.1:7886/metro?requestType=getWork -u= -p= --intensity d
@@ -102,7 +102,9 @@ For linux:
 
 
 #### Nvidia #### 
-Download sgminer from https://github.com/metrosoftware/ccminer/releases
+Download ccminer from https://github.com/metrosoftware/ccminer/releases
+Install CUDA 9.2 from Nvidia site.
+
 Running: 
 For windows:
 ccminer -a metro -o http://localhost:7886/metro?requestType=getWork --user= --pass= -i 20

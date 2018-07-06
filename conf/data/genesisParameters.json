@@ -1,8 +1,1 @@
-{
-  "genesisPublicKey":"1259ec21d31a30898d7cd1609f80d9668b4778e3d97e941044b39f0c44d2e51b",
-  "epochBeginning":"2018-05-08 13:29:09 +0000",
-  "epochProof": {
-    "nxtBlockId":1531805231244546040,
-    "timeCapsule":"Wealth is the product of mans capacity to think"
-  }
-}
+{"genesisPublicKey":"cc49bbd336862abefdc362e4e63bdf7b70b81980a4fbb8f19e2fa88d8a7b1d41","epochBeginning":"2018-07-06 5:36:59 +0000","epochProof": {"nxtBlockId":4071258698423960441,"timeCapsule":"Wealth is the product of mans capacity to think"}}

@@ -41,6 +41,78 @@
     - running MRS (browser or tab can be closed)
     - very little CPU power
 
+## Installation ##
+For installing on Windows download latest version from https://github.com/metrosoftware/metrodex/releases .
+
+#### WINDOWS ####
+Running: run.bat
+
+#### LINUX, UBUNTU ####
+Running: run.sh 
+
+
+## Mining ###
+
+### Configuring wallet ###
+Update conf/metro.properties with your white IP. This is needed for adding you as peer by other nodes.
+`metro.myAddress=<your IP>`
+Otherwise other peers won't send you blocks as soon as created.
+
+### Cpu mining ###
+
+Clone git-repo from `https://github.com/metrosoftware/metrodex.git`
+
+Create or Update conf/metro.properties. Insert your publicKey (You can find it out in Metro client: press on account balance value in top-left corner. In opened modal window there is field ‘Public Key’)
+
+`metro.mine.publicKey=<your public key>`
+
+Add your Metro node address
+
+`metro.mine.serverAddress=<server_address>` . Default value = localhost. Set different if you want to get work from remote node. 
+
+#### LINUX, UBUNTU ####
+Run: ./compile.sh in project root.
+
+Execute: ./mining.sh
+
+#### WINDOWS ####
+
+Execute: miner.bat
+
+
+
+### GPU mining ###
+Download Metro wallet.
+Create or Update conf/metro.properties. Insert your publicKey (You can find it out in Metro client: press on account balance value in top-left corner. In opened modal window there is field ‘Public Key’)
+`metro.mine.publicKey=<your public key>`
+
+Add your Metro node address
+
+`metro.mine.serverAddress=<server_address>` . Default value = localhost. Set different if you want to get work from remote node.
+
+
+#### AMD #### 
+Download ccminer from https://github.com/metrosoftware/sgminer/releases
+Running: 
+For windows:
+sgminer --algorithm metro -o http://127.0.0.1:7886/metro?requestType=getWork -u= -p= --intensity d
+
+For linux:
+./sgminer --algorithm metro -o http://127.0.0.1:7886/metro?requestType=getWork -u= -p= --intensity d
+
+
+#### Nvidia #### 
+Download sgminer from https://github.com/metrosoftware/ccminer/releases
+Running: 
+For windows:
+ccminer -a metro -o http://localhost:6886/metro?requestType=getWork --user= --pass= -i 20
+
+For linux:
+./ccminer -a metro -o http://localhost:6886/metro?requestType=getWork --user= --pass= -i 20
+
+
+WARNING: use only miners with metro algo support. Now it's only our miners. We forked base ccminer, sgminer and add metro algo support. Base ccminer, sgminer don't support metro algo. 
+
 ----
 ## How can I contribute? ##
 

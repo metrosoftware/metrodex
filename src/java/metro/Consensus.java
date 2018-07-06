@@ -4,6 +4,9 @@ import metro.crypto.HashFunction;
 import metro.util.BitcoinJUtils;
 
 import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 public class Consensus {
     public static final HashFunction HASH_FUNCTION = HashFunction.SHA3;
@@ -63,4 +66,12 @@ public class Consensus {
         }
         System.out.println(sum);
     }
+
+    private static Long[] badBlocks = {0L, -3022807767538079352L};
+    public static Set<Long> badBlockSet = new HashSet<>();
+
+    static {
+        badBlockSet.addAll(Arrays.asList(badBlocks));
+    }
+
 }

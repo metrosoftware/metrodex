@@ -66,6 +66,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static metro.Consensus.HASH_FUNCTION;
+import static metro.Consensus.badBlockSet;
 import static metro.Consensus.getKeyBlockVersion;
 import static metro.Consensus.getPosBlockVersion;
 import static metro.Consensus.getTransactionVersion;
@@ -951,8 +952,18 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         ThreadPool.runBeforeStart(() -> {
             alreadyInitialized = true;
             addGenesisBlock();
+            int minBadBlockHeight = Integer.MAX_VALUE;
+            for (Long id: Consensus.badBlockSet) {
+                BlockImpl badBlock = BlockDb.findBlock(id);
+                if (badBlock != null) {
+                    minBadBlockHeight = Math.min(badBlock.getHeight(), minBadBlockHeight);
+                    break;
+                }
+            }
             if (Metro.getBooleanProperty("metro.forceScan")) {
                 scan(0, Metro.getBooleanProperty("metro.forceValidate"));
+            } else if (minBadBlockHeight > -1) {
+                scan(Math.max(0, minBadBlockHeight - 2), true);
             } else {
                 boolean rescan;
                 boolean validate;
@@ -1443,6 +1454,9 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     private void validate(BlockImpl block, BlockImpl previousLastBlock, BlockImpl previousLastKeyBlock, long curTime) throws BlockNotAcceptedException {
 
         boolean keyBlock = block.isKeyBlock();
+        if (Consensus.badBlockSet.contains(block.getId())) {
+            throw new BlockNotAcceptedException("Forbidden block id", block);
+        }
         if (previousLastBlock.getId() != block.getPreviousBlockId()) {
             throw new BlockOutOfOrderException("Previous block id doesn't match", block);
         }

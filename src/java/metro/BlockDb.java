@@ -312,7 +312,7 @@ final class BlockDb {
         try (Connection con = Db.db.getConnection();
                 PreparedStatement pstmt = con.prepareStatement(
                         "SELECT A.id, A.id2, G.count FROM Account A JOIN (SELECT generator_id, COUNT(generator_id) AS count " +
-                                "FROM block WHERE height >= ? AND height <= ? AND nonce IS NULL GROUP BY generator_id) G on (A.id = G.generator_id)")) {
+                                "FROM block WHERE height >= ? AND height <= ? AND nonce IS NULL GROUP BY generator_id) G on (A.id = G.generator_id) WHERE A.latest = true")) {
             pstmt.setInt(1, startHeight);
             pstmt.setInt(2, endHeight);
             try (ResultSet rs = pstmt.executeQuery()) {

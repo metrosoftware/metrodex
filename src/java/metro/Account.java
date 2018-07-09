@@ -412,6 +412,8 @@ public final class Account {
 
     private static final VersionedEntityDbTable<Account> accountTable = new VersionedEntityDbTable<Account>(ACCOUNT_TABLE_NAME, accountDbKeyFactory) {
 
+        protected static final int TRIM_START_HEIGHT = 1;
+
         @Override
         protected Account load(Connection con, ResultSet rs, DbKey dbKey) throws SQLException {
             return new Account(rs, dbKey);
@@ -424,19 +426,18 @@ public final class Account {
 
         @Override
         public void trim(int height) {
-            if (height <= Metro.getBlockchain().getGuaranteedBalanceHeight(height)) {
+            if (Metro.getBlockchain().getGuaranteedBalanceHeight(height) == 0) {
                 return;
             }
             super.trim(height);
         }
         @Override
         public void checkAvailable(int height) {
-            if (height > Metro.getBlockchain().getGuaranteedBalanceHeight(height)) {
-                super.checkAvailable(height);
-                return;
-            }
             if (height > Metro.getBlockchain().getHeight()) {
                 throw new IllegalArgumentException("Height " + height + " exceeds blockchain height " + Metro.getBlockchain().getHeight());
+            } else if (height > 0) {
+                super.checkAvailable(height);
+                return;
             }
         }
 

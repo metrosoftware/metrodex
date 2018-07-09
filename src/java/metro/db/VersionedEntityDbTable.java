@@ -30,6 +30,8 @@ import java.util.List;
 
 public abstract class VersionedEntityDbTable<T> extends EntityDbTable<T> {
 
+    protected static final int TRIM_START_HEIGHT = 0;
+
     protected VersionedEntityDbTable(String table, DbKey.Factory<T> dbKeyFactory) {
         super(table, dbKeyFactory, true, null);
     }
@@ -132,7 +134,7 @@ public abstract class VersionedEntityDbTable<T> extends EntityDbTable<T> {
              PreparedStatement pstmtSelect = con.prepareStatement("SELECT " + dbKeyFactory.getPKColumns() + ", MAX(height) AS max_height"
                      + " FROM " + table + " WHERE height < ? GROUP BY " + dbKeyFactory.getPKColumns() + " HAVING COUNT(DISTINCT height) > 1");
              PreparedStatement pstmtDelete = con.prepareStatement("DELETE FROM " + table + dbKeyFactory.getPKClause()
-                     + " AND height < ? AND height > 0 LIMIT " + Constants.BATCH_COMMIT_SIZE);
+                     + " AND height < ? AND height => " + TRIM_START_HEIGHT + " LIMIT " + Constants.BATCH_COMMIT_SIZE);
 
              PreparedStatement pstmtDeleteDeleted = con.prepareStatement("DELETE FROM " + table + " WHERE height < ? AND height > 0 AND latest = FALSE "
                      + " AND (" + dbKeyFactory.getPKColumns() + ") NOT IN (SELECT (" + dbKeyFactory.getPKColumns() + ") FROM "

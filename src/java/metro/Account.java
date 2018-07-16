@@ -991,6 +991,7 @@ public final class Account {
     private long balanceMQT;
     private long unconfirmedBalanceMQT;
     private long forgedBalanceMQT;
+    private int lastForgedHeight;
     private long activeLesseeId;
     private Set<ControlType> controls;
     private boolean haveAnotherGenesisAccount;
@@ -1012,6 +1013,7 @@ public final class Account {
         this.balanceMQT = rs.getLong("balance");
         this.unconfirmedBalanceMQT = rs.getLong("unconfirmed_balance");
         this.forgedBalanceMQT = rs.getLong("forged_balance");
+        this.lastForgedHeight = rs.getInt("last_forged_height");
         this.activeLesseeId = rs.getLong("active_lessee_id");
         if (rs.getBoolean("has_control_phasing")) {
             controls = Collections.unmodifiableSet(EnumSet.of(ControlType.PHASING_ONLY));
@@ -1022,15 +1024,16 @@ public final class Account {
 
     private void save(Connection con) throws SQLException {
         try (PreparedStatement pstmt = con.prepareStatement("MERGE INTO account (id, id2, "
-                + "balance, unconfirmed_balance, forged_balance, "
+                + "balance, unconfirmed_balance, forged_balance, last_forged_height, "
                 + "active_lessee_id, has_control_phasing, height, latest) "
-                + "KEY (id, height) VALUES (?, ?, ?, ?, ?, ?, ?, ?, TRUE)")) {
+                + "KEY (id, height) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)")) {
             int i = 0;
             pstmt.setLong(++i, this.id);
             pstmt.setInt(++i, this.id2);
             pstmt.setLong(++i, this.balanceMQT);
             pstmt.setLong(++i, this.unconfirmedBalanceMQT);
             pstmt.setLong(++i, this.forgedBalanceMQT);
+            pstmt.setInt(++i, this.lastForgedHeight);
             DbUtils.setLongZeroToNull(pstmt, ++i, this.activeLesseeId);
             pstmt.setBoolean(++i, controls.contains(ControlType.PHASING_ONLY));
             pstmt.setInt(++i, Metro.getBlockchain().getHeight());
@@ -1055,6 +1058,11 @@ public final class Account {
             throw new IllegalStateException(String.format("Can not replace full id for %s to %s", getFullId(), fullId));
         }
         accountTable.delete(this, true);
+    }
+
+    public void setLastForgedHeight(int height) {
+        this.lastForgedHeight = height;
+        save();
     }
 
     public long getId() {
@@ -1306,7 +1314,7 @@ public final class Account {
             }
             try (Connection con = db.getConnection();
                  PreparedStatement pstmt = con.prepareStatement("SELECT SUM (additions) AS additions "
-                         + "FROM account_guaranteed_balance WHERE account_id = ? AND NOT coinbase AND height > ? AND height <= ?")) {
+                         + "FROM account_guaranteed_balance WHERE account_id = ? AND height > ? AND height <= ?")) {
                 pstmt.setLong(1, this.id);
                 pstmt.setInt(2, height);
                 pstmt.setInt(3, currentHeight);

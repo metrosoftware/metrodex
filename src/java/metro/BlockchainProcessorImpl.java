@@ -32,6 +32,7 @@ import metro.util.Listeners;
 import metro.util.Logger;
 import metro.util.ThreadPool;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -64,12 +65,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static metro.Consensus.HASH_FUNCTION;
-import static metro.Consensus.badBlockSet;
 import static metro.Consensus.getKeyBlockVersion;
 import static metro.Consensus.getPosBlockVersion;
 import static metro.Consensus.getTransactionVersion;
+import static metro.util.Convert.HASH_SIZE;
 
 final class BlockchainProcessorImpl implements BlockchainProcessor {
 
@@ -102,6 +104,8 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     private volatile Peer lastBlockchainFeeder;
     private volatile int lastBlockchainFeederHeight;
     private volatile boolean getMoreBlocks = true;
+
+    private final AtomicReference<BlockImpl> forgersMerkleAtLastKeyBlock = new AtomicReference<>();
 
     private volatile boolean isTrimming;
     private volatile boolean isScanning;
@@ -952,6 +956,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         ThreadPool.runBeforeStart(() -> {
             alreadyInitialized = true;
             addGenesisBlock();
+            fillNewColumns();
             int minBadBlockHeight = Integer.MAX_VALUE;
             for (Long id: Consensus.badBlockSet) {
                 BlockImpl badBlock = BlockDb.findBlock(id);
@@ -1344,6 +1349,10 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         }
     }
 
+    private void fillNewColumns() {
+
+    }
+
     private void pushBlock(final BlockImpl block) throws BlockNotAcceptedException {
 
         long curTime = Metro.getEpochTime();
@@ -1527,7 +1536,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             return Block.ValidationResult.INCORRECT_VERSION;
         }
         // TODO #188
-        if (!Arrays.equals(keyBlock.getForgersMerkleRoot(), Generator.getCurrentForgersMerkleBranches())) {
+        if (!Arrays.equals(keyBlock.getForgersMerkleRoot(), getCurrentForgersMerkleBranches())) {
             return Block.ValidationResult.FORGERS_MERKLE_ROOT_DISCREPANCY;
         }
 
@@ -2250,12 +2259,11 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         BlockImpl previousBlock = blockchain.getLastBlock();
         BlockImpl previousKeyBlock = blockchain.getLastKeyBlock();
         byte[] previousBlockHash = previousBlock.getHash();
-        //TODO ticket # get generatorPublicKey from properties
         byte[] generatorPublicKey = Convert.parseHexString(Miner.getPublicKey());
         Long previousKeyBlockId = previousKeyBlock == null ? null : previousKeyBlock.getId();
         long baseTarget = BitcoinJUtils.encodeCompactBits(Metro.getBlockchain().getNextTarget());
         long blockTimestamp = Metro.getEpochTime();
-        byte[] forgersMerkle = Generator.getCurrentForgersMerkleBranches();
+        byte[] forgersMerkle = getCurrentForgersMerkleBranches();
         List<TransactionImpl> blockTransactions = new ArrayList<>();
 
         int keyHeight = previousKeyBlock != null ? previousKeyBlock.getLocalHeight() + 1 : 0;
@@ -2325,5 +2333,115 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             }
         }
         return sortedTransactions;
+    }
+
+    public byte[] getCurrentForgersMerkleBranches() {
+        Metro.getBlockchain().readLock();
+        byte[] forgersMerkle;
+        try {
+            MessageDigest mdg = HASH_FUNCTION.messageDigest();
+            byte[] forgersMerkleVotersBranch = new byte[0];
+            List<byte[]> outfeeders = new ArrayList<>();
+            try (Connection con = Db.db.getConnection();
+                 PreparedStatement pstmt = con.prepareStatement(
+                         "SELECT PK.public_key, A.balance - IFNULL(B.additions, 0) AS effective FROM Account A " +
+                                 "LEFT JOIN (SELECT account_id, SUM (additions) AS additions FROM account_guaranteed_balance WHERE height > ? AND height <= ? GROUP BY account_id) B on (A.id = B.account_id) " +
+                                 "JOIN public_key PK ON PK.account_id = A.id WHERE A.latest AND A.active_lessee_id IS NULL AND PK.latest AND A.last_forged_height > ? AND A.last_forged_height <= ? ORDER BY effective"
+                 )) {
+                /*
+                Block lastBlock = Metro.getBlockchain().getLastBlock();
+                if (!lastBlock.isKeyBlock()) {
+                    throw new IllegalStateException("On fast blocks forgersMerkle is not defined, call me when you are at key block!");
+                }
+                */
+                Block lastBlock = Metro.getBlockchain().getLastKeyBlock();
+                int height = lastBlock != null ? lastBlock.getHeight() : 0;
+                pstmt.setInt(1, Metro.getBlockchain().getGuaranteedBalanceHeight(height));
+                pstmt.setInt(2, height);
+                pstmt.setInt(3, Math.max(0, height - Consensus.FORGER_ACTIVITY_SNAPSHOT_INTERVAL));
+                pstmt.setInt(4, height);
+
+                Logger.logDebugMessage("Starting getBlockGenerators");
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    Logger.logDebugMessage("SELECT getBlockGenerators complete, iterating");
+                    while (rs.next()) {
+                        int amountMTR = (int)(rs.getLong("effective")/Constants.ONE_MTR);
+                        if (amountMTR > Consensus.MIN_FORKVOTING_AMOUNT_MTR) {
+                            byte[] publicKey = rs.getBytes("public_key");
+                            mdg.update(forgersMerkleVotersBranch);
+                            mdg.update(publicKey);
+                            forgersMerkleVotersBranch = mdg.digest(new byte[] {
+                                    (byte)(amountMTR >> 24),
+                                    (byte)(amountMTR >> 16),
+                                    (byte)(amountMTR >> 8),
+                                    (byte)amountMTR,
+                            });
+                            outfeeders.add(publicKey);
+                        }
+                    }
+                }
+                Logger.logDebugMessage("Finishing getBlockGenerators");
+            } catch (SQLException e) {
+                throw new RuntimeException(e.toString(), e);
+            }
+
+            forgersMerkle = new byte[HASH_SIZE * 2];
+            if (forgersMerkleVotersBranch.length > 0) {
+                // TODO #211 these should be not just available in effective balance, they need to be frozen!
+                List<byte[]> tree = BitcoinJUtils.buildMerkleTree(outfeeders);
+                byte[] forgersMerkleOutfeedersBranch = tree.get(tree.size() - 1);
+                System.arraycopy(forgersMerkleVotersBranch, 0, forgersMerkle, 0, HASH_SIZE);
+                System.arraycopy(forgersMerkleOutfeedersBranch, 0, forgersMerkle, HASH_SIZE, HASH_SIZE);
+            }
+            return forgersMerkle;
+        } finally {
+            Metro.getBlockchain().readUnlock();
+        }
+    }
+
+    /**
+     * Temporary, for testing in this git branch only!
+     * @return
+     */
+    public List<Pair<String, Long>> getCurrentForgers() {
+        Metro.getBlockchain().readLock();
+        try {
+            List<Pair<String, Long>> generators = new ArrayList<>();
+            try (Connection con = Db.db.getConnection();
+                 PreparedStatement pstmt = con.prepareStatement(
+                         "SELECT A.id, PK.public_key, A.balance - IFNULL(B.additions, 0) AS effective FROM Account A " +
+                                 "LEFT JOIN (SELECT account_id, SUM (additions) AS additions FROM account_guaranteed_balance WHERE height > ? AND height <= ? GROUP BY account_id) B on (A.id = B.account_id) " +
+                                 "JOIN public_key PK ON PK.account_id = A.id WHERE A.latest AND A.active_lessee_id IS NULL AND PK.latest AND A.last_forged_height > ? AND A.last_forged_height <= ? ORDER BY effective"
+                 )) {
+                Block lastBlock = Metro.getBlockchain().getLastBlock();
+                if (!lastBlock.isKeyBlock()) {
+                    throw new IllegalStateException("On fast blocks forgersMerkle is not defined, call me when you are at key block!");
+                }
+                int height = lastBlock.getHeight();
+                pstmt.setInt(1, Metro.getBlockchain().getGuaranteedBalanceHeight(height));
+                pstmt.setInt(2, height);
+                pstmt.setInt(3, Math.max(0, height - Consensus.FORGER_ACTIVITY_SNAPSHOT_INTERVAL));
+                pstmt.setInt(4, height);
+//                pstmt.setInt(1, Metro.getBlockchain().getGuaranteedBalanceHeight(height) - 1);
+                // this is current height
+//                pstmt.setInt(2, height);
+                Logger.logDebugMessage("Starting getCurrentForgers");
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    Logger.logDebugMessage("SELECT getCurrentForgers complete, iterating");
+                    while (rs.next()) {
+                        long amount = rs.getLong("effective");
+                        if (amount > 999900000000l) {
+                            generators.add(new ImmutablePair<>(Convert.toHexString(rs.getBytes("public_key")), amount));
+                        }
+                    }
+                }
+                Logger.logDebugMessage("Finishing getCurrentForgers");
+            } catch (SQLException e) {
+                throw new RuntimeException(e.toString(), e);
+            }
+            return generators;
+        } finally {
+            Metro.getBlockchain().readUnlock();
+        }
     }
 }

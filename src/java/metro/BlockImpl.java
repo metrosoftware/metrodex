@@ -571,6 +571,9 @@ public final class BlockImpl implements Block {
         Account.FullId generatorFullId = Account.FullId.fromPublicKey(getGeneratorPublicKey());
         Account generatorAccount = Account.addOrGetAccount(generatorFullId);
         generatorAccount.apply(getGeneratorPublicKey());
+        if (!isKeyBlock()) {
+            generatorAccount.setLastForgedHeight(height);
+        }
     }
 
     private void calculateBaseTarget(BlockImpl posBlock) {

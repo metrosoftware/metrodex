@@ -40,7 +40,7 @@ public class AccountTest extends BlockchainTest {
         // TODO should it really appear in guaranteed balance immediately - once we have 30 clusters?
         // since forgers' coinbases are time-locked as well, it's probably OK to forge with the freshly mined stake...
         alice = Account.getAccount(ALICE.getFullId());
-        Assert.assertEquals(1022000, alice.getEffectiveBalanceMTR());
+        Assert.assertEquals(1004000, alice.getEffectiveBalanceMTR());
         Assert.assertEquals(102200000000000L, alice.getBalanceMQT());
         // 2000*(11-2) of them can be spent now (2 key blocks ago)
         Assert.assertEquals(101800000000000L, alice.getUnconfirmedBalanceMQT());

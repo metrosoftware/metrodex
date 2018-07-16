@@ -20,6 +20,7 @@ package metro;
 import metro.db.DerivedDbTable;
 import metro.peer.Peer;
 import metro.util.Observable;
+import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONObject;
 
 import java.util.List;
@@ -72,6 +73,9 @@ public interface BlockchainProcessor extends Observable<Block,BlockchainProcesso
     long getGenesisBlockId();
 
     BlockImpl prepareKeyBlock(List<TransactionImpl> transactions);
+
+    byte[] getCurrentForgersMerkleBranches();
+    List<Pair<String, Long>> getCurrentForgers();
 
     class BlockNotAcceptedException extends MetroException {
 

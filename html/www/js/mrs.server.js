@@ -583,7 +583,7 @@ var MRS = (function (MRS, $, undefined) {
         }
 
         if (transaction.recipient !== data.recipient) {
-            if ((data.recipient == MRS.constants.GENESIS || data.recipient == "") && transaction.recipient == "0") {
+            if ((data.recipient == MRS.constants.BURNING || data.recipient == "") && transaction.recipient == "0") {
                 //ok
             } else {
                 return false;
@@ -1295,8 +1295,8 @@ var MRS = (function (MRS, $, undefined) {
             data.amountMQT = "0";
         }
         if (!("recipient" in data)) {
-            data.recipient = MRS.constants.GENESIS;
-            data.recipientRS = MRS.constants.GENESIS_RS;
+            data.recipient = MRS.constants.BURNING;
+            data.recipientRS = MRS.constants.BURNING_RS;
         }
     }
 

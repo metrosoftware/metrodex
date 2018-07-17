@@ -563,7 +563,7 @@ var MRS = (function (MRS, $, undefined) {
                             data["sender"] = transaction.senderRS ? transaction.senderRS : transaction.sender;
                             data["recipient"] = transaction.recipientRS ? transaction.recipientRS : transaction.recipient;
                             // Setting recipient to genesis to delete shares was allowed between v1.6 and v1.7
-                            if (data.recipient == MRS.constants.GENESIS_RS) {
+                            if (data.recipient == MRS.constants.BURNING_RS) {
                                 data.type = $.t("delete_asset_shares");
                             }
                             infoTable.find("tbody").append(MRS.createInfoTable(data));

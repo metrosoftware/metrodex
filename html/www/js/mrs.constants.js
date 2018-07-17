@@ -64,8 +64,8 @@ var MRS = (function (MRS, $) {
         'SERVER': {},
         'MAX_TAGGED_DATA_DATA_LENGTH': 0,
         'MAX_PRUNABLE_MESSAGE_LENGTH': 0,
-        'GENESIS': '',
-        'GENESIS_RS': '',
+        'BURNING': '',
+        'BURNING_RS': '',
         'EPOCH_BEGINNING': 0,
         'FORGING': 'forging',
         'NOT_FORGING': 'not_forging',
@@ -105,14 +105,14 @@ var MRS = (function (MRS, $) {
     };
 
     MRS.processConstants = function(response, resolve) {
-        if (response.genesisAccountId) {
+        if (response.burningAccountId) {
             MRS.constants.SERVER = response;
             MRS.constants.VOTING_MODELS = response.votingModels;
             MRS.constants.MIN_BALANCE_MODELS = response.minBalanceModels;
             MRS.constants.HASH_ALGORITHMS = response.hashAlgorithms;
             MRS.constants.PHASING_HASH_ALGORITHMS = response.phasingHashAlgorithms;
             MRS.constants.MAX_PRUNABLE_MESSAGE_LENGTH = response.maxPrunableMessageLength;
-            MRS.constants.GENESIS = response.genesisAccountId;
+            MRS.constants.BURNING = response.burningAccountId;
             MRS.constants.EPOCH_BEGINNING = response.epochBeginning;
             MRS.constants.REQUEST_TYPES = response.requestTypes;
             MRS.constants.API_TAGS = response.apiTags;
@@ -134,7 +134,7 @@ var MRS = (function (MRS, $) {
             MRS.constants.ACCOUNT_MASK_ASTERIX = response.accountPrefix + "-****-****-****-****-****-****";
             MRS.constants.ACCOUNT_MASK_UNDERSCORE = response.accountPrefix + "-____-____-____-____-____-____";
             MRS.constants.ACCOUNT_MASK_PREFIX = response.accountPrefix + "-";
-            MRS.constants.GENESIS_RS = converters.convertNumericToRSAccountFormat(response.genesisAccountId);
+            MRS.constants.BURNING_RS = converters.convertNumericToRSAccountFormat(response.burningAccountId);
             MRS.constants.INITIAL_BASE_TARGET = parseInt(response.initialBaseTarget);
             console.log("done loading server constants");
             if (resolve) {

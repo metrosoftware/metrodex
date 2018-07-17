@@ -19,6 +19,7 @@ package metro;
 
 import metro.util.Convert;
 import metro.util.Logger;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.tika.io.IOUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -44,16 +45,25 @@ import static metro.Consensus.HASH_FUNCTION;
 
 public final class Genesis {
 
-    private static final byte[] CREATOR_PUBLIC_KEY;
-    public static final Account.FullId CREATOR_ID;
+    private static final byte[] BURNING_PUBLIC_KEY;
+    public static final Account.FullId BURNING_ACCOUNT_ID;
     public static final long EPOCH_BEGINNING;
     public static final byte[] SPECIAL_SIGNATURE;
     public static final String TIME_CAPSULE;
+    private static final byte[] GENESIS_PUBLIC_KEY;
+
+    private static final Account.FullId GENESIS_ACCOUNT_ID;
+
     static {
         try (InputStream is = ClassLoader.getSystemResourceAsStream("data/genesisParameters.json")) {
             JSONObject genesisParameters = (JSONObject)JSONValue.parseWithException(new InputStreamReader(is));
-            CREATOR_PUBLIC_KEY = Convert.parseHexString((String)genesisParameters.get("genesisPublicKey"));
-            CREATOR_ID = Account.FullId.fromPublicKey(CREATOR_PUBLIC_KEY);
+            GENESIS_PUBLIC_KEY = Convert.parseHexString((String)genesisParameters.get("genesisPublicKey"));
+            GENESIS_ACCOUNT_ID = Account.FullId.fromPublicKey(GENESIS_PUBLIC_KEY);
+
+            BURNING_PUBLIC_KEY = GENESIS_PUBLIC_KEY.clone();
+            ArrayUtils.reverse(BURNING_PUBLIC_KEY);
+
+            BURNING_ACCOUNT_ID = Account.FullId.fromPublicKey(BURNING_PUBLIC_KEY);
             DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");
             EPOCH_BEGINNING = dateFormat.parse((String) genesisParameters.get("epochBeginning")).getTime();
             ByteBuffer buffer = ByteBuffer.allocate(64);
@@ -93,7 +103,7 @@ public final class Genesis {
     }
 
     static BlockImpl newGenesisBlock() {
-        return new BlockImpl(CREATOR_PUBLIC_KEY, loadGenesisAccountsJSON());
+        return new BlockImpl(GENESIS_PUBLIC_KEY, loadGenesisAccountsJSON());
     }
 
     static void apply() {
@@ -132,9 +142,14 @@ public final class Genesis {
             throw new RuntimeException("Total balance " + total + " exceeds maximum allowed " + Constants.MAX_BALANCE_MQT);
         }
         Logger.logDebugMessage("Total balance %f %s", (double)total / Constants.ONE_MTR, Constants.COIN_SYMBOL);
-        Account creatorAccount = Account.addOrGetAccount(Genesis.CREATOR_ID);
-        creatorAccount.apply(Genesis.CREATOR_PUBLIC_KEY);
-        creatorAccount.addToBalanceAndUnconfirmedBalanceMQT(null, 0, -total);
+
+        Account creatorAccount = Account.addOrGetAccount(Genesis.GENESIS_ACCOUNT_ID);
+        creatorAccount.apply(Genesis.GENESIS_PUBLIC_KEY);
+
+        Account burningAccount = Account.addOrGetAccount(Genesis.BURNING_ACCOUNT_ID);
+        burningAccount.apply(Genesis.BURNING_PUBLIC_KEY);
+        burningAccount.addToBalanceAndUnconfirmedBalanceMQT(null, 0, -Constants.MAX_BALANCE_MQT);
+
         genesisAccountsJSON = null;
     }
 

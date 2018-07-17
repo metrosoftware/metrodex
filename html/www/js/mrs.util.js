@@ -718,7 +718,7 @@ var MRS = (function (MRS, $, undefined) {
 
         if (formattedAcc == MRS.account || formattedAcc == MRS.accountRS) {
             return $.t("you");
-        } else if (formattedAcc == MRS.constants.GENESIS || formattedAcc == MRS.constants.GENESIS_RS) {
+        } else if (formattedAcc == MRS.constants.BURNING || formattedAcc == MRS.constants.BURNING_RS) {
             return $.t("genesis");
         } else if (formattedAcc in MRS.contacts) {
             return MRS.contacts[formattedAcc].name.escapeHTML();

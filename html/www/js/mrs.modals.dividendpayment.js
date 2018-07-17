@@ -81,7 +81,7 @@ var MRS = (function(MRS, $) {
                     var qualifiedDividendRecipients = accountAssets.filter(
                         function(accountAsset) {
                             return accountAsset.accountRS !== MRS.getCurrentAsset().accountRS
-                                && accountAsset.accountRS !== MRS.constants.GENESIS_RS;
+                                && accountAsset.accountRS !== MRS.constants.BURNING_RS;
                         });
                     var totalQuantityQNT = new BigInteger("0");
                     qualifiedDividendRecipients.forEach(

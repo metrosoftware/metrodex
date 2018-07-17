@@ -194,7 +194,7 @@ public final class DebugTrace {
             }
             Account.FullId recipientId = transaction.getRecipientFullId();
             if (transaction.getAmountMQT() > 0 && recipientId == null) {
-                recipientId = Genesis.CREATOR_ID;
+                recipientId = Genesis.BURNING_ACCOUNT_ID;
             }
             if (include(recipientId)) {
                 log(getValues(recipientId, transaction, true, true, true));

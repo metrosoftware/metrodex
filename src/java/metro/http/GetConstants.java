@@ -54,8 +54,8 @@ public final class GetConstants extends APIServlet.APIRequestHandler {
                 response.put("accountPrefix", Constants.ACCOUNT_PREFIX);
                 response.put("projectName", Constants.PROJECT_NAME);
                 response.put("genesisBlockId", Long.toUnsignedString(Metro.getBlockchainProcessor().getGenesisBlockId()));
-                response.put("genesisAccountId", Genesis.CREATOR_ID.toString());
-                response.put("genesisAccountRS", Genesis.CREATOR_ID.toRS());
+                response.put("burningAccountId", Genesis.BURNING_ACCOUNT_ID.toString());
+                response.put("burningAccountRS", Genesis.BURNING_ACCOUNT_ID.toRS());
                 response.put("epochBeginning", Genesis.EPOCH_BEGINNING);
                 response.put("posBlockMaxPayloadLength", Consensus.POSBLOCK_MAX_PAYLOAD_LENGTH);
                 response.put("keyBlockMaxPayloadLength", Consensus.KEYBLOCK_MAX_PAYLOAD_LENGTH);

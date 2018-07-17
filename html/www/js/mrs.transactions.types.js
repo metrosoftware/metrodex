@@ -244,7 +244,7 @@ var MRS = (function(MRS, $, undefined) {
     MRS.subtype = {};
 
     MRS.loadTransactionTypeConstants = function(response) {
-        if (response.genesisAccountId) {
+        if (response.burningAccountId) {
             $.each(response.transactionTypes, function(typeIndex, type) {
                 if (!(typeIndex in MRS.transactionTypes)) {
                     MRS.transactionTypes[typeIndex] = {

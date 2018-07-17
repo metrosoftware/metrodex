@@ -199,9 +199,9 @@ QUnit.test("getAccountLink", function (assert) {
     assert.equal(MRS.getAccountLink({ entityRS: "MTR-XK4R-7VJU-6EQG-7R335" }, "entity", undefined, undefined, undefined, "btn btn-xs"), "<a href='#' data-user='MTR-XK4R-7VJU-6EQG-7R335' class='show_account_modal_action user-info btn btn-xs'>You</a>", "add.class");
     MRS.contacts = null;
     MRS.accountRS = null;
-    MRS.constants.GENESIS = 1739068987193023818;
-    MRS.constants.GENESIS_RS = "MTR-MR8N-2YLS-3MEQ-3CMAJ";
-    assert.equal(MRS.getAccountLink({ entityRS: MRS.constants.GENESIS_RS }, "entity"), "<a href='#' data-user='MTR-MR8N-2YLS-3MEQ-3CMAJ' class='show_account_modal_action user-info'>Genesis</a>", "genesis");
+    MRS.constants.BURNING = 1739068987193023818;
+    MRS.constants.BURNING_RS = "MTR-MR8N-2YLS-3MEQ-3CMAJ";
+    assert.equal(MRS.getAccountLink({ entityRS: MRS.constants.BURNING_RS }, "entity"), "<a href='#' data-user='MTR-MR8N-2YLS-3MEQ-3CMAJ' class='show_account_modal_action user-info'>Genesis</a>", "genesis");
 });
 
 QUnit.test("generateToken", function (assert) {

@@ -19,7 +19,6 @@ package metro.tools;
 
 import metro.Account;
 import metro.Genesis;
-import metro.util.Convert;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -88,7 +87,7 @@ public final class VerifyTraceFile {
                     String assetId = valueMap.get("asset");
                     issuedAssetQuantities.put(assetId, Long.parseLong(valueMap.get("asset quantity")));
                 }
-                if ("asset transfer".equals(event) && Genesis.CREATOR_ID.equals(Account.FullId.fromStrId(accountId))) {
+                if ("asset transfer".equals(event) && Genesis.BURNING_ACCOUNT_ID.equals(Account.FullId.fromStrId(accountId))) {
                     String assetId = valueMap.get("asset");
                     long deletedQuantity = Long.parseLong(valueMap.get("asset quantity"));
                     long currentQuantity = issuedAssetQuantities.get(assetId);
@@ -168,7 +167,7 @@ public final class VerifyTraceFile {
                     }
                     System.out.println("total confirmed asset quantity change: " + totalAssetDelta);
                     long assetBalance = nullToZero(assetValues.get("asset balance"));
-                    if (assetBalance != totalAssetDelta && (!Genesis.CREATOR_ID.equals(Account.FullId.fromStrId(accountId)) || assetBalance != 0)) {
+                    if (assetBalance != totalAssetDelta && (!Genesis.BURNING_ACCOUNT_ID.equals(Account.FullId.fromStrId(accountId)) || assetBalance != 0)) {
                         System.out.println("ERROR: asset balance doesn't match total asset quantity change!!!");
                         failed.add(accountId);
                     }

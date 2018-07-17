@@ -1177,7 +1177,7 @@ public final class Account {
         long genesisBalanceSum;
         try (Connection con = db.getConnection();
             PreparedStatement pstmt = con.prepareStatement("SELECT SUM (balance) AS genesis_balance_sum " +
-                     " FROM account WHERE height = 0 and id <> " + Genesis.CREATOR_ID.getLeft())) {
+                     " FROM account WHERE height = 0 and id <> " + Genesis.BURNING_ACCOUNT_ID.getLeft())) {
             try (ResultSet rs = pstmt.executeQuery()) {
                 rs.next();
                 genesisBalanceSum = rs.getLong("genesis_balance_sum");
@@ -1664,7 +1664,7 @@ public final class Account {
     }
 
     private static void checkBalance(long accountId, long confirmed, long unconfirmed) {
-        if (accountId == Genesis.CREATOR_ID.getLeft()) {
+        if (accountId == Genesis.BURNING_ACCOUNT_ID.getLeft()) {
             return;
         }
         if (confirmed < 0) {

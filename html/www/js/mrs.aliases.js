@@ -156,7 +156,7 @@ var MRS = (function (MRS, $, undefined) {
             successMessage = $.t("success_sell_alias");
             errorMessage = $.t("error_sell_alias");
 
-            if (data.recipient == MRS.constants.GENESIS_RS) {
+            if (data.recipient == MRS.constants.BURNING_RS) {
                 if (!data.priceMTR || data.priceMTR == "0") {
                     return {
                         "error": $.t("error_not_specified", {
@@ -253,7 +253,7 @@ var MRS = (function (MRS, $, undefined) {
         var $modal = $(this).closest(".modal");
 
         if ($(this).attr("id") == "sell_alias_to_anyone") {
-            $modal.find("input[name=recipient]").val(MRS.constants.GENESIS_RS);
+            $modal.find("input[name=recipient]").val(MRS.constants.BURNING_RS);
             $("#sell_alias_recipient_div").hide();
             $modal.find(".add_message_container, .optional_message").hide();
         } else {

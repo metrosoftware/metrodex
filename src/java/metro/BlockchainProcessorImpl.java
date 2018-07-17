@@ -82,6 +82,11 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
     private static final BlockchainProcessorImpl instance = new BlockchainProcessorImpl();
 
+    public static final String SELECT_FORGERS_SQL = "SELECT S.super_id, PK.public_key, S.effective FROM (SELECT IFNULL(A.active_lessee_id,A.id) super_id, SUM(A.balance) - SUM(IFNULL(B.additions,0)) effective FROM Account A " +
+            "LEFT JOIN (SELECT account_id, SUM (additions) AS additions FROM account_guaranteed_balance WHERE height >= ? AND height < ? GROUP BY account_id) B " +
+            "on (A.id = B.account_id) LEFT JOIN (SELECT active_lessee_id id, SUM(balance) balance FROM account " +
+            "WHERE latest GROUP BY active_lessee_id) L ON (L.id = A.id) WHERE A.latest  AND A.last_forged_height > ? AND A.last_forged_height < ? GROUP BY super_id ORDER BY effective, super_id) S JOIN public_key PK ON PK.account_id = S.super_id WHERE PK.latest";
+
     static BlockchainProcessorImpl getInstance() {
         return instance;
     }
@@ -2343,11 +2348,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             byte[] forgersMerkleVotersBranch = new byte[0];
             List<byte[]> outfeeders = new ArrayList<>();
             try (Connection con = Db.db.getConnection();
-                 PreparedStatement pstmt = con.prepareStatement(
-                         "SELECT PK.public_key, A.balance - IFNULL(B.additions, 0) AS effective FROM Account A " +
-                                 "LEFT JOIN (SELECT account_id, SUM (additions) AS additions FROM account_guaranteed_balance WHERE height > ? AND height <= ? GROUP BY account_id) B on (A.id = B.account_id) " +
-                                 "JOIN public_key PK ON PK.account_id = A.id WHERE A.latest AND A.active_lessee_id IS NULL AND PK.latest AND A.last_forged_height > ? AND A.last_forged_height <= ? ORDER BY effective"
-                 )) {
+                 PreparedStatement pstmt = con.prepareStatement(SELECT_FORGERS_SQL)) {
                 /*
                 Block lastBlock = Metro.getBlockchain().getLastBlock();
                 if (!lastBlock.isKeyBlock()) {
@@ -2408,11 +2409,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         try {
             List<Pair<String, Long>> generators = new ArrayList<>();
             try (Connection con = Db.db.getConnection();
-                 PreparedStatement pstmt = con.prepareStatement(
-                         "SELECT A.id, PK.public_key, A.balance - IFNULL(B.additions, 0) AS effective FROM Account A " +
-                                 "LEFT JOIN (SELECT account_id, SUM (additions) AS additions FROM account_guaranteed_balance WHERE height > ? AND height <= ? GROUP BY account_id) B on (A.id = B.account_id) " +
-                                 "JOIN public_key PK ON PK.account_id = A.id WHERE A.latest AND A.active_lessee_id IS NULL AND PK.latest AND A.last_forged_height > ? AND A.last_forged_height <= ? ORDER BY effective"
-                 )) {
+                 PreparedStatement pstmt = con.prepareStatement(SELECT_FORGERS_SQL)) {
                 Block lastBlock = Metro.getBlockchain().getLastBlock();
                 if (!lastBlock.isKeyBlock()) {
                     throw new IllegalStateException("On fast blocks forgersMerkle is not defined, call me when you are at key block!");

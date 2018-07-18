@@ -18,10 +18,12 @@
 package metro;
 
 import metro.http.APICall;
+import metro.util.Convert;
 import metro.util.Logger;
 import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONObject;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.lang.reflect.Field;
@@ -32,11 +34,11 @@ import java.util.Map;
 import static metro.Consensus.GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS;
 
 public class ForgersMerkleTest extends BlockchainTest {
+    @Ignore
     @Test
     public void testSpendingInOldApproachWithForcedReset() throws NoSuchFieldException, IllegalAccessException, MetroException {
         // Alice forges a block (to become a generator and get included)
         generateBlockBy(ALICE);
-        Generator.getCurrentForgersMerkleBranches();
         Field generators = Generator.class.getDeclaredField("activeGenerators");
         generators.setAccessible(true);
         // initial MTR balances: Forgy: 500M, Alice: 1M
@@ -66,8 +68,6 @@ public class ForgersMerkleTest extends BlockchainTest {
         // by resetting activeGenerators, we make sure Alice's and Forgy's balances get updated -
         // Forgy's balance increases immediately only if we have SQL: SELECT account_id, SUM (additions) AS additions
         // FROM account_guaranteed_balance, TABLE (id BIGINT=?) T WHERE account_id = T.id AND NOT coinbase AND ...
-        Generator.resetActiveGenerators();
-        Generator.getCurrentForgersMerkleBranches();
         // resulting MTR balances: Forgy: 500M + 1, Alice: 1M - 1001 + 20000subsidy
         genValues = (Map<Account.FullId, Generator.ActiveGenerator>) generators.get(null);
         Assert.assertEquals(2, genValues.size());
@@ -87,10 +87,10 @@ public class ForgersMerkleTest extends BlockchainTest {
         // Alice forges a block (to become a generator and get included)
         generateBlockBy(ALICE);
         Assert.assertNotNull(mineBlock());
-        List<Pair<String, Long>> forgers = Metro.getBlockchainProcessor().getCurrentForgers();
+        List<Pair<String, Integer>> forgers = Metro.getBlockchainProcessor().getCurrentForgers();
         Assert.assertEquals(1, forgers.size());
-        Assert.assertEquals(100000000000000l, forgers.iterator().next().getRight().longValue());
-        byte[] branches = Metro.getBlockchainProcessor().getCurrentForgersMerkleBranches();
+        Assert.assertEquals(1000000, forgers.iterator().next().getRight().intValue());
+//        byte[] branches = Metro.getBlockchainProcessor().getCurrentForgersMerkleBranches();
         // Alice sends Bob an odd thousand
         JSONObject response = new APICall.Builder("sendMoney").
                 param("secretPhrase", ALICE.getSecretPhrase()).
@@ -112,40 +112,30 @@ public class ForgersMerkleTest extends BlockchainTest {
         forgers = Metro.getBlockchainProcessor().getCurrentForgers();
         // resulting MTR balances: Forgy: 500M + 1, Alice: 1M - 1001 + 20000subsidy
         Assert.assertEquals(2, forgers.size());
-        Iterator<Pair<String, Long>> iterator = forgers.iterator();
+        Iterator<Pair<String, Integer>> iterator = forgers.iterator();
         // so there was addition of 2000 and not 20000 MTR (9 out of 10 rewards not matured yet for effective balance)
         // `AND NOT coinbase' was removed from Account.getGuaranteedBalanceMQT() - so newly credited must mature
         // regardless of whether tx was coinbase
-        Assert.assertEquals(100099900000000l, iterator.next().getRight().longValue());
+        Assert.assertEquals(1000999, iterator.next().getRight().intValue());
         // now it's Forgy (has the greatest effective balance) - 1 block was mined before the commission of 1MTR, still not matured here
-        Assert.assertEquals(50000000000000000l, iterator.next().getRight().longValue());
-        branches = Metro.getBlockchainProcessor().getCurrentForgersMerkleBranches();
+        Assert.assertEquals(500000000, iterator.next().getRight().intValue());
+//        branches = Metro.getBlockchainProcessor().getCurrentForgersMerkleBranches();
         Assert.assertNotNull(mineBlock());
         forgers = Metro.getBlockchainProcessor().getCurrentForgers();
-        branches = Metro.getBlockchainProcessor().getCurrentForgersMerkleBranches();
+//        branches = Metro.getBlockchainProcessor().getCurrentForgersMerkleBranches();
         Assert.assertEquals(2, forgers.size());
         iterator = forgers.iterator();
         // 1 more block subsidy matured here
-        Assert.assertEquals(100299900000000l, iterator.next().getRight().longValue());
+        Assert.assertEquals(1002999, iterator.next().getRight().intValue());
         // 1 MTR commission from 'sendMoney' matured here
-        Assert.assertEquals(50000000100000000l, iterator.next().getRight().longValue());
+        Assert.assertEquals(500000001, iterator.next().getRight().intValue());
     }
 
-    @Test
-    public void testLeasingInOldApproach() throws MetroException {
-
-    }
-
-    @Test
-    public void testLeasingInNewApproach() throws MetroException {
-
-    }
-
+    @Ignore
     @Test
     public void testIncome() throws NoSuchFieldException, IllegalAccessException, MetroException {
         // Alice forges a block (to become a generator and get included)
         generateBlockBy(ALICE);
-        Generator.getCurrentForgersMerkleBranches();
         Field generators = Generator.class.getDeclaredField("activeGenerators");
         generators.setAccessible(true);
         // initial MTR balances: Forgy: 500M, Alice: 1M
@@ -176,8 +166,6 @@ public class ForgersMerkleTest extends BlockchainTest {
         // by resetting activeGenerators, we make sure Alice's and Forgy's balances get updated -
         // Forgy's balance increases immediately only if we have SQL: SELECT account_id, SUM (additions) AS additions
         // FROM account_guaranteed_balance, TABLE (id BIGINT=?) T WHERE account_id = T.id AND NOT coinbase AND ...
-        Generator.resetActiveGenerators();
-        Generator.getCurrentForgersMerkleBranches();
         // resulting MTR balances: Forgy: 500M + 1, Alice: 1M + 1000 + 20000subsidy
         genValues = (Map<Account.FullId, Generator.ActiveGenerator>) generators.get(null);
         Assert.assertEquals(2, genValues.size());
@@ -191,7 +179,6 @@ public class ForgersMerkleTest extends BlockchainTest {
         }
 
         // key blocks should have reset activeGenerators, re-request private activeGenerators value now
-        Generator.getCurrentForgersMerkleBranches();
         genValues = (Map<Account.FullId, Generator.ActiveGenerator>) generators.get(null);
         iterator = genValues.values().iterator();
         Assert.assertEquals(500000001, iterator.next().getEffectiveBalance().longValue());
@@ -204,9 +191,9 @@ public class ForgersMerkleTest extends BlockchainTest {
         // Alice forges a block (to become a generator and get included)
         generateBlockBy(ALICE);
         Assert.assertNotNull(mineBlock());
-        List<Pair<String, Long>> forgers = Metro.getBlockchainProcessor().getCurrentForgers();
+        List<Pair<String, Integer>> forgers = Metro.getBlockchainProcessor().getCurrentForgers();
         Assert.assertEquals(1, forgers.size());
-        Assert.assertEquals(100000000000000l, forgers.iterator().next().getRight().longValue());
+        Assert.assertEquals(1000000, forgers.iterator().next().getRight().intValue());
         // We need to get past initial EC to get effective balances different from genesisAccounts
         for (int i = 1; i < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS; i++) {
             Assert.assertNotNull(mineBlock());
@@ -229,12 +216,12 @@ public class ForgersMerkleTest extends BlockchainTest {
         forgers = Metro.getBlockchainProcessor().getCurrentForgers();
         // resulting MTR balances: Forgy: 500M + 1, Alice: 1M + 1000 + 20000subsidy
         Assert.assertEquals(2, forgers.size());
-        Iterator<Pair<String, Long>> iterator = forgers.iterator();
+        Iterator<Pair<String, Integer>> iterator = forgers.iterator();
         // so there was addition of 4000 and not 20000 MTR (8 out of 10 rewards not matured yet for effective balance)
         // balances are now listed in ascending order (as in hash)
-        Assert.assertEquals(100400000000000l, iterator.next().getRight().longValue());
+        Assert.assertEquals(1004000, iterator.next().getRight().intValue());
         // TODO difference by 1 MTR here with the old way! due to 'coinbase income'
-        Assert.assertEquals(50000000000000000l, iterator.next().getRight().longValue());
+        Assert.assertEquals(500000000, iterator.next().getRight().intValue());
 
         for (int i = 1; i < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS; i++) {
             Assert.assertNotNull(mineBlock());
@@ -245,9 +232,9 @@ public class ForgersMerkleTest extends BlockchainTest {
         iterator = forgers.iterator();
         Assert.assertEquals(2, forgers.size());
         // 10 more block subsidies + 1000MTR income from Bob has matured
-        Assert.assertEquals(102300000000000l, iterator.next().getRight().longValue());
+        Assert.assertEquals(1023000, iterator.next().getRight().intValue());
         // 1 MTR has matured now
-        Assert.assertEquals(50000000100000000l, iterator.next().getRight().longValue());
+        Assert.assertEquals(500000001, iterator.next().getRight().intValue());
     }
 
     @Test
@@ -256,25 +243,221 @@ public class ForgersMerkleTest extends BlockchainTest {
         JSONObject response1 = new APICall.Builder("leaseBalance").
                 param("secretPhrase", ALICE.getSecretPhrase()).
                 param("recipient", BOB.getStrId()).
-                param("period", Integer.toString(GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS + 3, 10)).
+                param("period", 2).
                 param("feeMQT", Constants.ONE_MTR).
                 build().invoke();
         Logger.logDebugMessage("leaseBalance: " + response1);
         generateBlockBy(ALICE);
         Assert.assertNotNull(mineBlock());
-        List<Pair<String, Long>> forgers = Metro.getBlockchainProcessor().getCurrentForgers();
+        List<Pair<String, Integer>> forgers = Metro.getBlockchainProcessor().getCurrentForgers();
         Assert.assertEquals(0, forgers.size());
+//        Assert.assertEquals(BOB.getPublicKeyStr(), forgers.iterator().next().getLeft());
         Account alice = Account.getAccount(ALICE.getFullId());
         // balance now increased by 2000 (1 block subsidy)
         Assert.assertEquals(100200000000000l, alice.getBalanceMQT());
         // but they are not included into effective
         Assert.assertEquals(1000000, alice.getEffectiveBalanceMTR());
-        // We need to get past initial EC to get effective balances different from genesisAccounts
-        for (int i = 0; i < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS; i++) {
+        Assert.assertNotNull(mineBlock());
+        Assert.assertNotNull(mineBlock());
+        forgers = Metro.getBlockchainProcessor().getCurrentForgers();
+        // after 3 blocks following Alice's fast block, Alice is forger again as her lease has expired by now
+        Assert.assertEquals(1, forgers.size());
+        Assert.assertEquals(999999, forgers.iterator().next().getRight().intValue());
+    }
+
+    @Test
+    public void testLesseeBalanceVariationsWithExpiration() throws MetroException {
+        // Esau leases 10000MTR to Alice, but loses 1 MTR from effective balance by receiving it back in fast block reward
+        JSONObject response = new APICall.Builder("leaseBalance").
+                param("secretPhrase", ESAU.getSecretPhrase()).
+                param("recipient", ALICE.getStrId()).
+                param("period", 15).
+                param("feeMQT", Constants.ONE_MTR).
+                build().invoke();
+        Logger.logDebugMessage("sendMoney: " + response);
+        generateBlockBy(ESAU);
+        Assert.assertNotNull(mineBlock());
+        List<Pair<String, Integer>> forgers = Metro.getBlockchainProcessor().getCurrentForgers();
+        Assert.assertEquals(0, forgers.size());
+
+        // Alice has 1000000 + 9999 MTR effective balance
+        generateBlockBy(ALICE);
+        Assert.assertNotNull(mineBlock());
+        forgers = Metro.getBlockchainProcessor().getCurrentForgers();
+        Assert.assertEquals(1, forgers.size());
+        Assert.assertEquals(1009999, forgers.iterator().next().getRight().intValue());
+
+        // Alice sends 999998 to Bob, paying 1 MTR comission, still has enough to remain in forgersMerkle
+        response = new APICall.Builder("sendMoney").
+                param("secretPhrase", ALICE.getSecretPhrase()).
+                param("recipient", BOB.getStrId()).
+                param("amountMQT", 999998 * Constants.ONE_MTR).
+                param("feeMQT", Constants.ONE_MTR).
+                build().invoke();
+        Logger.logDebugMessage("sendMoney: " + response);
+        generateBlockBy(ALICE);
+        Assert.assertNotNull(mineBlock());
+        forgers = Metro.getBlockchainProcessor().getCurrentForgers();
+        Assert.assertEquals(1, forgers.size());
+        Assert.assertEquals(10000, forgers.iterator().next().getRight().intValue());
+
+        // Esau sends 10 to Bob, paying 1 MTR comission, his lessee Alice now should leave forgersMerkle
+        response = new APICall.Builder("sendMoney").
+                param("secretPhrase", ESAU.getSecretPhrase()).
+                param("recipient", BOB.getStrId()).
+                param("amountMQT", 10 * Constants.ONE_MTR).
+                param("feeMQT", Constants.ONE_MTR).
+                build().invoke();
+        Logger.logDebugMessage("sendMoney: " + response);
+        generateBlockBy(ALICE);
+        Assert.assertNotNull(mineBlock());
+        forgers = Metro.getBlockchainProcessor().getCurrentForgers();
+        Assert.assertEquals(0, forgers.size());
+
+        // Bob sends 100 to Esau, Esau's lessee Alice now should be again in forgersMerkle - but only after income has matured;
+        // while waiting for that, Esau's lease has expired, creating 2 forgers
+        response = new APICall.Builder("sendMoney").
+                param("secretPhrase", BOB.getSecretPhrase()).
+                param("recipient", ESAU.getStrId()).
+                param("amountMQT", 100 * Constants.ONE_MTR).
+                param("feeMQT", Constants.ONE_MTR).
+                build().invoke();
+        Logger.logDebugMessage("sendMoney: " + response);
+        generateBlockBy(ALICE);
+        Assert.assertNotNull(mineBlock());
+        forgers = Metro.getBlockchainProcessor().getCurrentForgers();
+        Assert.assertEquals(0, forgers.size());
+
+        for (int i = 1; i < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS; i++) {
             Assert.assertNotNull(mineBlock());
         }
         forgers = Metro.getBlockchainProcessor().getCurrentForgers();
-        // even after 11 key blocks, Alice still is not forger (leased entire balance to Bob)
+        Assert.assertEquals(2, forgers.size());
+        // Alice got 1MTR commission 4 times
+        Iterator<Pair<String, Integer>> iterator = forgers.iterator();
+        Assert.assertEquals(10004, iterator.next().getRight().intValue());
+        // Esau's initial 10000 plus 100 from Bob minus 11 after sending to Bob; 1MTR commission paid to himself in the 1st fast block has now matured
+        Assert.assertEquals(10089, iterator.next().getRight().intValue());
+    }
+
+    @Test
+    public void testLesseeBalanceVariations() throws MetroException {
+        // Esau leases 10000MTR to Alice, but loses 1 MTR from effective balance by receiving it back in fast block reward
+        JSONObject response = new APICall.Builder("leaseBalance").
+                param("secretPhrase", ESAU.getSecretPhrase()).
+                param("recipient", ALICE.getStrId()).
+                param("period", 25).
+                param("feeMQT", Constants.ONE_MTR).
+                build().invoke();
+        Logger.logDebugMessage("sendMoney: " + response);
+        generateBlockBy(ESAU);
+        Assert.assertNotNull(mineBlock());
+        List<Pair<String, Integer>> forgers = Metro.getBlockchainProcessor().getCurrentForgers();
+        Assert.assertEquals(0, forgers.size());
+
+        // Alice has 1000000 + 9999 MTR effective balance
+        generateBlockBy(ALICE);
+        Assert.assertNotNull(mineBlock());
+        forgers = Metro.getBlockchainProcessor().getCurrentForgers();
+        Assert.assertEquals(1, forgers.size());
+        Assert.assertEquals(1009999, forgers.iterator().next().getRight().intValue());
+
+        // Alice sends 999998 to Bob, paying 1 MTR comission, still has enough to remain in forgersMerkle
+        response = new APICall.Builder("sendMoney").
+                param("secretPhrase", ALICE.getSecretPhrase()).
+                param("recipient", BOB.getStrId()).
+                param("amountMQT", 999998 * Constants.ONE_MTR).
+                param("feeMQT", Constants.ONE_MTR).
+                build().invoke();
+        Logger.logDebugMessage("sendMoney: " + response);
+        generateBlockBy(ALICE);
+        Assert.assertNotNull(mineBlock());
+        forgers = Metro.getBlockchainProcessor().getCurrentForgers();
+        Assert.assertEquals(1, forgers.size());
+        Assert.assertEquals(10000, forgers.iterator().next().getRight().intValue());
+
+        // Esau sends 10 to Bob, paying 1 MTR comission, his lessee Alice now should leave forgersMerkle
+        response = new APICall.Builder("sendMoney").
+                param("secretPhrase", ESAU.getSecretPhrase()).
+                param("recipient", BOB.getStrId()).
+                param("amountMQT", 10 * Constants.ONE_MTR).
+                param("feeMQT", Constants.ONE_MTR).
+                build().invoke();
+        Logger.logDebugMessage("sendMoney: " + response);
+        generateBlockBy(ALICE);
+        Assert.assertNotNull(mineBlock());
+        forgers = Metro.getBlockchainProcessor().getCurrentForgers();
+        Assert.assertEquals(0, forgers.size());
+
+        // Bob sends 100 to Esau, Esau's lessee Alice now should be again in forgersMerkle - but only after income has matured
+        response = new APICall.Builder("sendMoney").
+                param("secretPhrase", BOB.getSecretPhrase()).
+                param("recipient", ESAU.getStrId()).
+                param("amountMQT", 100 * Constants.ONE_MTR).
+                param("feeMQT", Constants.ONE_MTR).
+                build().invoke();
+        Logger.logDebugMessage("sendMoney: " + response);
+        generateBlockBy(ALICE);
+        Assert.assertNotNull(mineBlock());
+        forgers = Metro.getBlockchainProcessor().getCurrentForgers();
+        Assert.assertEquals(0, forgers.size());
+
+        for (int i = 1; i < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS; i++) {
+            Assert.assertNotNull(mineBlock());
+        }
+        forgers = Metro.getBlockchainProcessor().getCurrentForgers();
+        Assert.assertEquals(1, forgers.size());
+        // Alice got 1MTR commission 4 times
+        Iterator<Pair<String, Integer>> iterator = forgers.iterator();
+        // Alice had 1000000 initially, spent 999999 on 'sendMoney to Bob' tx, has 1 MTR remaining,
+        // earned 3MTR by forging (for 3 sendMoney tx), 14*2000 by mining (of which 10000 for 5 earliest blocks matured)
+        // Esau's initial 10000 plus 100 from Bob minus 11 after sending to Bob; 1MTR commission paid to himself in the 1st fast block has now matured
+        // total of (10000 + 89 of Esau's) + 1 (Alice remaining, from Genesis) + (3 + 10000 of Alice rewards)
+        Assert.assertEquals(20093, iterator.next().getRight().intValue());
+        Account alice = Account.getAccount(ALICE.getFullId());
+        // balance w/out Esau's but with full subsidy amount 14*2000 and remaining Genesis + fast block rewards
+        Assert.assertEquals(2800400000000l, alice.getBalanceMQT());
+        // exactly as in forgersMerkle
+        Assert.assertEquals(20093, alice.getEffectiveBalanceMTR());
+    }
+
+    @Test
+    public void testTenThousandEnoughToForkVote() throws MetroException {
+//        String unsigned = Long.toUnsignedString(Account.FullId.fromSecretPhrase("myfuUrX4AKYbD7npSxCAHPypWdAg3SEbSG").getLeft());
+        Account esau = Account.getAccount(ESAU.getFullId());
+        Assert.assertEquals(10000, esau.getEffectiveBalanceMTR());
+        generateBlockBy(ESAU);
+        Assert.assertNotNull(mineBlock());
+        List<Pair<String, Integer>> forgers = Metro.getBlockchainProcessor().getCurrentForgers();
+        Assert.assertEquals(1, forgers.size());
+        Assert.assertEquals(10000, forgers.iterator().next().getRight().intValue());
+        // Now let's ensure 9999 is not enough, send 1mMTR and pay 1MTR commission
+        JSONObject response = new APICall.Builder("sendMoney").
+                param("secretPhrase", ESAU.getSecretPhrase()).
+                param("recipient", ALICE.getStrId()).
+                param("amountMQT", 100000).
+                param("feeMQT", Constants.ONE_MTR).
+                build().invoke();
+        Logger.logDebugMessage("sendMoney: " + response);
+        generateBlockBy(ESAU);
+        Assert.assertNotNull(mineBlock());
+        forgers = Metro.getBlockchainProcessor().getCurrentForgers();
         Assert.assertEquals(0, forgers.size());
     }
+
+    @Test
+    public void testTwoGeneratorsSameEffectiveBalance() throws MetroException {
+
+    }
+
+    /**
+     * We don't need testLeasingInNewApproach() anymore - testLesseeBalanceVariationsWithExpiration,
+     * testLesseeBalanceVariations and testLessorDoesNotForge() are enough. Just implement this one to compare with the old way.
+     * @throws MetroException
+     */
+    @Test
+    public void testLeasingInOldApproach() throws MetroException {
+        // TODO
+    }
+
 }

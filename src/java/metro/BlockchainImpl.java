@@ -477,7 +477,7 @@ final class BlockchainImpl implements Blockchain {
 
         byte[] forgersMerkleRoot = new byte[hashSize];
         header.get(forgersMerkleRoot);
-        byte[] forgersMerkleBranches = Metro.getBlockchainProcessor().getCurrentForgersMerkleBranches();
+        byte[] forgersMerkleBranches = Metro.getBlockchainProcessor().getForgersMerkleAtLastKeyBlock();
         if (!Arrays.equals(forgersMerkleRoot, HASH_FUNCTION.hash(ArrayUtils.addAll(previousBlockHash, forgersMerkleBranches)))) {
             throw new IllegalArgumentException("Forgers root: " + Convert.toHexString(forgersMerkleRoot) + ", not matching branches: " + Convert.toHexString(forgersMerkleBranches));
         }

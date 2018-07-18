@@ -61,7 +61,7 @@ public class GeneratorLessorsTest extends BlockchainTest {
                     int i = 0;
                     pstmt.setLong(++i, j / 2);
                     pstmt.setLong(++i, 10  + j);
-                    pstmt.setInt(++i, j % 2);
+                    pstmt.setInt(++i, j % 2 + 1);
                     pstmt.setBoolean(++i, true);
                     pstmt.execute();
                 }

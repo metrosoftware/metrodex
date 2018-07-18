@@ -413,7 +413,7 @@ public class BlockTest extends BlockchainTest {
         emptyKeyBlockJSON.put("previousBlockHash", Convert.toHexString(posBlock3.getHash()));
         emptyKeyBlockJSON.put("nonce", 212428);
         emptyKeyBlockJSON.put("timestamp", 2330920112L);
-        emptyKeyBlockJSON.put("forgersMerkleRoot", Convert.toHexString(Generator.getCurrentForgersMerkleBranches()));
+        emptyKeyBlockJSON.put("forgersMerkleRoot", Convert.toHexString(Metro.getBlockchainProcessor().getForgersMerkleAtLastKeyBlock()));
         // adding key block that finishes cluster consisting of 3 blocks
         Metro.getBlockchainProcessor().processPeerBlock(emptyKeyBlockJSON);
     }

@@ -74,8 +74,8 @@ public interface BlockchainProcessor extends Observable<Block,BlockchainProcesso
 
     BlockImpl prepareKeyBlock(List<TransactionImpl> transactions);
 
-    byte[] getCurrentForgersMerkleBranches();
-    List<Pair<String, Long>> getCurrentForgers();
+    byte[] getForgersMerkleAtLastKeyBlock();
+    List<Pair<String, Integer>> getCurrentForgers();
 
     class BlockNotAcceptedException extends MetroException {
 

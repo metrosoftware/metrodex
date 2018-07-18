@@ -65,7 +65,6 @@ public class GeneratorTest extends BlockchainTest {
 
     @Test
     public void testForgersMerkleDuringScan() throws MetroException {
-        // TODO #207 more complex testing of forgers Merkle
         for (int i = 0; i < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS; i++) {
             generateBlockBy(ALICE);
             Assert.assertNotNull(mineBlock());

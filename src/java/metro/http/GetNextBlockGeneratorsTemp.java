@@ -17,6 +17,7 @@
 
 package metro.http;
 
+import metro.Account;
 import metro.Block;
 import metro.Blockchain;
 import metro.Generator;
@@ -88,7 +89,7 @@ public final class GetNextBlockGeneratorsTemp extends APIServlet.APIRequestHandl
                     break;
                 }
                 JSONObject resp = new JSONObject();
-                JSONData.putAccount(resp, "account", generator.getAccountFullId());
+                JSONData.putAccount(resp, "account", Account.getAccount(generator.getAccountId()).getFullId());
                 resp.put("effectiveBalanceMTR", generator.getEffectiveBalance());
                 resp.put("hitTime", generator.getHitTime());
                 resp.put("deadline", generator.getHitTime() - lastBlock.getTimestamp());

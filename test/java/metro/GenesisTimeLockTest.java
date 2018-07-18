@@ -79,7 +79,6 @@ public class GenesisTimeLockTest extends AbstractBlockchainTest {
         TransactionProcessorImpl.getInstance().clearUnconfirmedTransactions();
         blockchainProcessor.popOffTo(baseHeight);
         Metro.getBlockchain().forgetLastKeyBlock();
-        Generator.resetActiveGenerators();
     }
 
     @Test

@@ -5,13 +5,15 @@
     "rshw9abtpsa2",
     "eOdBVLMgySFvyiTy8xMuRXDTr45oTzB7L5J",
     "t9G2ymCmDsQij7VtYinqrbGCOAtDDA3WiNr",
-	"aSykrgKGZNlSVOMDxkZZgbTvQqJPGtsBggb"
+	"aSykrgKGZNlSVOMDxkZZgbTvQqJPGtsBggb",
+    "myfuUrX4AKYbD7npSxCAHPypWdAg3SEbSG"
   ],
   "genesisAmounts":[
     400000000,
     200000000,
     200000000,
     100000000,
-	100000000
+	100000000,
+    10000
   ],
 }

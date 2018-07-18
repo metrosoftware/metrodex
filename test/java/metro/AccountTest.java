@@ -87,14 +87,12 @@ public class AccountTest extends BlockchainTest {
                 param("feeMQT", Constants.ONE_MTR).
                 build().invoke();
         System.out.println("blockId_1=" + Metro.getBlockchain().getLastBlock().getId());
-        System.out.println("blockCount_1=" + BlockDb.blockCount());
         try {
             blockchainProcessor.generateBlock(forgerSecretPhrase, Metro.getEpochTime());
         } catch (BlockchainProcessor.BlockNotAcceptedException e) {
             e.printStackTrace();
         }
         System.out.println("blockId_3=" + Metro.getBlockchain().getLastBlock().getId());
-        System.out.println("blockCount_3=" + BlockDb.blockCount());
         Assert.assertNotNull(mineBlock());
     }
 
@@ -242,7 +240,6 @@ public class AccountTest extends BlockchainTest {
 
     @Test
     public void testRescan() throws MetroException {
-        // TODO #207 more complex testing of forgers Merkle
         JSONObject response = new APICall.Builder("sendMoney").
                 param("secretPhrase", ALICE.getSecretPhrase()).
                 param("recipient", BOB.getStrId()).

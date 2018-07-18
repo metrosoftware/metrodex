@@ -31,9 +31,11 @@ import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -307,19 +309,16 @@ final class BlockDb {
         }
     }
 
-    static List<Pair<Account.FullId, Integer>> getBlockGenerators(int startHeight, int endHeight) {
-        List<Pair<Account.FullId, Integer>> generators = new ArrayList<>();
+    static Set<Long> getBlockGenerators(int startHeight) {
+        Set<Long> generators = new HashSet<>();
         try (Connection con = Db.db.getConnection();
                 PreparedStatement pstmt = con.prepareStatement(
-                        "SELECT A.id, A.id2, G.count FROM Account A JOIN (SELECT generator_id, COUNT(generator_id) AS count " +
-                                "FROM block WHERE height >= ? AND height <= ? AND nonce IS NULL GROUP BY generator_id) G on (A.id = G.generator_id) WHERE A.latest = true")) {
+                        "SELECT generator_id, COUNT(generator_id) AS count FROM block WHERE height >= ? GROUP BY generator_id")) {
             pstmt.setInt(1, startHeight);
-            pstmt.setInt(2, endHeight);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
-                    int count = rs.getInt("count");
-                    if (count > 0) {
-                        generators.add(new ImmutablePair<>(new Account.FullId(rs.getLong("id"), rs.getInt("id2")), count));
+                    if (rs.getInt("count") > 1) {
+                        generators.add(rs.getLong("generator_id"));
                     }
                 }
             }
@@ -542,17 +541,4 @@ final class BlockDb {
         }
     }
 
-    public static long blockCount() {
-        try (Connection con = Db.db.getConnection();
-             PreparedStatement pstmt = con.prepareStatement("SELECT count(db_id) FROM block")) {
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getLong(1);
-                }
-                return -1;
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e.toString(), e);
-        }
-    }
 }

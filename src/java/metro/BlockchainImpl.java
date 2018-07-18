@@ -279,6 +279,21 @@ final class BlockchainImpl implements Blockchain {
     }
 
     @Override
+    public int getBlockCount(boolean isKeyBlock) {
+        try (Connection con = Db.db.getConnection();
+             PreparedStatement pstmt = con.prepareStatement("SELECT COUNT(*) FROM block WHERE nonce IS "
+                     + (isKeyBlock ? "NOT NULL " : "NULL ") )) {
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                rs.next();
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e.toString(), e);
+        }
+    }
+
+    @Override
     public DbIterator<BlockImpl> getBlocks(Connection con, PreparedStatement pstmt) {
         return new DbIterator<>(con, pstmt, BlockDb::loadBlock);
     }

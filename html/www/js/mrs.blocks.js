@@ -255,7 +255,25 @@ var MRS = (function(MRS, $) {
                     MRS.blocksPageLoaded([]);
                 }
             });
-		} else {
+		} else if (MRS.blocksPageType == "all_mined_blocks") {
+            $("#forged_fees_total_box, #mined_blocks_total_box").show();
+            $("#blocks_transactions_per_hour_box, #blocks_generation_time_box, #forged_blocks_total_box").hide();
+            MRS.sendRequest("getMinedBlocks+", {
+                "account": MRS.account,
+                "firstIndex": MRS.pageNumber * MRS.itemsPerPage - MRS.itemsPerPage,
+                "lastIndex": MRS.pageNumber * MRS.itemsPerPage
+            }, function(response) {
+                if (response.blocks && response.blocks.length) {
+                    if (response.blocks.length > MRS.itemsPerPage) {
+                        MRS.hasMorePages = true;
+                        response.blocks.pop();
+                    }
+                    MRS.blocksPageLoaded(response.blocks);
+                } else {
+                    MRS.blocksPageLoaded([]);
+                }
+            });
+        } else {
 			$("#forged_fees_total_box, #forged_blocks_total_box, #mined_blocks_total_box").hide();
 			$("#blocks_transactions_per_hour_box, #blocks_generation_time_box").show();
 			MRS.sendRequest("getBlocks+", {
@@ -361,7 +379,28 @@ var MRS = (function(MRS, $) {
             blockForgedBlocks.parent().parent().css('visibility', 'visible');
             blockForgedFees.removeClass("loading_dots");
             blockForgedFees.parent().parent().css('visibility', 'hidden');
-		} else {
+		} else if (MRS.blocksPageType == "all_mined_blocks") {
+            MRS.sendRequest("getBlockCount+", {
+                "isKeyBlock": true
+            }, function(response) {
+                if (response.numberOfBlocks && response.numberOfBlocks > 0) {
+                    $("#mined_blocks_total").html(response.numberOfBlocks).removeClass("loading_dots");
+                } else {
+                    $("#mined_blocks_total").html(0).removeClass("loading_dots");
+                }
+            });
+            $("#blocks_page").find(".ion-stats-bars").parent().css('visibility', 'hidden');
+            $("#blocks_page").find(".ion-paperclip").parent().css('visibility', 'hidden');
+            $("#blocks_page").find(".fa-bars").parent().css('visibility', 'visible');
+            $("#blocks_page").find(".fa-briefcase").parent().css('visibility', 'hidden');
+            blocksAverageAmount.removeClass("loading_dots");
+            blocksAverageAmount.parent().parent().css('visibility', 'hidden');
+            blockAvgFee.removeClass("loading_dots");
+            blockAvgFee.parent().parent().css('visibility', 'hidden');
+            blockForgedBlocks.parent().parent().css('visibility', 'visible');
+            blockForgedFees.removeClass("loading_dots");
+            blockForgedFees.parent().parent().css('visibility', 'hidden');
+        } else {
 			var time;
             if (blocks.length) {
 				var startingTime = blocks[blocks.length - 1].timestamp;

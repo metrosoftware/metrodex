@@ -73,6 +73,8 @@ public interface Blockchain {
 
     int getBlockCount(long accountId, boolean isKeyBlock);
 
+    int getBlockCount(boolean isKeyBlock);
+
     DbIterator<? extends Block> getBlocks(Connection con, PreparedStatement pstmt);
 
     List<Long> getBlockIdsAfter(long blockId, int limit);

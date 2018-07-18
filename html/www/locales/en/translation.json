@@ -1907,5 +1907,7 @@
   "delete_scheduled_transaction": "Delete Scheduled Transaction",
   "reward_recipients": "Reward recipients",
   "no_matching_recipients": "No reward recipients",
-  "ordinary_coinbase": "Block reward"
+  "ordinary_coinbase": "Block reward",
+  "mined_by_you": "Mined by you",
+  "all_mined_blocks": "Mined blocks"
 }

@@ -214,7 +214,9 @@ public enum APIEnum {
     DELETE_SCHEDULED_TRANSACTION("deleteScheduledTransaction", DeleteScheduledTransaction.instance),
     MINING_GET_WORK("getWork", GetWork.instance),
     GET_CIRCULATION_SUPPLY("getCirculationSupply", GetCirculationSupply.instance),
-    GET_POW_DIFFICULTY("getPOWDifficulty", GetPOWDifficulty.instance);
+    GET_POW_DIFFICULTY("getPOWDifficulty", GetPOWDifficulty.instance),
+    GET_POW_BLOCKS("getMinedBlocks", GetMinedBlocks.instance),
+    GET_BLOCKS_COUNT("getBlockCount", GetBlockCount.instance);
 
     private static final Map<String, APIEnum> apiByName = new HashMap<>();
 

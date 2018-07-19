@@ -123,6 +123,8 @@ public final class Constants {
     public static final String ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz";
     public static final String ALLOWED_CURRENCY_CODE_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
+
+    public static final int UI_GENERATORS_HISTORY_BLOCKS = 10000;
     private Constants() {} // never
 
 }

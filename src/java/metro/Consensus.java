@@ -29,8 +29,7 @@ public class Consensus {
     public static final int GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS = Constants.isTestnet ? Metro.getIntProperty("metro.testnetGuaranteedBalanceKeyblockConfirmations", 30) : 30;
     public static final int COINBASE_MATURITY_PERIOD = Constants.isTestnet ? Metro.getIntProperty("metro.testnetCoinbaseMaturityPeriodInKeyblocks", 6) : 6;
     public static final int MIN_FORKVOTING_AMOUNT_MTR = 10000;
-    // ~ 15 days
-    public static final int FORGER_ACTIVITY_SNAPSHOT_INTERVAL = 500000;
+    public static final int FORGER_ACTIVITY_SNAPSHOT_INTERVAL = 500000;    // ~ 15 days
     public static final int POSBLOCK_MAX_NUMBER_OF_TRANSACTIONS = 255;
     public static final int MIN_TRANSACTION_SIZE = 176;
     public static final int POSBLOCK_MAX_PAYLOAD_LENGTH = 100000;

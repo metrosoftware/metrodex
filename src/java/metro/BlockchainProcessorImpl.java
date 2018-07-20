@@ -40,6 +40,8 @@ import org.json.simple.JSONStreamAware;
 import org.json.simple.JSONValue;
 
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.security.MessageDigest;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -2285,42 +2287,101 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     }
 
     public BlockImpl prepareKeyBlock(List<TransactionImpl> transactions) {
-        BlockImpl previousBlock = blockchain.getLastBlock();
-        BlockImpl previousKeyBlock = blockchain.getLastKeyBlock();
-        byte[] previousBlockHash = previousBlock.getHash();
-        byte[] generatorPublicKey = Convert.parseHexString(Miner.getPublicKey());
-        Long previousKeyBlockId = previousKeyBlock == null ? null : previousKeyBlock.getId();
-        long baseTarget = BitcoinJUtils.encodeCompactBits(Metro.getBlockchain().getNextTarget());
-        long blockTimestamp = Metro.getEpochTime();
-        byte[] forgersMerkle = forgersMerkleAtLastKeyBlock;
-        List<TransactionImpl> blockTransactions = new ArrayList<>();
+        blockchain.readLock();
+        try {
+            BlockImpl previousBlock = blockchain.getLastBlock();
+            BlockImpl previousKeyBlock = blockchain.getLastKeyBlock();
+            byte[] previousBlockHash = previousBlock.getHash();
+            byte[] generatorPublicKey = Convert.parseHexString(Miner.getPublicKey());
+            Long previousKeyBlockId = previousKeyBlock == null ? null : previousKeyBlock.getId();
+            long baseTarget = BitcoinJUtils.encodeCompactBits(Metro.getBlockchain().getNextTarget());
+            long blockTimestamp = Metro.getEpochTime();
+            byte[] forgersMerkle = forgersMerkleAtLastKeyBlock;
+            List<TransactionImpl> blockTransactions = new ArrayList<>();
 
-        int keyHeight = previousKeyBlock != null ? previousKeyBlock.getLocalHeight() + 1 : 0;
-        blockTransactions.add(null);
-        if (transactions != null) {
-            //not include coinbase cause we make it later
-            blockTransactions.addAll(transactions.subList(1, transactions.size()));
-        } else {
-            SortedSet<UnconfirmedTransaction> unconfirmedTransactions = getTransactionsForKeyBlockGeneration(previousBlock);
-            if (unconfirmedTransactions.size() > 0) {
-                for (UnconfirmedTransaction unconfirmedTransaction : unconfirmedTransactions) {
-                    TransactionImpl transaction = unconfirmedTransaction.getTransaction();
-                    blockTransactions.add(transaction);
+            int keyHeight = previousKeyBlock != null ? previousKeyBlock.getLocalHeight() + 1 : 0;
+            blockTransactions.add(null);
+            if (transactions != null) {
+                //not include coinbase cause we make it later
+                blockTransactions.addAll(transactions.subList(1, transactions.size()));
+            } else {
+                SortedSet<UnconfirmedTransaction> unconfirmedTransactions = getTransactionsForKeyBlockGeneration(previousBlock);
+                if (unconfirmedTransactions.size() > 0) {
+                    for (UnconfirmedTransaction unconfirmedTransaction : unconfirmedTransactions) {
+                        TransactionImpl transaction = unconfirmedTransaction.getTransaction();
+                        blockTransactions.add(transaction);
+                    }
                 }
             }
-        }
-        TransactionImpl coinbase = buildCoinbase(generatorPublicKey, blockTimestamp, blockTransactions, true, keyHeight);
-        blockTransactions.set(0, coinbase);
+            TransactionImpl coinbase = buildCoinbase(generatorPublicKey, blockTimestamp, blockTransactions, true, keyHeight);
+            blockTransactions.set(0, coinbase);
 
-        List<byte[]> txids = new ArrayList<>();
-        for (TransactionImpl transaction : blockTransactions) {
-            txids.add(transaction.fullHash());
-        }
-        List<byte[]> tree = BitcoinJUtils.buildMerkleTree(txids);
-        byte[] txMerkleRoot = tree.get(tree.size() - 1);
+            List<byte[]> txids = new ArrayList<>();
+            for (TransactionImpl transaction : blockTransactions) {
+                txids.add(transaction.fullHash());
+            }
+            List<byte[]> tree = BitcoinJUtils.buildMerkleTree(txids);
+            byte[] txMerkleRoot = tree.get(tree.size() - 1);
 
-        return new BlockImpl(getKeyBlockVersion(previousBlock.getHeight()), blockTimestamp, baseTarget, previousBlock.getId(), previousKeyBlockId, 0, 0,
-                txMerkleRoot, generatorPublicKey, null, null, previousBlockHash, forgersMerkle, blockTransactions);
+            return new BlockImpl(getKeyBlockVersion(previousBlock.getHeight()), blockTimestamp, baseTarget, previousBlock.getId(), previousKeyBlockId, 0, 0,
+                    txMerkleRoot, generatorPublicKey, null, null, previousBlockHash, forgersMerkle, blockTransactions);
+        } finally {
+            blockchain.readUnlock();
+        }
+    }
+
+    @Override
+    public Block composeKeyBlock(byte[] headerData, List<TransactionImpl> transactions) {
+        blockchain.readLock();
+        try {
+            ByteBuffer header = ByteBuffer.wrap(headerData);
+            header.order(ByteOrder.LITTLE_ENDIAN);
+            short version = header.getShort();
+            if (!BlockImpl.isKeyBlockVersion(version)) {
+                throw new IllegalArgumentException("Wrong block version: 0x" + Integer.toUnsignedString(Short.toUnsignedInt(version), 16));
+            }
+            long timestamp = header.getLong();
+            final int hashSize = Convert.HASH_SIZE;
+            byte[] txMerkleRoot = new byte[hashSize];
+            header.get(txMerkleRoot);
+
+            long previousBlockId = header.getLong();
+            BlockImpl previousBlock = BlockDb.findBlock(previousBlockId);
+            if (previousBlock == null) {
+                throw new IllegalArgumentException("Wrong prev block id: " + previousBlockId);
+            } else if (previousBlock.getGenerationSequence() == null) {
+                throw new IllegalStateException("Generation sequence is not yet set in block " + previousBlockId + " given as previous");
+            }
+            byte[] previousBlockHash = HASH_FUNCTION.hash(previousBlock.getBytes());
+
+            byte[] generationSequence = BlockImpl.advanceGenerationSequenceInKeyBlock(previousBlock);
+
+            Long previousKeyBlockId = header.getLong();
+            if (previousKeyBlockId != 0) {
+                BlockImpl previousKeyBlock = BlockDb.findBlock(previousKeyBlockId);
+                if (previousKeyBlock == null) {
+                    throw new IllegalArgumentException("Wrong prev key block id: " + previousKeyBlockId);
+                }
+            } else {
+                previousKeyBlockId = null;
+            }
+
+            byte[] forgersMerkleRoot = new byte[hashSize];
+            header.get(forgersMerkleRoot);
+            byte[] forgersMerkleBranches = Metro.getBlockchainProcessor().getForgersMerkleAtLastKeyBlock();
+            if (!Arrays.equals(forgersMerkleRoot, HASH_FUNCTION.hash(ArrayUtils.addAll(previousBlockHash, forgersMerkleBranches)))) {
+                throw new IllegalArgumentException("Forgers root: " + Convert.toHexString(forgersMerkleRoot) + ", not matching branches: " + Convert.toHexString(forgersMerkleBranches));
+            }
+            long baseTarget = header.getInt();
+            int nonce = header.getInt();
+
+            // constructor will restore generator id from transactions.get(0) - coinbase
+            return new BlockImpl(version, timestamp, baseTarget, previousBlockId, previousKeyBlockId, nonce,
+                    0, txMerkleRoot, null,
+                    generationSequence, null, previousBlockHash, forgersMerkleBranches, transactions);
+        } finally {
+            blockchain.readUnlock();
+        }
     }
 
     private SortedSet<UnconfirmedTransaction> getTransactionsForKeyBlockGeneration(Block previousBlock) {

@@ -442,55 +442,6 @@ final class BlockchainImpl implements Blockchain {
     }
 
     @Override
-    public Block composeKeyBlock(byte[] headerData, List<TransactionImpl> transactions) {
-        ByteBuffer header = ByteBuffer.wrap(headerData);
-        header.order(ByteOrder.LITTLE_ENDIAN);
-        short version = header.getShort();
-        if (!BlockImpl.isKeyBlockVersion(version)) {
-            throw new IllegalArgumentException("Wrong block version: 0x" + Integer.toUnsignedString(Short.toUnsignedInt(version), 16));
-        }
-        long timestamp = header.getLong();
-        final int hashSize = Convert.HASH_SIZE;
-        byte[] txMerkleRoot = new byte[hashSize];
-        header.get(txMerkleRoot);
-
-        long previousBlockId = header.getLong();
-        BlockImpl previousBlock = BlockDb.findBlock(previousBlockId);
-        if (previousBlock == null) {
-            throw new IllegalArgumentException("Wrong prev block id: " + previousBlockId);
-        } else if (previousBlock.getGenerationSequence() == null) {
-            throw new IllegalStateException("Generation sequence is not yet set in block " + previousBlockId + " given as previous");
-        }
-        byte[] previousBlockHash = HASH_FUNCTION.hash(previousBlock.getBytes());
-
-        byte[] generationSequence = BlockImpl.advanceGenerationSequenceInKeyBlock(previousBlock);
-
-        Long previousKeyBlockId = header.getLong();
-        if (previousKeyBlockId != 0) {
-            BlockImpl previousKeyBlock = BlockDb.findBlock(previousKeyBlockId);
-            if (previousKeyBlock == null) {
-                throw new IllegalArgumentException("Wrong prev key block id: " + previousKeyBlockId);
-            }
-        } else {
-            previousKeyBlockId = null;
-        }
-
-        byte[] forgersMerkleRoot = new byte[hashSize];
-        header.get(forgersMerkleRoot);
-        byte[] forgersMerkleBranches = Metro.getBlockchainProcessor().getForgersMerkleAtLastKeyBlock();
-        if (!Arrays.equals(forgersMerkleRoot, HASH_FUNCTION.hash(ArrayUtils.addAll(previousBlockHash, forgersMerkleBranches)))) {
-            throw new IllegalArgumentException("Forgers root: " + Convert.toHexString(forgersMerkleRoot) + ", not matching branches: " + Convert.toHexString(forgersMerkleBranches));
-        }
-        long baseTarget = header.getInt();
-        int nonce = header.getInt();
-
-        // constructor will restore generator id from transactions.get(0) - coinbase
-        return new BlockImpl(version, timestamp, baseTarget, previousBlockId, previousKeyBlockId, nonce,
-                0, txMerkleRoot, null,
-                generationSequence, null, previousBlockHash, forgersMerkleBranches, transactions);
-    }
-
-    @Override
     public TransactionImpl getTransaction(long transactionId) {
         return TransactionDb.findTransaction(transactionId);
     }

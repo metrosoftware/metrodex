@@ -95,7 +95,7 @@ public final class GetWork extends APIServlet.APIRequestHandler {
                                 response.put("error", "Too small get work cache.");
                                 return JSON.prepare(response);
                             }
-                            Block extra = Metro.getBlockchain().composeKeyBlock(blockHeaderBytes, txs);
+                            Block extra = Metro.getBlockchainProcessor().composeKeyBlock(blockHeaderBytes, txs);
                             boolean blockAccepted = Metro.getBlockchainProcessor().processKeyBlock(extra);
                             Logger.logDebugMessage("Solution found. Block Accepted:" + blockAccepted);
                             response.put("result", blockAccepted);

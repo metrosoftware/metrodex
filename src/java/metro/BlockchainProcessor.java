@@ -74,6 +74,8 @@ public interface BlockchainProcessor extends Observable<Block,BlockchainProcesso
 
     BlockImpl prepareKeyBlock(List<TransactionImpl> transactions);
 
+    Block composeKeyBlock(byte[] headerData, List<TransactionImpl> transactions);
+
     byte[] getForgersMerkleAtLastKeyBlock();
     List<Pair<String, Integer>> getCurrentForgers();
 

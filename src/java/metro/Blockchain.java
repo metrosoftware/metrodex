@@ -85,8 +85,6 @@ public interface Blockchain {
 
     Block getECBlock(long timestamp);
 
-    Block composeKeyBlock(byte[] headerData, List<TransactionImpl> transactions);
-
     Transaction getTransaction(long transactionId);
 
     Transaction getTransactionByFullHash(String fullHash);

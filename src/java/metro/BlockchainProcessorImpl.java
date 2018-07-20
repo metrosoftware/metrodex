@@ -982,7 +982,9 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                     break;
                 }
             }
-            if (minBadBlockHeight < Integer.MAX_VALUE) {
+            if (needToFillNewColumns()) {
+                scan(0, true);
+            } else if (minBadBlockHeight < Integer.MAX_VALUE) {
                 scan(Math.max(0, minBadBlockHeight - 2), true);
             } else if (Metro.getBooleanProperty("metro.forceScan")) {
                 scan(0, Metro.getBooleanProperty("metro.forceValidate"));
@@ -1010,6 +1012,21 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             ThreadPool.scheduleThread("GetMoreBlocks", getMoreBlocksThread, 1);
         }
 
+    }
+
+    private boolean needToFillNewColumns() {
+        Metro.getBlockchain().readLock();
+        try (Connection con = Db.db.getConnection();
+             PreparedStatement pstmt = con.prepareStatement("SELECT count(last_forged_height) as count FROM account where last_forged_height > 0")) {
+            try (ResultSet rs = pstmt.executeQuery()) {
+                rs.next();
+                return rs.getLong("count") == 0;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e.toString(), e);
+        } finally {
+            Metro.getBlockchain().readUnlock();
+        }
     }
 
     @Override
@@ -1549,8 +1566,8 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         if (keyBlock.getVersion() != Consensus.getKeyBlockVersion(keyBlock.getHeight())) {
             return Block.ValidationResult.INCORRECT_VERSION;
         }
-        // TODO #188
-        if (!Arrays.equals(keyBlock.getForgersMerkleRoot(), forgersMerkleAtLastKeyBlock)) {
+
+        if (keyBlock.getLocalHeight() >= Consensus.FORGERS_FIXATION_BLOCK && !Arrays.equals(keyBlock.getForgersMerkleRoot(), forgersMerkleAtLastKeyBlock)) {
             return Block.ValidationResult.FORGERS_MERKLE_ROOT_DISCREPANCY;
         }
 

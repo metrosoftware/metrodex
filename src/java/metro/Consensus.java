@@ -36,6 +36,7 @@ public class Consensus {
     public static final int KEYBLOCK_MAX_PAYLOAD_LENGTH = 1000000;
     public static final long MAX_BALANCE_MTR = 1000000000;
     public static final int BLOCK_TIME = 3000;
+    public static final int FORGERS_FIXATION_BLOCK = 50;
 
     public static short getPosBlockVersion(int atHeight) {
         return 3;

@@ -13,11 +13,16 @@ import java.math.BigInteger;
 
 public class Target {
 
+    private static int TARGET_FIXATION_HEIGHT = 50;
     /* current difficulty formula, dash - DarkGravity v3, written by Evan Duffield - evan@dash.org */
     public static int nextTarget(Block lastKeyBlock) {
         // make sure we have at least (npastBlocks + 1) blocks, otherwise just return powLimit
         if (lastKeyBlock == null || lastKeyBlock.getLocalHeight() < Consensus.POW_RETARGET_INTERVAL) {
             return BitcoinJUtils.encodeCompactBits(Consensus.MAX_WORK_TARGET);
+        }
+        if (lastKeyBlock.getLocalHeight() > TARGET_FIXATION_HEIGHT && lastKeyBlock.getLocalHeight() < TARGET_FIXATION_HEIGHT + Consensus.POW_RETARGET_INTERVAL) {
+            BlockImpl fixation = BlockDb.findBlockAtLocalHeight(TARGET_FIXATION_HEIGHT, true);
+            return (int)fixation.getBaseTarget();
         }
         Block block = lastKeyBlock;
 

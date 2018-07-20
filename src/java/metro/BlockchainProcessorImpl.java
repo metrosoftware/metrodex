@@ -2378,11 +2378,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 if (!lastBlock.isKeyBlock()) {
                     throw new IllegalStateException("On fast blocks forgersMerkle is not defined, call me when you are at key block!");
                 }
-                Block prevKeyBlock = BlockDb.findLastKeyBlock(lastBlock.getHeight() - 1);
-                if (prevKeyBlock == null) {
-                    return forgersMerkle;
-                }
-                int height = prevKeyBlock.getHeight();
+                int height = lastBlock.getHeight();
                 pstmt.setInt(1, Metro.getBlockchain().getGuaranteedBalanceHeight(height));
                 pstmt.setInt(2, height);
                 pstmt.setInt(3, Math.max(0, height - Consensus.FORGER_ACTIVITY_SNAPSHOT_INTERVAL));

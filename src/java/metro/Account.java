@@ -1314,7 +1314,7 @@ public final class Account {
             }
             try (Connection con = db.getConnection();
                  PreparedStatement pstmt = con.prepareStatement("SELECT SUM (additions) AS additions "
-                         + "FROM account_guaranteed_balance WHERE account_id = ? AND height > ? AND height <= ?")) {
+                         + "FROM account_guaranteed_balance WHERE account_id = ? AND NOT coinbase AND height > ? AND height <= ?")) {
                 pstmt.setLong(1, this.id);
                 pstmt.setInt(2, height);
                 pstmt.setInt(3, currentHeight);

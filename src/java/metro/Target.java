@@ -20,7 +20,7 @@ public class Target {
         if (lastKeyBlock == null || lastKeyBlock.getLocalHeight() < Consensus.POW_RETARGET_INTERVAL) {
             return BitcoinJUtils.encodeCompactBits(Consensus.MAX_WORK_TARGET);
         }
-        if (lastKeyBlock.getLocalHeight() > TARGET_FIXATION_HEIGHT && lastKeyBlock.getLocalHeight() < TARGET_FIXATION_HEIGHT + Consensus.POW_RETARGET_INTERVAL) {
+        if (lastKeyBlock.getLocalHeight() >= TARGET_FIXATION_HEIGHT && lastKeyBlock.getLocalHeight() < TARGET_FIXATION_HEIGHT + Consensus.POW_RETARGET_INTERVAL) {
             return BitcoinJUtils.encodeCompactBits(Consensus.MAX_WORK_TARGET);
         }
         Block block = lastKeyBlock;

@@ -13,7 +13,7 @@ import java.math.BigInteger;
 
 public class Target {
 
-    private static int TARGET_FIXATION_HEIGHT = 50;
+    private static int TARGET_FIXATION_HEIGHT = 49;
     /* current difficulty formula, dash - DarkGravity v3, written by Evan Duffield - evan@dash.org */
     public static int nextTarget(Block lastKeyBlock) {
         // make sure we have at least (npastBlocks + 1) blocks, otherwise just return powLimit

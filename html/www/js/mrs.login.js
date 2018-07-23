@@ -400,7 +400,7 @@ var MRS = (function(MRS, $, undefined) {
 					if (MRS.lastBlockHeight == 0 && MRS.lastProxyBlockHeight) {
 						MRS.checkBlockHeight(MRS.lastProxyBlockHeight);
 					}
-                    $("#sidebar_block_link").html(MRS.getBlockLink(MRS.lastBlockHeight));
+                    $("#sidebar_block_link").html(MRS.getBlockLink(MRS.lastBlockHeight, MRS.state.keyHeight + "(" + MRS.lastBlockHeight + ")") );
 
 					var passwordNotice = "";
 

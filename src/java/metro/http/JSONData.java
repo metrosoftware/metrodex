@@ -309,6 +309,7 @@ public final class JSONData {
         JSONObject json = new JSONObject();
         json.put("block", block.getStringId());
         json.put("height", block.getHeight());
+        json.put("local_height", block.getLocalHeight());
         putAccount(json, "generator", block.getGeneratorFullId());
         json.put("generatorPublicKey", Convert.toHexString(block.getGeneratorPublicKey()));
         json.put("timestamp", block.getTimestamp());

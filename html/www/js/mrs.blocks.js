@@ -211,7 +211,7 @@ var MRS = (function(MRS, $) {
 		});
 		var blockLink = $("#sidebar_block_link");
 		if (blockLink.length > 0) {
-			blockLink.html(MRS.getBlockLink(MRS.lastBlockHeight));
+			blockLink.html(MRS.getBlockLink(MRS.lastBlockHeight, MRS.state.keyHeight + "(" + MRS.lastBlockHeight + ")"));
 		}
 	};
 
@@ -219,6 +219,8 @@ var MRS = (function(MRS, $) {
 		if (MRS.blocksPageType == "forged_blocks") {
 			$("#forged_fees_total_box, #forged_blocks_total_box").show();
 			$("#blocks_transactions_per_hour_box, #blocks_generation_time_box").hide();
+            $("#key_height_column_header").hide();
+            $("#key_height_column").hide();
 			$("#forged_blocks_total_box").show();
             $("#mined_blocks_total_box").hide();
 
@@ -239,6 +241,8 @@ var MRS = (function(MRS, $) {
 			});
 		} else if (MRS.blocksPageType == "mined_blocks") {
             $("#forged_fees_total_box, #mined_blocks_total_box").show();
+            $("#key_height_column_header").show();
+            $("#key_height_column").show();
             $("#blocks_transactions_per_hour_box, #blocks_generation_time_box, #forged_blocks_total_box").hide();
             MRS.sendRequest("getAccountMinedBlocks+", {
                 "account": MRS.account,
@@ -257,6 +261,8 @@ var MRS = (function(MRS, $) {
             });
 		} else if (MRS.blocksPageType == "all_mined_blocks") {
             $("#forged_fees_total_box, #mined_blocks_total_box").show();
+            $("#key_height_column_header").show();
+            $("#key_height_column").show();
             $("#blocks_transactions_per_hour_box, #blocks_generation_time_box, #forged_blocks_total_box").hide();
             MRS.sendRequest("getMinedBlocks+", {
                 "account": MRS.account,
@@ -275,6 +281,8 @@ var MRS = (function(MRS, $) {
             });
         } else {
 			$("#forged_fees_total_box, #forged_blocks_total_box, #mined_blocks_total_box").hide();
+			$("#key_height_column_header").hide();
+            $("#key_height_column").hide();
 			$("#blocks_transactions_per_hour_box, #blocks_generation_time_box").show();
 			MRS.sendRequest("getBlocks+", {
 				"firstIndex": MRS.pageNumber * MRS.itemsPerPage - MRS.itemsPerPage,
@@ -308,8 +316,10 @@ var MRS = (function(MRS, $) {
 			totalAmount = totalAmount.add(new BigInteger(block.totalAmountMQT));
 			reward = reward.add(new BigInteger(block.rewardMQT));
 			totalTransactions += block.numberOfTransactions;
+            var localHeightStr = "<td><a href='#' data-block='" + MRS.escapeRespStr(block.height) + "' data-blockid='" + MRS.escapeRespStr(block.block) + "' class='block show_block_modal_action'" + (block.numberOfTransactions > 0 ? " style='font-weight:bold'" : "") + ">" + MRS.escapeRespStr(block.local_height) + "</a></td>";
 			rows += "<tr>" +
                 "<td><a href='#' data-block='" + MRS.escapeRespStr(block.height) + "' data-blockid='" + MRS.escapeRespStr(block.block) + "' class='block show_block_modal_action'" + (block.numberOfTransactions > 0 ? " style='font-weight:bold'" : "") + ">" + MRS.escapeRespStr(block.height) + "</a></td>" +
+				(MRS.blocksPageType == "all_mined_blocks" || MRS.blocksPageType == "mined_blocks" ? localHeightStr : "") +
                 "<td>" + MRS.formatTimestamp(block.timestamp) + "</td>" +
                 "<td>" + MRS.formatAmount(block.totalAmountMQT) + "</td>" +
 				"<td>" + MRS.formatAmount(block.rewardMQT) + "</td>" +

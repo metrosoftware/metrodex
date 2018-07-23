@@ -1909,5 +1909,7 @@
   "no_matching_recipients": "No reward recipients",
   "ordinary_coinbase": "Block reward",
   "mined_by_you": "Mined by you",
-  "all_mined_blocks": "Mined blocks"
+  "all_mined_blocks": "Mined blocks",
+  "key_height": "Key height",
+  "local_height": "Local height"
 }

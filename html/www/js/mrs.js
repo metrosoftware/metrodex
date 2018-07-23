@@ -448,7 +448,7 @@ var MRS = (function(MRS, $, undefined) {
 
 		MRS.serverConnect = true;
 		MRS.ledgerTrimKeep = response.ledgerTrimKeep;
-		$("#sidebar_block_link").html(MRS.getBlockLink(height));
+		$("#sidebar_block_link").html(MRS.getBlockLink(height, MRS.state.keyHeight + "(" + height + ")"));
 		if (firstTime) {
 			$("#mrs_version").html(MRS.state.version).removeClass("loading_dots");
 			MRS.getBlock(lastBlock, MRS.handleInitialBlocks);

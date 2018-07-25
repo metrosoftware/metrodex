@@ -85,7 +85,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
     public static final String SELECT_FORGERS_SQL = "SELECT S.super_id, PK.public_key, S.effective FROM (" +
             "SELECT IFNULL(A.active_lessee_id,A.id) super_id, SUM(CASEWHEN(A.active_lessee_id IS NULL, 1, 0)) generator, SUM(A.balance) - SUM(IFNULL(B.additions,0)) effective FROM Account A " +
-            "LEFT JOIN (SELECT account_id, SUM (additions) AS additions FROM account_guaranteed_balance WHERE height > ? AND height <= ? GROUP BY account_id) B " +
+            "LEFT JOIN (SELECT account_id, SUM (additions) AS additions FROM account_guaranteed_balance WHERE height > ? AND height <= ? AND NOT coinbase GROUP BY account_id) B " +
             "on (A.id = B.account_id) LEFT JOIN (SELECT active_lessee_id id, SUM(balance) balance FROM account " +
             "WHERE latest GROUP BY active_lessee_id) L ON (L.id = A.id) " +
             "WHERE A.latest AND ((A.last_forged_height > ? AND A.last_forged_height <= ?) OR A.active_lessee_id IS NOT NULL) GROUP BY super_id HAVING generator > 0 ORDER BY effective, super_id) S " +

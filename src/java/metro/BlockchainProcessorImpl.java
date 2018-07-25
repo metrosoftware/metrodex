@@ -114,10 +114,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     private volatile int lastBlockchainFeederHeight;
     private volatile boolean getMoreBlocks = true;
 
-    /**
-     Filled by zeroes during the 1st cluster (between Genesis and key block)
-     */
-    private volatile byte[] forgersMerkleAtLastKeyBlock = new byte[HASH_SIZE * 2];
+    private volatile byte[] forgersMerkleAtLastKeyBlock;
 
     public byte[] getForgersMerkleAtLastKeyBlock() {
         return forgersMerkleAtLastKeyBlock;
@@ -967,8 +964,6 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
         blockListeners.addListener(checksumListener, Event.BLOCK_PUSHED);
 
-        blockListeners.addListener(block -> updateToOldForgersMerkle(block.getHeight()), Event.RESCAN_BEGIN);
-
         blockListeners.addListener(block -> Db.db.analyzeTables(), Event.RESCAN_END);
 
         ThreadPool.runBeforeStart(() -> {
@@ -1006,12 +1001,19 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                     scan(height, validate);
                 }
             }
+            // find last key block with ANY timestamp
+            Block lastKeyBlock = BlockDb.findLastKeyBlock(Long.MAX_VALUE);
+            if (lastKeyBlock != null && Arrays.equals(forgersMerkleAtLastKeyBlock, Constants.TWO_BRANCHES_EMPTY_MERKLE_ROOT)) {
+                // our previous scan, if any, was insufficient to initialize the forgersMerkle; rescan starting from last key block
+                scan(lastKeyBlock.getHeight(), false);
+            }
         }, false);
 
+        // filled by zeroes during the 1st cluster (between Genesis and key block)
+        resetForgersMerkle();
         if (!Constants.isLightClient && !Constants.isOffline) {
             ThreadPool.scheduleThread("GetMoreBlocks", getMoreBlocksThread, 1);
         }
-
     }
 
     private boolean needToFillNewColumns() {
@@ -1232,7 +1234,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 //BlockDb.deleteBlock(Genesis.GENESIS_BLOCK_ID); // fails with stack overflow in H2
                 BlockDb.deleteAll();
                 addGenesisBlock();
-                updateToOldForgersMerkle(0);
+                resetForgersMerkle();
             } finally {
                 setGetMoreBlocks(true);
             }
@@ -1860,7 +1862,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         previousBlock.loadTransactions();
         blockchain.setLastBlock(previousBlock);
         if (block.isKeyBlock()) {
-            updateToOldForgersMerkle(previousBlock.getHeight());
+            forgersMerkleAtLastKeyBlock = block.getForgersMerkleRoot();
         }
         blockListeners.notify(block, Event.BLOCK_POPPED);
         return previousBlock;
@@ -1874,7 +1876,6 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 BlockImpl lastBlock = BlockDb.deleteBlocksFrom(BlockDb.findBlockIdAtHeight(height));
                 blockchain.setLastBlock(lastBlock);
                 Logger.logDebugMessage("Deleted blocks starting from height %s", height);
-                updateToOldForgersMerkle(height);
             } finally {
                 scan(0, false);
             }
@@ -1883,13 +1884,8 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         }
     }
 
-    private void updateToOldForgersMerkle(int height) {
-        BlockImpl lastKeyBlock = BlockDb.findLastKeyBlock(height);
-        if (lastKeyBlock != null) {
-            forgersMerkleAtLastKeyBlock = lastKeyBlock.getForgersMerkleRoot();
-        } else {
-            forgersMerkleAtLastKeyBlock = new byte[HASH_SIZE * 2];
-        }
+    private void resetForgersMerkle() {
+        forgersMerkleAtLastKeyBlock = Constants.TWO_BRANCHES_EMPTY_MERKLE_ROOT;
     }
 
     private boolean verifyChecksum(byte[] validChecksum, int fromHeight, int toHeight) {

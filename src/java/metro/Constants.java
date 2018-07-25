@@ -125,6 +125,7 @@ public final class Constants {
 
 
     public static final int UI_GENERATORS_HISTORY_BLOCKS = 10000;
+    public static final byte[] TWO_BRANCHES_EMPTY_MERKLE_ROOT = new byte[Convert.HASH_SIZE * 2];
     private Constants() {} // never
 
 }

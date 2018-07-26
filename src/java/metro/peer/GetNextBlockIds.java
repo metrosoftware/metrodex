@@ -17,6 +17,7 @@
 
 package metro.peer;
 
+import metro.Consensus;
 import metro.Metro;
 import metro.util.Convert;
 import org.json.simple.JSONArray;
@@ -40,10 +41,10 @@ final class GetNextBlockIds extends PeerServlet.PeerRequestHandler {
         JSONArray nextBlockIds = new JSONArray();
         long blockId = Convert.parseUnsignedLong((String) request.get("blockId"));
         int limit = (int)Convert.parseLong(request.get("limit"));
-        if (limit > 1440) {
+        if (limit > Consensus.BLOCKCHAIN_SIX_HOURS) {
             return GetNextBlocks.TOO_MANY_BLOCKS_REQUESTED;
         }
-        List<Long> ids = Metro.getBlockchain().getBlockIdsAfter(blockId, limit > 0 ? limit : 1440);
+        List<Long> ids = Metro.getBlockchain().getBlockIdsAfter(blockId, limit > 0 ? limit : Consensus.BLOCKCHAIN_SIX_HOURS);
         ids.forEach(id -> nextBlockIds.add(Long.toUnsignedString(id)));
         response.put("nextBlockIds", nextBlockIds);
 

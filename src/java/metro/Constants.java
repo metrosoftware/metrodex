@@ -21,6 +21,8 @@ import metro.util.Convert;
 
 import java.math.BigInteger;
 
+import static metro.Consensus.TIMERATIO_IN_BLOCKS;
+
 public final class Constants {
 
     public static final boolean isTestnet = Metro.getBooleanProperty("metro.isTestnet");
@@ -41,7 +43,7 @@ public final class Constants {
     public static final int MIN_BLOCKTIME_LIMIT = Consensus.BLOCK_TIME - 350;
     public static final int MAX_BLOCKTIME_LIMIT = Consensus.BLOCK_TIME + 350;
     public static final int BASE_TARGET_GAMMA = 64;
-    public static final int LEASING_DELAY = isTestnet ? Metro.getIntProperty("metro.testnetLeasingDelay", 1440) : 1440;
+    public static final int LEASING_DELAY = isTestnet ? Metro.getIntProperty("metro.testnetLeasingDelay", 1440) : Consensus.BLOCKCHAIN_THREE_HOURS;
     public static final long MIN_FORGING_BALANCE_MQT = 1000 * ONE_MTR;
 
     public static final int MAX_TIMEDRIFT = 15000; // allow up to 15 s clock difference
@@ -49,10 +51,12 @@ public final class Constants {
     public static final int FORGING_SPEEDUP = Metro.getIntProperty("metro.forgingSpeedup");
     public static final int BATCH_COMMIT_SIZE = Metro.getIntProperty("metro.batchCommitSize", Integer.MAX_VALUE);
 
+    public static final int BLOCKCHAIN_NXT_HALFDAY = 720;
+    public static final int BLOCKCHAIN_NXT_DAY = BLOCKCHAIN_NXT_HALFDAY * 2;
     public static final byte MAX_PHASING_VOTE_TRANSACTIONS = 10;
     public static final byte MAX_PHASING_WHITELIST_SIZE = 10;
     public static final byte MAX_PHASING_LINKED_TRANSACTIONS = 10;
-    public static final int MAX_PHASING_DURATION = 14 * 1440;
+    public static final int MAX_PHASING_DURATION = 14 * Consensus.BLOCKCHAIN_DAY;
     public static final int MAX_PHASING_REVEALED_SECRET_LENGTH = 100;
 
     public static final int MAX_ALIAS_URI_LENGTH = 1000;
@@ -64,7 +68,7 @@ public final class Constants {
     public static final int MAX_PRUNABLE_MESSAGE_LENGTH = 42 * 1024;
     public static final int MAX_PRUNABLE_ENCRYPTED_MESSAGE_LENGTH = 42 * 1024;
 
-    public static final long MIN_PRUNABLE_LIFETIME = isTestnet ? 1440 * 60 * 1000 : 14 * 1440 * 60 * 1000;
+    public static final long MIN_PRUNABLE_LIFETIME = isTestnet ? BLOCKCHAIN_NXT_DAY * 60 * 1000 : 14 * BLOCKCHAIN_NXT_DAY * 60 * 1000;
     public static final long MAX_PRUNABLE_LIFETIME;
     public static final boolean ENABLE_PRUNING;
     public static final long MAX_MESSAGE_DATA_LENGTH = 42 * 1024;
@@ -88,13 +92,13 @@ public final class Constants {
     public static final int MAX_ASSET_DESCRIPTION_LENGTH = 1000;
     public static final int MAX_SINGLETON_ASSET_DESCRIPTION_LENGTH = 160;
     public static final int MAX_ASSET_TRANSFER_COMMENT_LENGTH = 1000;
-    public static final int MAX_DIVIDEND_PAYMENT_ROLLBACK = 1441;
+    public static final int MAX_DIVIDEND_PAYMENT_ROLLBACK = Consensus.BLOCKCHAIN_DAY + 1;
 
     public static final int MAX_POLL_NAME_LENGTH = 100;
     public static final int MAX_POLL_DESCRIPTION_LENGTH = 1000;
     public static final int MAX_POLL_OPTION_LENGTH = 100;
     public static final int MAX_POLL_OPTION_COUNT = 100;
-    public static final int MAX_POLL_DURATION = 14 * 1440;
+    public static final int MAX_POLL_DURATION = 14 * Consensus.BLOCKCHAIN_DAY;
 
     public static final byte MIN_VOTE_VALUE = -92;
     public static final byte MAX_VOTE_VALUE = 92;
@@ -102,10 +106,10 @@ public final class Constants {
 
     public static final byte MIN_NUMBER_OF_SHUFFLING_PARTICIPANTS = 3;
     public static final byte MAX_NUMBER_OF_SHUFFLING_PARTICIPANTS = 30; // max possible at current block payload limit is 51
-    public static final short MAX_SHUFFLING_REGISTRATION_PERIOD = (short)1440 * 7;
-    public static final short SHUFFLING_PROCESSING_DEADLINE = (short)(isTestnet ? 10 : 100);
+    public static final short MAX_SHUFFLING_REGISTRATION_PERIOD = (short)(Consensus.BLOCKCHAIN_DAY * 7);
+    public static final short SHUFFLING_PROCESSING_DEADLINE = (short)(TIMERATIO_IN_BLOCKS * (isTestnet ? 10 : 100));
 
-    public static final long MAX_REFERENCED_TRANSACTION_TIMESPAN = 60 * 1440 * 60 * 1000;
+    public static final long MAX_REFERENCED_TRANSACTION_TIMESPAN = 60 * BLOCKCHAIN_NXT_DAY * 60 * 1000;
     public static final int CHECKSUM_BLOCK_1 = Integer.MAX_VALUE;
 
     public static final int LAST_CHECKSUM_BLOCK = 0;

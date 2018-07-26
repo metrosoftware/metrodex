@@ -606,7 +606,7 @@ public final class FundingMonitor {
         FundingMonitor monitor = monitoredAccount.monitor;
         if (targetAccount.getBalanceMQT() < monitoredAccount.threshold) {
             Transaction.Builder builder = Metro.newTransactionBuilder(monitor.publicKey,
-                    monitoredAccount.amount, 0, (short)1440, Attachment.ORDINARY_PAYMENT);
+                    monitoredAccount.amount, 0, (short)Consensus.BLOCKCHAIN_DAY, Attachment.ORDINARY_PAYMENT);
             builder.recipientFullId(monitoredAccount.accountId)
                    .timestamp(Metro.getBlockchain().getLastBlockTimestamp());
             Transaction transaction = builder.build(monitor.secretPhrase);
@@ -643,7 +643,7 @@ public final class FundingMonitor {
         } else if (targetAsset == null || targetAsset.getQuantityQNT() < monitoredAccount.threshold) {
             Attachment attachment = new Attachment.ColoredCoinsAssetTransfer(monitor.holdingId, monitoredAccount.amount);
             Transaction.Builder builder = Metro.newTransactionBuilder(monitor.publicKey,
-                    0, 0, (short)1440, attachment);
+                    0, 0, (short)Consensus.BLOCKCHAIN_DAY, attachment);
             builder.recipientFullId(monitoredAccount.accountId)
                    .timestamp(Metro.getBlockchain().getLastBlockTimestamp());
             Transaction transaction = builder.build(monitor.secretPhrase);

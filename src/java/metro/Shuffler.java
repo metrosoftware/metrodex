@@ -274,7 +274,7 @@ public final class Shuffler {
     }
 
     private static void scheduleExpiration(Shuffling shuffling) {
-        int expirationHeight = Metro.getBlockchain().getHeight() + 720;
+        int expirationHeight = Metro.getBlockchain().getHeight() + Consensus.BLOCKCHAIN_HALFDAY;
         Set<String> shufflingIds = expirations.get(expirationHeight);
         if (shufflingIds == null) {
             shufflingIds = new HashSet<>();
@@ -447,7 +447,7 @@ public final class Shuffler {
         }
         try {
             Transaction.Builder builder = Metro.newTransactionBuilder(Crypto.getPublicKey(secretPhrase), 0, 0,
-                    (short) 1440, attachment);
+                    (short) Consensus.BLOCKCHAIN_DAY, attachment);
             builder.timestamp(Metro.getBlockchain().getLastBlockTimestamp());
             Transaction transaction = builder.build(secretPhrase);
             failedTransaction = null;

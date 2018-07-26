@@ -38,6 +38,14 @@ public class Consensus {
     public static final int BLOCK_TIME = 3000;
     public static final int FORGERS_FIXATION_BLOCK = 50;
 
+    public static final int QUARTER_TIMERATIO_IN_BLOCKS = 5;
+    public static final int TIMERATIO_IN_BLOCKS = QUARTER_TIMERATIO_IN_BLOCKS * 4;
+    public static final int BLOCKCHAIN_THREE_HOURS = Constants.BLOCKCHAIN_NXT_HALFDAY * QUARTER_TIMERATIO_IN_BLOCKS;
+    // we use this instead of 1440
+    public static final int BLOCKCHAIN_SIX_HOURS = Constants.BLOCKCHAIN_NXT_DAY * QUARTER_TIMERATIO_IN_BLOCKS;
+    public static final int BLOCKCHAIN_HALFDAY = Constants.BLOCKCHAIN_NXT_HALFDAY * TIMERATIO_IN_BLOCKS;
+    public static final int BLOCKCHAIN_DAY = Constants.BLOCKCHAIN_NXT_DAY * TIMERATIO_IN_BLOCKS;
+
     public static short getPosBlockVersion(int atHeight) {
         return 3;
     }

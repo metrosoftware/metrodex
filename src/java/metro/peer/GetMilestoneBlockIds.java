@@ -18,6 +18,7 @@
 package metro.peer;
 
 import metro.Block;
+import metro.Consensus;
 import metro.Metro;
 import metro.util.Convert;
 import metro.util.Logger;
@@ -66,7 +67,7 @@ final class GetMilestoneBlockIds extends PeerServlet.PeerRequestHandler {
                     throw new IllegalStateException("Don't have block " + lastMilestoneBlockIdString);
                 }
                 height = lastMilestoneBlock.getHeight();
-                jump = Math.min(1440, Math.max(blockchainHeight - height, 1));
+                jump = Math.min(Consensus.BLOCKCHAIN_SIX_HOURS, Math.max(blockchainHeight - height, 1));
                 height = Math.max(height - jump, 0);
             } else if (lastBlockIdString != null) {
                 height = blockchainHeight;

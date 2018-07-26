@@ -2151,7 +2151,13 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             }
             Logger.logMessage("Scanning blockchain starting from height " + height + "...");
             if (validate) {
-                Logger.logDebugMessage("Also verifying signatures and validating transactions...");
+                Logger.logDebugMessage("Also performing block/tx validation...");
+            }
+            Block lastKeyBlock = BlockDb.findLastKeyBlock(height);
+            if (validate && lastKeyBlock == null) {
+                // we are scanning in the 1st cluster, so initial value of forgersMerkle would be 64 zeroes
+                // TODO #265
+                resetForgersMerkle();
             }
             try (Connection con = Db.db.getConnection();
                  PreparedStatement pstmtSelect = con.prepareStatement("SELECT * FROM block WHERE " + (height > 0 ? "height >= ? AND " : "")

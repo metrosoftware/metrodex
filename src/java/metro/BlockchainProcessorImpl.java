@@ -964,8 +964,6 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
         blockListeners.addListener(checksumListener, Event.BLOCK_PUSHED);
 
-        blockListeners.addListener(block -> updateToOldForgersMerkle(block.getHeight()), Event.RESCAN_BEGIN);
-
         blockListeners.addListener(block -> Db.db.analyzeTables(), Event.RESCAN_END);
 
         ThreadPool.runBeforeStart(() -> {
@@ -982,7 +980,13 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             if (needToFillNewColumns()) {
                 scan(0, true);
             } else if (minBadBlockHeight < Integer.MAX_VALUE) {
-                scan(Math.max(0, minBadBlockHeight - 2), true);
+                popOffTo(Math.max(0, minBadBlockHeight - 1));
+                Block keyBlock = BlockchainImpl.getInstance().getLastKeyBlock();
+                if (keyBlock != null) {
+                    scan(keyBlock.getHeight(), false);
+                } else {
+                    resetForgersMerkle();
+                }
             } else if (Metro.getBooleanProperty("metro.forceScan")) {
                 scan(0, Metro.getBooleanProperty("metro.forceValidate"));
             } else {
@@ -1868,15 +1872,6 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         }
         blockListeners.notify(block, Event.BLOCK_POPPED);
         return previousBlock;
-    }
-
-    private void updateToOldForgersMerkle(int height) {
-        BlockImpl lastKeyBlock = BlockDb.findLastKeyBlock(height);
-        if (lastKeyBlock != null) {
-            forgersMerkleAtLastKeyBlock = lastKeyBlock.getForgersMerkleRoot();
-        } else {
-            resetForgersMerkle();
-        }
     }
 
     private void popOffWithRescan(int height) {

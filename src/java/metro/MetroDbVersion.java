@@ -430,13 +430,11 @@ class MetroDbVersion extends DbVersion {
                 apply("CREATE INDEX IF NOT EXISTS unconfirmed_transaction_is_key_tx_idx ON unconfirmed_transaction (is_key_tx)");
             case 151:
                 apply("ALTER TABLE account ADD COLUMN IF NOT EXISTS last_forged_height INT NOT NULL default 0");
-            /*
             case 152:
-                apply("CREATE INDEX IF NOT EXISTS account_last_forged_height_idx ON account (latest)");
-            */
-            case 152:
-                apply("CREATE INDEX IF NOT EXISTS account_last_forged_height_latest_idx ON account (last_forged_height, latest)");
+                apply("CREATE INDEX IF NOT EXISTS account_last_forged_height_latest_idx ON account (latest, last_forged_height)");
             case 153:
+                apply("INSERT INTO scan (rescan, height, validate) VALUES (true, 0, false)");
+            case 154:
                 return;
             default:
                 throw new RuntimeException("Blockchain database inconsistent with code, at update " + nextUpdate

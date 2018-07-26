@@ -977,9 +977,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                     break;
                 }
             }
-            if (needToFillNewColumns()) {
-                scan(0, true);
-            } else if (minBadBlockHeight < Integer.MAX_VALUE) {
+            if (minBadBlockHeight < Integer.MAX_VALUE) {
                 popOffTo(Math.max(0, minBadBlockHeight - 1));
                 Block keyBlock = BlockchainImpl.getInstance().getLastKeyBlock();
                 if (keyBlock != null) {
@@ -1019,21 +1017,6 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         resetForgersMerkle();
         if (!Constants.isLightClient && !Constants.isOffline) {
             ThreadPool.scheduleThread("GetMoreBlocks", getMoreBlocksThread, 1);
-        }
-    }
-
-    private boolean needToFillNewColumns() {
-        Metro.getBlockchain().readLock();
-        try (Connection con = Db.db.getConnection();
-             PreparedStatement pstmt = con.prepareStatement("SELECT count(last_forged_height) as count FROM account where last_forged_height > 0")) {
-            try (ResultSet rs = pstmt.executeQuery()) {
-                rs.next();
-                return rs.getLong("count") == 0;
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e.toString(), e);
-        } finally {
-            Metro.getBlockchain().readUnlock();
         }
     }
 

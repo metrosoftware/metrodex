@@ -122,6 +122,7 @@ public final class Peers {
     private static final int pushThreshold;
     private static final int pullThreshold;
     private static final int sendToPeersLimit;
+    private static final int requiredSendPeerNumber;
     private static final boolean usePeersDb;
     private static final boolean savePeers;
     static final boolean ignorePeerAnnouncedAddress;
@@ -336,6 +337,7 @@ public final class Peers {
         blacklistingPeriod = Metro.getIntProperty("metro.blacklistingPeriod") / 1000;
         communicationLoggingMask = Metro.getIntProperty("metro.communicationLoggingMask");
         sendToPeersLimit = Metro.getIntProperty("metro.sendToPeersLimit");
+        requiredSendPeerNumber = Metro.getIntProperty("metro.requiredSendPeerNumber");
         usePeersDb = Metro.getBooleanProperty("metro.usePeersDb") && ! Constants.isOffline;
         savePeers = usePeersDb && Metro.getBooleanProperty("metro.savePeers");
         getMorePeers = Metro.getBooleanProperty("metro.getMorePeers");
@@ -1029,38 +1031,55 @@ public final class Peers {
 
             int successful = 0;
             List<Future<JSONObject>> expectedResponses = new ArrayList<>();
-            for (final Peer peer : peers.values()) {
+            Collection<PeerImpl> peerCollection = peers.values();
+            Map<Future, PeerImpl> peerMap = new HashMap<>();
 
-                if (Peers.enableHallmarkProtection && peer.getWeight() < Peers.pushThreshold) {
-                    continue;
-                }
-
-                if (!peer.isBlacklisted() && peer.getState() == Peer.State.CONNECTED && peer.getAnnouncedAddress() != null
-                        && peer.getBlockchainState() != Peer.BlockchainState.LIGHT_CLIENT) {
-                    Future<JSONObject> futureResponse = peersService.submit(() -> peer.send(jsonRequest));
-                    expectedResponses.add(futureResponse);
-                }
-                if (expectedResponses.size() >= Peers.sendToPeersLimit - successful) {
-                    for (Future<JSONObject> future : expectedResponses) {
-                        try {
-                            JSONObject response = future.get();
-                            if (response != null && response.get("error") == null) {
-                                successful += 1;
-                            }
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                        } catch (ExecutionException e) {
-                            Logger.logDebugMessage("Error in sendToSomePeers", e);
-                        }
-
+            while (successful < Peers.requiredSendPeerNumber) {
+                Collection<PeerImpl> resend = new ArrayList<>();
+                for (final PeerImpl peer : peerCollection) {
+                    if (Peers.enableHallmarkProtection && peer.getWeight() < Peers.pushThreshold) {
+                        continue;
                     }
-                    expectedResponses.clear();
+
+                    if (!peer.isBlacklisted() && peer.getState() == Peer.State.CONNECTED && peer.getAnnouncedAddress() != null
+                            && peer.getBlockchainState() != Peer.BlockchainState.LIGHT_CLIENT) {
+                        Future<JSONObject> futureResponse = peersService.submit(() -> peer.send(jsonRequest));
+                        peerMap.put(futureResponse, peer);
+                        expectedResponses.add(futureResponse);
+                    }
+                    if (expectedResponses.size() >= Peers.sendToPeersLimit - successful) {
+                        successful += checkPeersAnswers(expectedResponses, peerMap, resend);
+                        expectedResponses.clear();
+                    }
+                    if (successful >= Peers.sendToPeersLimit) {
+                        return;
+                    }
                 }
-                if (successful >= Peers.sendToPeersLimit) {
-                    return;
-                }
+                successful += checkPeersAnswers(expectedResponses, peerMap, resend);
+                peerCollection = resend;
             }
         });
+    }
+
+    private static int checkPeersAnswers(List<Future<JSONObject>> expectedResponses, Map<Future, PeerImpl> peerMap, Collection<PeerImpl> resend) {
+        int successful = 0;
+        for (Future<JSONObject> future : expectedResponses) {
+            try {
+                JSONObject response = future.get();
+                if (response != null && response.get("error") == null) {
+                    successful += 1;
+                    Logger.logDebugMessage("Success send to peer:" + peerMap.get(future));
+                } else {
+                    resend.add(peerMap.get(future));
+                    Logger.logDebugMessage("Error response from peer:" + peerMap.get(future) + ", response:" + response);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (ExecutionException e) {
+                Logger.logDebugMessage("Error in sendToSomePeers", e);
+            }
+        }
+        return successful;
     }
 
     public static Peer getAnyPeer(final Peer.State state, final boolean applyPullThreshold) {

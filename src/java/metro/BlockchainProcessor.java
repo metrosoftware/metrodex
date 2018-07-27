@@ -72,7 +72,7 @@ public interface BlockchainProcessor extends Observable<Block,BlockchainProcesso
 
     long getGenesisBlockId();
 
-    BlockImpl prepareKeyBlock(List<TransactionImpl> transactions);
+    BlockImpl prepareKeyBlockTemplate(List<TransactionImpl> transactions);
 
     Block composeKeyBlock(byte[] headerData, List<TransactionImpl> transactions);
 

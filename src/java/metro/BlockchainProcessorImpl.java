@@ -2294,7 +2294,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         }
     }
 
-    public BlockImpl prepareKeyBlock(List<TransactionImpl> transactions) {
+    public BlockImpl prepareKeyBlockTemplate(List<TransactionImpl> transactions) {
         blockchain.readLock();
         try {
             BlockImpl previousBlock = blockchain.getLastBlock();

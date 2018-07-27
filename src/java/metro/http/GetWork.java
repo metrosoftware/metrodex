@@ -72,7 +72,7 @@ public final class GetWork extends APIServlet.APIRequestHandler {
         try {
             if (request.getReader() != null) {
                 content = request.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
-                Logger.logDebugMessage("getwork:" + content);
+                //Logger.logDebugMessage("getwork:" + content);
             }
         } catch (IOException e) {
             response.put("error", e.getMessage());
@@ -86,6 +86,7 @@ public final class GetWork extends APIServlet.APIRequestHandler {
                     if (requestJSON.containsKey("params")) {
                         JSONArray params = (JSONArray) requestJSON.get("params");
                         if (!params.isEmpty()) {
+                            Logger.logDebugMessage("getwork:" + content);
                             String blockHeader = (String) params.get(0);
                             String merkle = blockHeader.substring(20, 84);
                             byte[] blockHeaderBytes = Convert.parseHexString(blockHeader.toLowerCase());
@@ -113,7 +114,7 @@ public final class GetWork extends APIServlet.APIRequestHandler {
             long currentTime = System.currentTimeMillis();
             if (cachedLastBlockId != lastBlockId || currentTime - lastTxTime > Math.min(transactionsCacheDuration, 5000)) {
                 lastTxTime = currentTime;
-                Block block = Metro.getBlockchainProcessor().prepareKeyBlock(null);
+                Block block = Metro.getBlockchainProcessor().prepareKeyBlockTemplate(null);
                 cache = block.getBytes();
                 cachedLastBlockId = lastBlockId;
                 cachedTarget = block.getDifficultyTargetAsInteger();
@@ -123,14 +124,14 @@ public final class GetWork extends APIServlet.APIRequestHandler {
                 lastTimestamp = currentTime;
             } else if (currentTime - lastTimestamp > Math.min(blockCacheDuration, 1000)) {
                 int i = index.get();
-                Block block = Metro.getBlockchainProcessor().prepareKeyBlock(transactions[i]);
+                Block block = Metro.getBlockchainProcessor().prepareKeyBlockTemplate(transactions[i]);
                 i = index.getAndUpdate(j -> (j + 1) % CACHE_SIZE);
                 transactions[i] = (List<TransactionImpl>) block.getTransactions();
                 merkles[i] = Convert.toHexString(block.getTxMerkleRoot());
                 cache = block.getBytes();
                 lastTimestamp = currentTime;
             } else {
-                Logger.logInfoMessage("Return cached work");
+                //Logger.logInfoMessage("Return cached work");
             }
         }
 

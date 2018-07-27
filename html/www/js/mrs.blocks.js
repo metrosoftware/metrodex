@@ -114,7 +114,7 @@ var MRS = (function(MRS, $) {
 			if (!MRS.state.apiProxy) {
 				MRS.updateDashboardLastBlock(MRS.blocks[0]);
 			}
-		} else {
+		} else if (response.height - 1 > MRS.lastBlockHeight) {
 			MRS.tempBlocks.push(response);
 			MRS.getBlock(response.previousBlock, MRS.handleNewBlocks);
 		}

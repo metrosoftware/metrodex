@@ -1121,17 +1121,20 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
         BlockImpl lastKeyBlock = blockchain.getLastKeyBlock();
         BlockImpl common = blockchain.getBlock(block.getPreviousBlockId());
-        BlockImpl secondKeyBlock = lastKeyBlock == null || lastKeyBlock.getPreviousKeyBlockId() == null ? null :
-                blockchain.getBlock(lastKeyBlock.getPreviousKeyBlockId());
 
-        if (common == null || (secondKeyBlock != null && secondKeyBlock.getHeight() >= common.getHeight())) {
+        //Only allow to add block in current cluster
+        if (common == null || (lastKeyBlock != null && lastKeyBlock.getHeight() >= common.getHeight())) {
             return false;
         }
 
         boolean added = processFork(null, Collections.singletonList(block), common);
         if (added) {
-            Logger.logWarningMessage("Block " + lastBlock.getStringId() + " at height " + lastBlock.getHeight() +
-                    " was replaced by key block " + block.getStringId() + " height " + block.getHeight());
+            try {
+                Logger.logWarningMessage("Block " + lastBlock.getStringId() + " at height " + lastBlock.getHeight() +
+                        " was replaced by key block " + block.getStringId() + " height " + block.getHeight());
+            } catch (IllegalStateException ex) {
+                Logger.logWarningMessage("Block " + lastBlock.getStringId() + " was replaced by key block " + block.getStringId());
+            }
         }
         return added;
     }
@@ -1166,10 +1169,9 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         blockchain.writeLock();
         try {
             BlockImpl lastBlock = blockchain.getLastBlock();
-            final boolean isBlockchainContinuation = block.getPreviousBlockId() == lastBlock.getId();
-            final boolean isTipReplacement = !lastBlock.isKeyBlock() && block.getPreviousBlockId() == lastBlock.getPreviousBlockId() && block.getTimestamp() < lastBlock.getTimestamp();
+
             if (block.isKeyBlock()) {
-                if (block.getGenerationSequence() == null && (isBlockchainContinuation || isTipReplacement)) {
+                if (block.getGenerationSequence() == null) {
                     // received from JSON, prevBlockId checked, we can restore hash from DB or block cache
                     byte[] generationSequenceHash = BlockImpl.advanceGenerationSequenceInKeyBlock(lastBlock);
                     request.put("generationSequence", Convert.toHexString(generationSequenceHash));
@@ -1179,9 +1181,12 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 return;
             }
 
+            final boolean isBlockchainContinuation = block.getPreviousBlockId() == lastBlock.getId();
+            final boolean isOneFastBlockReplacement = !lastBlock.isKeyBlock() && block.getPreviousBlockId() == lastBlock.getPreviousBlockId() && block.getTimestamp() < lastBlock.getTimestamp();
+
             if (isBlockchainContinuation) {
                 pushBlock(block);
-            } else if (isTipReplacement) {
+            } else if (isOneFastBlockReplacement) {
                 if (lastBlock.getId() != blockchain.getLastBlock().getId()) {
                     // blockchain changed, ignore the block
                     return;

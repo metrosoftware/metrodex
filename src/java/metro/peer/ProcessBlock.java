@@ -17,10 +17,8 @@
 
 package metro.peer;
 
-import metro.Block;
 import metro.Metro;
 import metro.MetroException;
-import metro.util.Convert;
 import metro.util.JSON;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONStreamAware;
@@ -33,21 +31,16 @@ final class ProcessBlock extends PeerServlet.PeerRequestHandler {
 
     @Override
     JSONStreamAware processRequest(final JSONObject request, final Peer peer) {
-        String previousBlockId = (String)request.get("previousBlock");
-        Block lastBlock = Metro.getBlockchain().getLastBlock();
-        if (lastBlock.getStringId().equals(previousBlockId) ||
-                (Convert.parseUnsignedLong(previousBlockId) == lastBlock.getPreviousBlockId()
-                        && lastBlock.getTimestamp() > Convert.parseLong(request.get("timestamp")))) {
-            Peers.peersService.submit(() -> {
-                try {
-                    Metro.getBlockchainProcessor().processPeerBlock(request);
-                } catch (MetroException | RuntimeException e) {
-                    if (peer != null) {
-                        peer.blacklist(e);
-                    }
+        Peers.peersService.submit(() -> {
+            try {
+                Metro.getBlockchainProcessor().processPeerBlock(request);
+            } catch (MetroException | RuntimeException e) {
+                if (peer != null) {
+                    peer.blacklist(e);
                 }
-            });
-        }
+            }
+        });
+
         return JSON.emptyJSON;
     }
 

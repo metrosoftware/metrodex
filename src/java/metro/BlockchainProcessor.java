@@ -50,7 +50,7 @@ public interface BlockchainProcessor extends Observable<Block,BlockchainProcesso
 
     void processPeerBlock(JSONObject request) throws MetroException;
 
-    boolean processKeyBlock(Block block) throws MetroException;
+    boolean processMyKeyBlock(Block block) throws MetroException;
 
     void fullReset();
 

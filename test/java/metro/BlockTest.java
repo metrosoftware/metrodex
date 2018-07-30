@@ -129,7 +129,7 @@ public class BlockTest extends BlockchainTest {
         Assert.assertTrue(preparedBlock.getTransactions().get(0).getType().isCoinbase());
         Assert.assertArrayEquals(txHashPrivateAccess(preparedBlock.getTransactions().get(0)), preparedBlock.getTxMerkleRoot());
         try {
-            Metro.getBlockchainProcessor().processKeyBlock(preparedBlock);
+            Metro.getBlockchainProcessor().processMyKeyBlock(preparedBlock);
         } catch (BlockchainProcessor.BlockNotAcceptedException e) {
             Assert.assertTrue(e.getMessage().startsWith("Special keyBlock validation failed: INSUFFICIENT_WORK"));
         }

@@ -1140,7 +1140,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     }
 
     @Override
-    public boolean processKeyBlock(Block blk) throws MetroException {
+    public boolean processMyKeyBlock(Block blk) throws MetroException {
         if (!(blk instanceof BlockImpl)) {
             throw new BlockNotAcceptedException("Unknown block class " + blk.getClass().getName() + ", should not happen", new BlockImpl(new byte[0], null));
         }

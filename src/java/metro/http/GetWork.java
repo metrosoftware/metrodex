@@ -97,7 +97,7 @@ public final class GetWork extends APIServlet.APIRequestHandler {
                                 return JSON.prepare(response);
                             }
                             Block extra = Metro.getBlockchainProcessor().composeKeyBlock(blockHeaderBytes, txs);
-                            boolean blockAccepted = Metro.getBlockchainProcessor().processKeyBlock(extra);
+                            boolean blockAccepted = Metro.getBlockchainProcessor().processMyKeyBlock(extra);
                             Logger.logDebugMessage("Solution found. Block Accepted:" + blockAccepted);
                             response.put("result", blockAccepted);
                             return JSON.prepare(response);

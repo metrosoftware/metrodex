@@ -1068,7 +1068,7 @@ public final class Peers {
                 JSONObject response = future.get();
                 if (response != null && response.get("error") == null) {
                     successful += 1;
-                    Logger.logDebugMessage("Success send to peer:" + peerMap.get(future));
+                    //Logger.logDebugMessage("Success send to peer:" + peerMap.get(future));
                 } else {
                     resend.add(peerMap.get(future));
                     Logger.logDebugMessage("Error response from peer:" + peerMap.get(future) + ", response:" + response);

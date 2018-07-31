@@ -173,14 +173,6 @@ var MRS = (function (MRS) {
         return device && device.platform == "Android" && device.version >= "6.0.0";
     };
 
-    MRS.getShapeShiftUrl = function() {
-        return MRS.settings.shape_shift_url;
-    };
-
-    MRS.getChangellyUrl = function() {
-        return MRS.settings.changelly_url;
-    };
-
     MRS.isForgingSupported = function() {
         return !MRS.isMobileApp() && !(MRS.state && MRS.state.apiProxy);
     };

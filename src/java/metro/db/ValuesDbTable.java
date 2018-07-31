@@ -120,7 +120,7 @@ public abstract class ValuesDbTable<T,V> extends DerivedDbTable {
     @Override
     public final void trim(int height) {
         if (multiversion) {
-            VersionedEntityDbTable.trim(db, table, height, dbKeyFactory);
+            VersionedEntityDbTable.trim(db, table, height, dbKeyFactory, 0);
         } else {
             super.trim(height);
         }

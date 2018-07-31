@@ -446,7 +446,7 @@ public abstract class EntityDbTable<T> extends DerivedDbTable {
     @Override
     public void trim(int height) {
         if (multiversion) {
-            VersionedEntityDbTable.trim(db, table, height, dbKeyFactory);
+            VersionedEntityDbTable.trim(db, table, height, dbKeyFactory, 0);
         } else {
             super.trim(height);
         }

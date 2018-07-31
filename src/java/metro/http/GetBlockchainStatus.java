@@ -49,7 +49,7 @@ public final class GetBlockchainStatus extends APIServlet.APIRequestHandler {
         response.put("lastBlock", lastBlock.getStringId());
         response.put("cumulativeDifficulty", lastBlock.getCumulativeDifficulty().toString());
         response.put("numberOfBlocks", lastBlock.getHeight() + 1);
-        response.put("keyHeight", lastKeyBlock.getLocalHeight());
+        response.put("keyHeight", lastKeyBlock != null ? lastKeyBlock.getLocalHeight() + 1 : 0);
         BlockchainProcessor blockchainProcessor = Metro.getBlockchainProcessor();
         Peer lastBlockchainFeeder = blockchainProcessor.getLastBlockchainFeeder();
         response.put("lastBlockchainFeeder", lastBlockchainFeeder == null ? null : lastBlockchainFeeder.getAnnouncedAddress());

@@ -195,6 +195,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 if (peer == null) {
                     return;
                 }
+                Logger.logDebugMessage("getWeightedPeer returned peer: " + peer.getAnnouncedAddress());
                 JSONObject response = peer.send(getCumulativeDifficultyRequest);
                 if (response == null) {
                     return;
@@ -204,6 +205,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 if (peerCumulativeDifficulty == null) {
                     return;
                 }
+                Logger.logDebugMessage("received cumulative difficulty: " + response + ", ours: " + curCumulativeDifficulty);
                 BigInteger betterCumulativeDifficulty = new BigInteger(peerCumulativeDifficulty);
                 if (betterCumulativeDifficulty.compareTo(curCumulativeDifficulty) < 0) {
                     return;
@@ -213,9 +215,10 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                     lastBlockchainFeederHeight = ((Long) response.get("blockchainHeight")).intValue();
                 }
                 if (betterCumulativeDifficulty.equals(curCumulativeDifficulty)) {
+                    Logger.logDebugMessage("difficulty: " + betterCumulativeDifficulty + " was same as ours");
                     return;
                 }
-
+                Logger.logDebugMessage("difficulty: " + betterCumulativeDifficulty + " was better than ours: " + curCumulativeDifficulty);
                 long commonMilestoneBlockId = genesisBlockId;
 
                 if (blockchain.getHeight() > 0) {
@@ -224,7 +227,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 if (commonMilestoneBlockId == 0 || !peerHasMore) {
                     return;
                 }
-
+                Logger.logDebugMessage("common milestone: " + commonMilestoneBlockId);
                 chainBlockIds = getBlockIdsAfterCommon(peer, commonMilestoneBlockId, false);
                 if (chainBlockIds.size() < 2 || !peerHasMore) {
                     if (commonMilestoneBlockId == genesisBlockId) {
@@ -257,6 +260,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                         return;
                     }
                     long lastBlockId = blockchain.getLastBlock().getId();
+                    Logger.logDebugMessage("Trying peer: " + peer.getAnnouncedAddress() + " with common block height " + commonBlock.getHeight());
                     downloadBlockchain(peer, commonBlock, commonBlock.getHeight());
                     if (blockchain.getHeight() - commonBlock.getHeight() <= 10) {
                         return;
@@ -270,6 +274,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                         if (peer.getHost().equals(otherPeer.getHost())) {
                             continue;
                         }
+                        Logger.logDebugMessage("Getting block Ids from other peer: " + otherPeer.getAnnouncedAddress() + ", with common block height " + commonBlock.getHeight());
                         chainBlockIds = getBlockIdsAfterCommon(otherPeer, commonBlockId, true);
                         if (chainBlockIds.isEmpty()) {
                             continue;
@@ -280,11 +285,13 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                             continue;
                         }
                         Block otherPeerCommonBlock = blockchain.getBlock(otherPeerCommonBlockId);
+
                         if (blockchain.getHeight() - otherPeerCommonBlock.getHeight() >= Consensus.BLOCKCHAIN_THREE_HOURS) {
                             continue;
                         }
                         String otherPeerCumulativeDifficulty;
                         JSONObject otherPeerResponse = peer.send(getCumulativeDifficultyRequest);
+                        Logger.logDebugMessage("otherPeer cumulative difficulty response: " + otherPeerResponse);
                         if (otherPeerResponse == null || (otherPeerCumulativeDifficulty = (String) response.get("cumulativeDifficulty")) == null) {
                             continue;
                         }
@@ -578,6 +585,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                         if (peer != null) {
                             peer.blacklist(e);
                         }
+                        Logger.logDebugMessage("Block not accepted:" + e.getMessage());
                         break;
                     }
                 }
@@ -585,6 +593,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         }
 
         if (pushedForkBlocks > 0 && blockchain.getLastBlock().getCumulativeDifficulty().compareTo(curCumulativeDifficulty) < 0) {
+            Logger.logDebugMessage("Insufficient new cumulative difficulty:" + blockchain.getLastBlock().getCumulativeDifficulty() + ", ours: " + curCumulativeDifficulty);
             if (peer != null) {
                 Logger.logDebugMessage("Pop off caused by peer " + peer.getHost() + ", blacklisting");
                 peer.blacklist("Pop off");
@@ -1112,7 +1121,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         return genesisBlockId;
     }
 
-    private boolean processKeyBlockInternal(BlockImpl block) throws MetroException {
+    private boolean processKeyBlockInternal(BlockImpl block, Peer peer) throws MetroException {
         BlockImpl lastBlock = blockchain.getLastBlock();
         if (block.getPreviousBlockId() == lastBlock.getId()) {
             pushBlock(block);
@@ -1127,7 +1136,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             return false;
         }
 
-        boolean added = processFork(null, Collections.singletonList(block), common);
+        boolean added = processFork(peer, Collections.singletonList(block), common);
         if (added) {
             try {
                 Logger.logWarningMessage("Block " + lastBlock.getStringId() + " at height " + lastBlock.getHeight() +
@@ -1148,7 +1157,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
         blockchain.writeLock();
         try {
-            return processKeyBlockInternal(block);
+            return processKeyBlockInternal(block, null);
         } finally {
             blockchain.writeUnlock();
         }
@@ -1164,7 +1173,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
      * @throws MetroException
      */
     @Override
-    public void processPeerBlock(JSONObject request) throws MetroException {
+    public void processPeerBlock(JSONObject request, Peer peer) throws MetroException {
         BlockImpl block = BlockImpl.parseBlock(request, false);
         blockchain.writeLock();
         try {
@@ -1177,7 +1186,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                     request.put("generationSequence", Convert.toHexString(generationSequenceHash));
                     block = BlockImpl.parseBlock(request, true);
                 }
-                processKeyBlockInternal(block);
+                processKeyBlockInternal(block, peer);
                 return;
             }
 

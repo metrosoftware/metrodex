@@ -48,7 +48,7 @@ public interface BlockchainProcessor extends Observable<Block,BlockchainProcesso
 
     int getInitialScanHeight();
 
-    void processPeerBlock(JSONObject request) throws MetroException;
+    void processPeerBlock(JSONObject request, Peer peer) throws MetroException;
 
     boolean processMyKeyBlock(Block block) throws MetroException;
 

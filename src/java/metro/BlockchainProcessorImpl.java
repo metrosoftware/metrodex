@@ -1112,7 +1112,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         return genesisBlockId;
     }
 
-    private boolean processKeyBlockInternal(BlockImpl block) throws MetroException {
+    private boolean processKeyBlockInternal(BlockImpl block, Peer peer) throws MetroException {
         BlockImpl lastBlock = blockchain.getLastBlock();
         if (block.getPreviousBlockId() == lastBlock.getId()) {
             pushBlock(block);
@@ -1127,7 +1127,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             return false;
         }
 
-        boolean added = processFork(null, Collections.singletonList(block), common);
+        boolean added = processFork(peer, Collections.singletonList(block), common);
         if (added) {
             try {
                 Logger.logWarningMessage("Block " + lastBlock.getStringId() + " at height " + lastBlock.getHeight() +
@@ -1148,7 +1148,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
         blockchain.writeLock();
         try {
-            return processKeyBlockInternal(block);
+            return processKeyBlockInternal(block, null);
         } finally {
             blockchain.writeUnlock();
         }
@@ -1164,7 +1164,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
      * @throws MetroException
      */
     @Override
-    public void processPeerBlock(JSONObject request) throws MetroException {
+    public void processPeerBlock(JSONObject request, Peer peer) throws MetroException {
         BlockImpl block = BlockImpl.parseBlock(request, false);
         blockchain.writeLock();
         try {
@@ -1176,7 +1176,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                     request.put("generationSequence", Convert.toHexString(generationSequenceHash));
                     block = BlockImpl.parseBlock(request, true);
                 }
-                processKeyBlockInternal(block);
+                processKeyBlockInternal(block, peer);
                 return;
             }
 

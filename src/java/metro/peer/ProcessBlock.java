@@ -33,7 +33,7 @@ final class ProcessBlock extends PeerServlet.PeerRequestHandler {
     JSONStreamAware processRequest(final JSONObject request, final Peer peer) {
         Peers.peersService.submit(() -> {
             try {
-                Metro.getBlockchainProcessor().processPeerBlock(request);
+                Metro.getBlockchainProcessor().processPeerBlock(request, peer);
             } catch (MetroException | RuntimeException e) {
                 if (peer != null) {
                     peer.blacklist(e);

@@ -1127,7 +1127,10 @@ var MRS = (function(MRS, $, undefined) {
                 if (response.balanceMQT && response.balanceMQT != response.unconfirmedBalanceMQT) {
                     $("#account_full_balance_sidebar").html("(" + MRS.formatStyledAmount(response.balanceMQT) + ")");
                     $("#account_full_balance_sidebar").attr('title', $.t("balance_sidebar"));
-                }
+                } else {
+                    $("#account_full_balance_sidebar").html("");
+                    $("#account_full_balance_sidebar").attr('title', $.t("balance_sidebar"));
+				}
                 $("#account_forged_balance").html(MRS.formatStyledAmount(response.forgedBalanceMQT));
 
                 if (MRS.isDisplayOptionalDashboardTiles()) {

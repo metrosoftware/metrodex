@@ -1177,12 +1177,11 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         BlockImpl block = BlockImpl.parseBlock(request, false);
         blockchain.writeLock();
         try {
-            BlockImpl lastBlock = blockchain.getLastBlock();
-
             if (block.isKeyBlock()) {
                 if (block.getGenerationSequence() == null) {
                     // received from JSON, prevBlockId checked, we can restore hash from DB or block cache
-                    byte[] generationSequenceHash = BlockImpl.advanceGenerationSequenceInKeyBlock(lastBlock);
+                    BlockImpl previousBlock = blockchain.getBlock(block.getPreviousBlockId());
+                    byte[] generationSequenceHash = BlockImpl.advanceGenerationSequenceInKeyBlock(previousBlock);
                     request.put("generationSequence", Convert.toHexString(generationSequenceHash));
                     block = BlockImpl.parseBlock(request, true);
                 }
@@ -1190,6 +1189,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 return;
             }
 
+            BlockImpl lastBlock = blockchain.getLastBlock();
             final boolean isBlockchainContinuation = block.getPreviousBlockId() == lastBlock.getId();
             final boolean isOneFastBlockReplacement = !lastBlock.isKeyBlock() && block.getPreviousBlockId() == lastBlock.getPreviousBlockId() && block.getTimestamp() < lastBlock.getTimestamp();
 

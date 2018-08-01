@@ -32,7 +32,7 @@
   - allows payment *transactions*, *exchange trading*, *name registrations*, *voting* and much more
   - no need to trust third parties anymore
 
-### Forging (aka block generation) ###
+### Forging (fast block generation) ###
 
   - reward for securing the network
   - start via the browser interface
@@ -51,7 +51,7 @@ Running: run.bat
 Running: run.sh 
 
 
-## Mining ###
+## Mining (key block generation) ###
 
 ### Configuring wallet ###
 Update conf/metro.properties with your white IP. This is needed for adding you as peer by other nodes.
@@ -122,7 +122,7 @@ WARNING: use only miners with metro algo support. Now it's only our miners. We f
   - help users on issues
   - join the forums and find places where you can help
   - get your friends to join Metro
-  - generate blocks via the forging capability
+  - generate blocks via forging or mining
   - ask us, the dev team
 
 ----

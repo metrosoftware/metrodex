@@ -75,7 +75,7 @@ public class Consensus {
         System.out.println(sum);
     }
 
-    private static Long[] badBlocks = {0L, -3022807767538079352L};
+    private static Long[] badBlocks = {0L, -284693093706906331L};
     public static Set<Long> badBlockSet = new HashSet<>();
 
     static {

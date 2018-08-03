@@ -18,7 +18,6 @@
 package metro;
 
 import metro.http.APICall;
-import metro.util.Convert;
 import metro.util.Logger;
 import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONObject;
@@ -274,18 +273,18 @@ public class ForgersMerkleTest extends BlockchainTest {
                 param("period", 15).
                 param("feeMQT", Constants.ONE_MTR).
                 build().invoke();
-        Logger.logDebugMessage("sendMoney: " + response);
+        Logger.logDebugMessage("leaseBalance: " + response);
         generateBlockBy(ESAU);
         Assert.assertNotNull(mineBlock());
         List<Pair<String, Integer>> forgers = Metro.getBlockchainProcessor().getCurrentForgers();
         Assert.assertEquals(0, forgers.size());
 
-        // Alice has 1000000 + 9999 MTR effective balance
+        // Alice has 1000000 + 9999 MTR effective balance, and has mined two blocks so far
         generateBlockBy(ALICE);
         Assert.assertNotNull(mineBlock());
         forgers = Metro.getBlockchainProcessor().getCurrentForgers();
         Assert.assertEquals(1, forgers.size());
-        Assert.assertEquals(1009999, forgers.iterator().next().getRight().intValue());
+        Assert.assertEquals(1014000, forgers.iterator().next().getRight().intValue());
 
         // Alice sends 999998 to Bob, paying 1 MTR comission, still has enough to remain in forgersMerkle
         response = new APICall.Builder("sendMoney").
@@ -299,13 +298,23 @@ public class ForgersMerkleTest extends BlockchainTest {
         Assert.assertNotNull(mineBlock());
         forgers = Metro.getBlockchainProcessor().getCurrentForgers();
         Assert.assertEquals(1, forgers.size());
-        Assert.assertEquals(10000, forgers.iterator().next().getRight().intValue());
+        // 2 MTR forged, 2000 mined by Alice
+        Assert.assertEquals(16002, forgers.iterator().next().getRight().intValue());
+//        Assert.assertEquals(16002, ESAU.getAccount().getUnconfirmedBalanceMQT());
 
-        // Esau sends 10 to Bob, paying 1 MTR comission, his lessee Alice now should leave forgersMerkle
+        // Esau sends 2001 to Bob, paying 1 MTR comission, his lessee Alice now should leave forgersMerkle
         response = new APICall.Builder("sendMoney").
                 param("secretPhrase", ESAU.getSecretPhrase()).
                 param("recipient", BOB.getStrId()).
-                param("amountMQT", 10 * Constants.ONE_MTR).
+                param("amountMQT", 9002 * Constants.ONE_MTR).
+                param("feeMQT", Constants.ONE_MTR).
+                build().invoke();
+        Logger.logDebugMessage("sendMoney: " + response);
+        // Alice has forged 2MTR and mined again, so send extra to Bob in order to test Esau's diminishing balance influence
+        response = new APICall.Builder("sendMoney").
+                param("secretPhrase", ALICE.getSecretPhrase()).
+                param("recipient", BOB.getStrId()).
+                param("amountMQT", 2000 * Constants.ONE_MTR).
                 param("feeMQT", Constants.ONE_MTR).
                 build().invoke();
         Logger.logDebugMessage("sendMoney: " + response);
@@ -319,7 +328,7 @@ public class ForgersMerkleTest extends BlockchainTest {
         response = new APICall.Builder("sendMoney").
                 param("secretPhrase", BOB.getSecretPhrase()).
                 param("recipient", ESAU.getStrId()).
-                param("amountMQT", 100 * Constants.ONE_MTR).
+                param("amountMQT", 9005 * Constants.ONE_MTR).
                 param("feeMQT", Constants.ONE_MTR).
                 build().invoke();
         Logger.logDebugMessage("sendMoney: " + response);
@@ -335,9 +344,10 @@ public class ForgersMerkleTest extends BlockchainTest {
         Assert.assertEquals(2, forgers.size());
         // Alice got 1MTR commission 4 times
         Iterator<Pair<String, Integer>> iterator = forgers.iterator();
-        Assert.assertEquals(10004, iterator.next().getRight().intValue());
-        // Esau's initial 10000 plus 100 from Bob minus 11 after sending to Bob; 1MTR commission paid to himself in the 1st fast block has now matured
-        Assert.assertEquals(10089, iterator.next().getRight().intValue());
+        // Esau's money
+        Assert.assertEquals(10002, iterator.next().getRight().intValue());
+        // Alice's money (forged and mined reward show up now)
+        Assert.assertEquals(26004, iterator.next().getRight().intValue());
     }
 
     @Test
@@ -460,4 +470,26 @@ public class ForgersMerkleTest extends BlockchainTest {
         // TODO
     }
 
+    @Test
+    public void testLessorBalanceZeroed() throws MetroException {
+        for (int i = 1; i < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS; i++) {
+            Assert.assertNotNull(mineBlock());
+        }
+        // Esau leases 10000MTR to Alice...
+        JSONObject response = new APICall.Builder("leaseBalance").
+                param("secretPhrase", ESAU.getSecretPhrase()).
+                param("recipient", ALICE.getStrId()).
+                param("period", 15).
+                param("feeMQT", Constants.ONE_MTR).
+                build().invoke();
+        Logger.logDebugMessage("leaseBalance: " + response);
+        generateBlockBy(ESAU);
+        Assert.assertNotNull(mineBlock());
+        List<Pair<String, Integer>> forgers = Metro.getBlockchainProcessor().getCurrentForgers();
+        // Esau was the only forger, and now he hasn't enough funds to enter forgersMerkle, while Alice (lessee) hasn't forged yet
+        Assert.assertEquals(0, forgers.size());
+        Assert.assertEquals(0, ESAU.getAccount().getEffectiveBalanceMTR());
+        Assert.assertEquals(1000000000000l, ESAU.getAccount().getGuaranteedBalanceMQT());
+        Assert.assertEquals(999900000000l, ESAU.getAccount().getUnconfirmedBalanceMQT());
+    }
 }

@@ -26,9 +26,12 @@ import java.util.Properties;
 
 public abstract class AbstractBlockchainTest {
 
+    // Esau's MTR address: MTR-HW98-D36H-6ZUW-R8R3-8PH2-QW3H
+    protected static final String esauSecretPhrase = "myfuUrX4AKYbD7npSxCAHPypWdAg3SEbSG";
     protected static BlockchainProcessorImpl blockchainProcessor;
     protected static BlockchainImpl blockchain;
     private static final Object doneLock = new Object();
+    protected static Tester ESAU;
     private static boolean done = false;
 
     protected static Properties newTestProperties() {
@@ -66,6 +69,7 @@ public abstract class AbstractBlockchainTest {
             }
         };
         blockchainProcessor.addListener(countingListener, BlockchainProcessor.Event.BLOCK_PUSHED);
+        ESAU = new Tester(esauSecretPhrase);
     }
 
     protected static void shutdown() {

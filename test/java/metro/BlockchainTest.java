@@ -45,7 +45,6 @@ public abstract class BlockchainTest extends AbstractBlockchainTest {
     protected static Tester BOB;
     protected static Tester CHUCK;
     protected static Tester DAVE;
-    protected static Tester ESAU;
 
     protected static int baseHeight;
 
@@ -56,8 +55,6 @@ public abstract class BlockchainTest extends AbstractBlockchainTest {
     private static final String bobSecretPhrase2 = "rshw9abtpsa2";
     private static final String chuckSecretPhrase = "eOdBVLMgySFvyiTy8xMuRXDTr45oTzB7L5J";
     private static final String daveSecretPhrase = "t9G2ymCmDsQij7VtYinqrbGCOAtDDA3WiNr";
-    // Esau's MTR address: MTR-HW98-D36H-6ZUW-R8R3-8PH2-QW3H
-    private static final String esauSecretPhrase = "myfuUrX4AKYbD7npSxCAHPypWdAg3SEbSG";
 
     protected static boolean isMetroInitialized = false;
 
@@ -67,7 +64,7 @@ public abstract class BlockchainTest extends AbstractBlockchainTest {
             properties.setProperty("metro.isTestnet", "true");
             properties.setProperty("metro.isOffline", "true");
             properties.setProperty("metro.enableFakeForging", "true");
-            properties.setProperty("metro.fakeForgingAccounts", "{\"rs\":[\"" + forgerAccountIds.get(0) + "\",\"" + forgerAccountIds.get(1) + "\",\"" + forgerAccountIds.get(2) + "\"]}");
+
             properties.setProperty("metro.testnetMaxWorkTarget", "1f00ffff");
             properties.setProperty("metro.testnetGuaranteedBalanceKeyblockConfirmations", "10");
             properties.setProperty("metro.testnetCoinbaseMaturityPeriodInKeyblocks", "2");
@@ -79,6 +76,7 @@ public abstract class BlockchainTest extends AbstractBlockchainTest {
             properties.setProperty("metro.deleteFinishedShufflings", "false");
             properties.setProperty("metro.disableSecurityPolicy", "true");
             properties.setProperty("metro.disableAdminPassword", "true");
+            properties.setProperty("metro.testnetGenesisBalancesTimeLock", "false");
             AbstractBlockchainTest.init(properties);
             isMetroInitialized = true;
         }
@@ -95,7 +93,6 @@ public abstract class BlockchainTest extends AbstractBlockchainTest {
         BOB = new Tester(bobSecretPhrase2);
         CHUCK = new Tester(chuckSecretPhrase);
         DAVE = new Tester(daveSecretPhrase);
-        ESAU = new Tester(esauSecretPhrase);
     }
 
     @After

@@ -5,45 +5,33 @@ import metro.http.APICall;
 import metro.util.Convert;
 import metro.util.Logger;
 import metro.util.Time;
+import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONObject;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
+import static metro.BlockchainTest.generateBlockBy;
 import static metro.BlockchainTest.mineBlock;
 
-public class GenesisTimeLockTest extends AbstractBlockchainTest {
-
-    protected static Tester FORGY;
-    protected static Tester ALICE;
-    protected static Tester BOB;
-    protected static Tester CHUCK;
-    protected static Tester DAVE;
+public class GenesisTimeLockTest extends AbstractForgingTest {
 
     protected static int baseHeight;
 
     protected static String forgerSecretPhrase = "aSykrgKGZNlSVOMDxkZZgbTvQqJPGtsBggb";
-    protected static final List<String> forgerAccountIds = Arrays.asList("MTR-SZKV-J8TH-AL2R-LKV6-ZW32-APYM","MTR-9KZM-KNYY-FCUM-TD8V-TFG3-5R5U");
-
-    public static final String aliceSecretPhrase = "hope peace happen touch easy pretend worthless talk them indeed wheel state";
-    private static final String bobSecretPhrase2 = "rshw9abtpsa2";
-    private static final String chuckSecretPhrase = "eOdBVLMgySFvyiTy8xMuRXDTr45oTzB7L5J";
-    private static final String daveSecretPhrase = "t9G2ymCmDsQij7VtYinqrbGCOAtDDA3WiNr";
 
     protected static boolean isMetroInitialized = false;
 
     public static void initMetro() {
         if (!isMetroInitialized) {
-            Properties properties = ManualForgingTest.newTestProperties();
+            Properties properties = AbstractForgingTest.newTestProperties();
             properties.setProperty("metro.isTestnet", "true");
             properties.setProperty("metro.isOffline", "true");
             properties.setProperty("metro.enableFakeForging", "true");
-            properties.setProperty("metro.fakeForgingAccounts", "{\"rs\":[\"" + forgerAccountIds.get(0) + "\",\"" + forgerAccountIds.get(1) + "\"]}");
             properties.setProperty("metro.testnetMaxWorkTarget", "1f00ffff");
             properties.setProperty("metro.testnetGuaranteedBalanceKeyblockConfirmations", "10");
             properties.setProperty("metro.testnetCoinbaseMaturityPeriodInKeyblocks", "2");
@@ -56,7 +44,7 @@ public class GenesisTimeLockTest extends AbstractBlockchainTest {
             properties.setProperty("metro.disableSecurityPolicy", "true");
             properties.setProperty("metro.disableAdminPassword", "true");
             properties.setProperty("metro.testnetGenesisBalancesTimeLock", "true");
-            AbstractBlockchainTest.init(properties);
+            AbstractForgingTest.init(properties);
             isMetroInitialized = true;
         }
     }
@@ -67,11 +55,6 @@ public class GenesisTimeLockTest extends AbstractBlockchainTest {
         Metro.setTime(new Time.CounterTime(Metro.getEpochTime()));
         baseHeight = blockchain.getHeight();
         Logger.logMessage("baseHeight: " + baseHeight);
-        FORGY = new Tester(forgerSecretPhrase);
-        ALICE = new Tester(aliceSecretPhrase);
-        BOB = new Tester(bobSecretPhrase2);
-        CHUCK = new Tester(chuckSecretPhrase);
-        DAVE = new Tester(daveSecretPhrase);
     }
 
     @After
@@ -120,6 +103,48 @@ public class GenesisTimeLockTest extends AbstractBlockchainTest {
         generateBlock();
         Assert.assertEquals(3 * Constants.ONE_MTR, BOB.getBalanceDiff());
         Assert.assertEquals((-1 - 3) * Constants.ONE_MTR, ALICE.getBalanceDiff());
+    }
+
+    @Test
+    public void testLesseeBalanceVariationsWithExpiration() throws MetroException {
+        // Esau tries to lease 10000MTR to Alice, but doesn't have enough readily available funds to pay 1MTR commission
+        JSONObject response = new APICall.Builder("leaseBalance").
+                param("secretPhrase", ESAU.getSecretPhrase()).
+                param("recipient", ALICE.getStrId()).
+                param("period", 15).
+                param("feeMQT", Constants.ONE_MTR).
+                build().invoke();
+        Logger.logDebugMessage("leaseBalance: " + response);
+        generateBlockBy(ESAU);
+        Assert.assertNotNull(mineBlock());
+        List<Pair<String, Integer>> forgers = Metro.getBlockchainProcessor().getCurrentForgers();
+        // he is forger, since he still has unleased min amount of 10000MTR:
+        Assert.assertEquals(1, forgers.size());
+        // Bob helps him with 2MTR
+        response = new APICall.Builder("sendMoney").
+                param("secretPhrase", BOB.getSecretPhrase()).
+                param("recipient", ESAU.getStrId()).
+                param("amountMQT", 2 * Constants.ONE_MTR).
+                param("feeMQT", Constants.ONE_MTR).
+                build().invoke();
+        Logger.logDebugMessage("sendMoney: " + response);
+        generateBlockBy(ESAU);
+        response = new APICall.Builder("leaseBalance").
+                param("secretPhrase", ESAU.getSecretPhrase()).
+                param("recipient", ALICE.getStrId()).
+                param("period", 15).
+                param("feeMQT", Constants.ONE_MTR).
+                build().invoke();
+        Logger.logDebugMessage("leaseBalance: " + response);
+        generateBlockBy(ESAU);
+        // balance is now leased to Alice, but she hasn't forged yet; Esau doesn't have 10000 anymore
+        Assert.assertNotNull(mineBlock());
+        forgers = Metro.getBlockchainProcessor().getCurrentForgers();
+        Assert.assertEquals(0, forgers.size());
+        Assert.assertEquals(10000, ESAU.getAccount().getEffectiveBalanceMTR());
+        Assert.assertEquals(1000100000000l, ESAU.getAccount().getGuaranteedBalanceMQT());
+        // 1.1MTR?
+        Assert.assertEquals(110000000, ESAU.getAccount().getUnconfirmedBalanceMQT());
     }
 
     public static void generateBlock() {

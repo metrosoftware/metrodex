@@ -110,7 +110,7 @@ public final class Constants {
     public static final short SHUFFLING_PROCESSING_DEADLINE = (short)(TIMERATIO_IN_BLOCKS * (isTestnet ? 10 : 100));
 
     public static final long MAX_REFERENCED_TRANSACTION_TIMESPAN = 60 * BLOCKCHAIN_NXT_DAY * 60 * 1000;
-    public static final int CHECKSUM_BLOCK_1 = 1313;
+    public static final int CHECKSUM_BLOCK_1 = 1312;
 
     public static final int LAST_CHECKSUM_BLOCK = 0;
     // LAST_KNOWN_BLOCK must also be set in html/www/js/mrs.constants.js

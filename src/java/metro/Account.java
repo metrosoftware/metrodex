@@ -1047,8 +1047,10 @@ public final class Account {
             if (haveAnotherGenesisAccount) {
                 Account genesis = Account.getAccountMandatory(new Account.FullId(id,0));
                 genesis.replace(getFullId());
+                haveAnotherGenesisAccount = false;
             }
             accountTable.insert(this);
+
         }
     }
 

@@ -411,7 +411,7 @@ var MRS = (function(MRS, $) {
         var data = {
 			"recipient": $.trim($("#inline_message_recipient").val()),
 			"feeMTR": "1",
-			"deadline": "1440",
+			"deadline": "28800",
 			"secretPhrase": $.trim(passpharse)
 		};
 

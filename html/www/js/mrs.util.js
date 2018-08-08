@@ -1634,7 +1634,7 @@ var MRS = (function (MRS, $, undefined) {
     MRS.getMandatoryParams = function() {
         return {
             feeMQT: "0",
-            deadline: "1440"
+            deadline: "28800"
         }
     };
 

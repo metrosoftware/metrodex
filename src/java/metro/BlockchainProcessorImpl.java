@@ -2155,14 +2155,31 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 height = 0;
             }
             Logger.logMessage("Scanning blockchain starting from height " + height + "...");
+            boolean doValidate = validate;
+            int scanAfter2ndClusterFromHeight = 0;
             if (validate) {
                 Logger.logDebugMessage("Also performing block/tx validation...");
-            }
-            Block lastKeyBlock = BlockDb.findLastKeyBlock(height);
-            if (validate && lastKeyBlock == null) {
-                // we are scanning in the 1st cluster, so initial value of forgersMerkle would be 64 zeroes
-                // TODO #265
-                resetForgersMerkle();
+                Block lastKeyBlock = BlockDb.findLastKeyBlock(height);
+                if (lastKeyBlock == null) {
+                    // we are scanning in the 1st cluster, so initial value of forgersMerkle would be 64 zeroes
+                    resetForgersMerkle();
+                } else {
+                    // bug #265 solution: start with validate=false on key block preceding the "scanned area" (outside of it)
+                    // accept on that block will update the correct Merkle root in memory
+                    doValidate = false;
+                    // switch to validate=true once we are in the scanned area - if passed height is at key block, we have to start with previous one, to be ready
+                    scanAfter2ndClusterFromHeight = height;
+                    if (lastKeyBlock.getHeight() == height) {
+                        Block secondLastKeyBlock = BlockDb.findLastKeyBlock(height - 1);
+                        if (secondLastKeyBlock != null) {
+                            height = secondLastKeyBlock.getHeight();
+                        } else {
+                            resetForgersMerkle();
+                        }
+                    } else {
+                        height = lastKeyBlock.getHeight();
+                    }
+                }
             }
             try (Connection con = Db.db.getConnection();
                  PreparedStatement pstmtSelect = con.prepareStatement("SELECT * FROM block WHERE " + (height > 0 ? "height >= ? AND " : "")
@@ -2221,16 +2238,20 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                             try {
                                 dbId = rs.getLong("db_id");
                                 currentBlock = BlockDb.loadBlock(con, rs, true);
-                                if (currentBlock.getHeight() > 0) {
+                                int curHeight = currentBlock.getHeight();
+                                if (scanAfter2ndClusterFromHeight > 0 && curHeight >= scanAfter2ndClusterFromHeight) {
+                                    doValidate = true;
+                                }
+                                if (curHeight > 0) {
                                     currentBlock.loadTransactions();
-                                    if (currentBlock.getId() != currentBlockId || currentBlock.getHeight() > blockchain.getHeight() + 1) {
+                                    if (currentBlock.getId() != currentBlockId || curHeight > blockchain.getHeight() + 1) {
                                         throw new MetroException.NotValidException("Database blocks in the wrong order!");
                                     }
                                     Map<TransactionType, Map<String, Integer>> duplicates = new HashMap<>();
                                     List<TransactionImpl> validPhasedTransactions = new ArrayList<>();
                                     List<TransactionImpl> invalidPhasedTransactions = new ArrayList<>();
                                     validatePhasedTransactions(blockchain.getHeight(), validPhasedTransactions, invalidPhasedTransactions, duplicates);
-                                    if (validate && currentBlock.getHeight() > 0) {
+                                    if (doValidate && curHeight > 0) {
                                         long curTime = Metro.getEpochTime();
                                         validate(currentBlock, blockchain.getLastBlock(), blockchain.getLastKeyBlock(), curTime);
                                         byte[] blockBytes = currentBlock.bytes();

@@ -32,6 +32,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -77,7 +78,7 @@ public final class PassphraseRecovery {
             }
             String dictionaryStr = Metro.getStringProperty("recoveryDictionary", "");
             char[] dictionary;
-            switch(dictionaryStr.toLowerCase()) {
+            switch(dictionaryStr.toLowerCase(Locale.ROOT)) {
                 case "":
                 case "ascii":
                     dictionary = getDictionary(32, 127);

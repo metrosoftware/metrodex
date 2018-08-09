@@ -47,6 +47,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -1795,7 +1796,7 @@ public final class Account {
             if (account == null || (account = account.trim()).isEmpty()) {
                 return null;
             }
-            account = account.toUpperCase();
+            account = account.toUpperCase(Locale.ROOT);
             int prefixEnd = account.indexOf('-');
             if (prefixEnd > 0) {
                 return Crypto.rsDecode(account.substring(prefixEnd + 1));

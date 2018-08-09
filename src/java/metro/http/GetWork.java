@@ -22,6 +22,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -89,7 +90,7 @@ public final class GetWork extends APIServlet.APIRequestHandler {
                             Logger.logDebugMessage("getwork:" + content);
                             String blockHeader = (String) params.get(0);
                             String merkle = blockHeader.substring(20, 84);
-                            byte[] blockHeaderBytes = Convert.parseHexString(blockHeader.toLowerCase());
+                            byte[] blockHeaderBytes = Convert.parseHexString(blockHeader.toLowerCase(Locale.ROOT));
                             List<TransactionImpl> txs = findTxsByMerkle(merkle);
                             if (txs == null) {
                                 Logger.logErrorMessage("Too small get work cache.");

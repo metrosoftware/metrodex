@@ -59,6 +59,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
 
@@ -662,7 +663,7 @@ final class PeerImpl implements Peer {
                 if (!Peers.ignorePeerAnnouncedAddress) {
                     String newAnnouncedAddress = Convert.emptyToNull((String) response.get("announcedAddress"));
                     if (newAnnouncedAddress != null) {
-                        newAnnouncedAddress = Peers.addressWithPort(newAnnouncedAddress.toLowerCase());
+                        newAnnouncedAddress = Peers.addressWithPort(newAnnouncedAddress.toLowerCase(Locale.ROOT));
                         if (newAnnouncedAddress != null) {
                             if (!verifyAnnouncedAddress(newAnnouncedAddress)) {
                                 Logger.logDebugMessage("Connect: new announced address for " + host + " not accepted");

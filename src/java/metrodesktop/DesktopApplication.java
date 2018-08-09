@@ -142,7 +142,7 @@ public class DesktopApplication extends Application {
                     javaScriptBridge = new JavaScriptBridge(this); // Must be a member variable to prevent gc
                     window.setMember("java", javaScriptBridge);
                     Locale locale = Locale.getDefault();
-                    String language = locale.getLanguage().toLowerCase() + "-" + locale.getCountry().toUpperCase();
+                    String language = locale.getLanguage().toLowerCase(Locale.ROOT) + "-" + locale.getCountry().toUpperCase(Locale.ROOT);
                     window.setMember("javaFxLanguage", language);
                     webEngine.executeScript("console.log = function(msg) { java.log(msg); };");
                     stage.setTitle(Constants.PROJECT_NAME + " Desktop - " + webEngine.getLocation());

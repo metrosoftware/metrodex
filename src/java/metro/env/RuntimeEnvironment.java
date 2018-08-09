@@ -19,13 +19,14 @@ package metro.env;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Locale;
 
 public class RuntimeEnvironment {
 
     public static final String RUNTIME_MODE_ARG = "metro.runtime.mode";
     public static final String DIRPROVIDER_ARG = "metro.runtime.dirProvider";
 
-    private static final String osname = System.getProperty("os.name").toLowerCase();
+    private static final String osname = System.getProperty("os.name").toLowerCase(Locale.ROOT);
     private static final boolean isHeadless;
     private static final boolean hasJavaFX;
     static {

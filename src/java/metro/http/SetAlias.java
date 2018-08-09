@@ -29,6 +29,8 @@ import org.json.simple.JSONStreamAware;
 
 import javax.servlet.http.HttpServletRequest;
 
+import java.util.Locale;
+
 import static metro.http.JSONResponses.INCORRECT_ALIAS_LENGTH;
 import static metro.http.JSONResponses.INCORRECT_ALIAS_NAME;
 import static metro.http.JSONResponses.INCORRECT_URI_LENGTH;
@@ -56,7 +58,7 @@ public final class SetAlias extends CreateTransaction {
             return INCORRECT_ALIAS_LENGTH;
         }
 
-        String normalizedAlias = aliasName.toLowerCase();
+        String normalizedAlias = aliasName.toLowerCase(Locale.ROOT);
         for (int i = 0; i < normalizedAlias.length(); i++) {
             if (Constants.ALPHABET.indexOf(normalizedAlias.charAt(i)) < 0) {
                 return INCORRECT_ALIAS_NAME;

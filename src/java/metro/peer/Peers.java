@@ -62,6 +62,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
@@ -874,7 +875,7 @@ public final class Peers {
         if (announcedAddress == null) {
             return null;
         }
-        announcedAddress = announcedAddress.trim().toLowerCase();
+        announcedAddress = announcedAddress.trim().toLowerCase(Locale.ROOT);
         PeerImpl peer;
         if ((peer = peers.get(announcedAddress)) != null) {
             return peer;
@@ -978,7 +979,7 @@ public final class Peers {
     }
 
     public static boolean addPeer(Peer peer, String newAnnouncedAddress) {
-        setAnnouncedAddress((PeerImpl)peer, newAnnouncedAddress.toLowerCase());
+        setAnnouncedAddress((PeerImpl)peer, newAnnouncedAddress.toLowerCase(Locale.ROOT));
         return addPeer(peer);
     }
 

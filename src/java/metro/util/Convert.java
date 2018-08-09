@@ -38,6 +38,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -344,7 +345,7 @@ public final class Convert {
     public static byte[] encodeTimeCapsuleWithoutLength(String text) {
         BitSet bits = new BitSet(text.length() * 5);
         int pos = 0;
-        for (char ch : text.toUpperCase().toCharArray()) {
+        for (char ch : text.toUpperCase(Locale.ROOT).toCharArray()) {
             int i = (int) ch;
             // 0 means space, 1 means A, 26 means Z
             if (i < 65)

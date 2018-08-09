@@ -24,6 +24,8 @@ import metro.util.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONStreamAware;
 
+import java.util.Locale;
+
 final class GetInfo extends PeerServlet.PeerRequestHandler {
 
     static final GetInfo instance = new GetInfo();
@@ -48,7 +50,7 @@ final class GetInfo extends PeerServlet.PeerRequestHandler {
         if (!Peers.ignorePeerAnnouncedAddress) {
             String announcedAddress = Convert.emptyToNull((String) request.get("announcedAddress"));
             if (announcedAddress != null) {
-                announcedAddress = Peers.addressWithPort(announcedAddress.toLowerCase());
+                announcedAddress = Peers.addressWithPort(announcedAddress.toLowerCase(Locale.ROOT));
                 if (announcedAddress != null) {
                     if (!peerImpl.verifyAnnouncedAddress(announcedAddress)) {
                         Logger.logDebugMessage("GetInfo: ignoring invalid announced address for " + peerImpl.getHost());

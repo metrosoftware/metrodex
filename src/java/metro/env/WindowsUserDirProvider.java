@@ -20,10 +20,11 @@ package metro.env;
 import metro.Metro;
 
 import java.nio.file.Paths;
+import java.util.Locale;
 
 public class WindowsUserDirProvider extends DesktopUserDirProvider {
 
-    private static final String METRO_USER_HOME = Paths.get(System.getProperty("user.home"), "AppData", "Roaming", Metro.APPLICATION.toUpperCase()).toString();
+    private static final String METRO_USER_HOME = Paths.get(System.getProperty("user.home"), "AppData", "Roaming", Metro.APPLICATION.toUpperCase(Locale.ROOT)).toString();
 
     @Override
     public String getUserHomeDir() {

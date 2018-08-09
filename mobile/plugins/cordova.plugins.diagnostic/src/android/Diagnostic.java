@@ -993,14 +993,14 @@ public class Diagnostic extends CordovaPlugin{
         //Below few lines is to remove paths which may not be external memory card, like OTG (feel free to comment them out)
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             for (int i = 0; i < results.size(); i++) {
-                if (!results.get(i).toLowerCase().matches(".*[0-9a-f]{4}[-][0-9a-f]{4}.*")) {
+                if (!results.get(i).toLowerCase(Locale.ROOT).matches(".*[0-9a-f]{4}[-][0-9a-f]{4}.*")) {
                     Log.d(TAG, results.get(i) + " might not be extSDcard");
                     results.remove(i--);
                 }
             }
         } else {
             for (int i = 0; i < results.size(); i++) {
-                if (!results.get(i).toLowerCase().contains("ext") && !results.get(i).toLowerCase().contains("sdcard")) {
+                if (!results.get(i).toLowerCase(Locale.ROOT).contains("ext") && !results.get(i).toLowerCase(Locale.ROOT).contains("sdcard")) {
                     Log.d(TAG, results.get(i)+" might not be extSDcard");
                     results.remove(i--);
                 }

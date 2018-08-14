@@ -77,9 +77,7 @@ import static metro.util.Convert.HASH_SIZE;
 final class BlockchainProcessorImpl implements BlockchainProcessor {
 
     private static final byte[] CHECKSUM_1 = Constants.isTestnet ?
-            null
-            :
-            null;
+            null : Convert.parseHexString("4e3fc0fcb9350472ac1a7f2d510b4a806671a517e0ede5c4a2f26499c84a2ce7");
 
     private static final BlockchainProcessorImpl instance = new BlockchainProcessorImpl();
 

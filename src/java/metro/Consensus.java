@@ -16,8 +16,10 @@ public class Consensus {
     public static final int POW_TARGET_SPACING = 10 * 60 * 1000; //10 min
     public static final int POW_RETARGET_INTERVAL = 12;
 
-    public static final int MAX_WORK_BITS = Constants.isTestnet ? Integer.parseUnsignedInt(Metro.getStringProperty("metro.testnetMaxWorkTarget", "1e00ffff"),16) : 0x1d000fff;
-    public static final BigInteger MAX_WORK_TARGET = BitcoinJUtils.decodeCompactBits(MAX_WORK_BITS);
+    public static final int START_WORK_BITS = Constants.isTestnet ? Integer.parseUnsignedInt(Metro.getStringProperty("metro.testnetMaxWorkTarget", "1e00ffff"),16) : 0x1d000fff;
+    public static final BigInteger MAX_WORK_TARGET = BitcoinJUtils.decodeCompactBits(START_WORK_BITS);
+    public static final int DIFFICULTY_BITS = 0x1d00ffff;
+    public static final BigInteger DIFFICULTY_MAX_TARGET = BitcoinJUtils.decodeCompactBits(DIFFICULTY_BITS);
 
     public static final boolean GENESIS_BALANCES_TIME_LOCK = !Constants.isTestnet || Metro.getBooleanProperty("metro.testnetGenesisBalancesTimeLock", false);
 

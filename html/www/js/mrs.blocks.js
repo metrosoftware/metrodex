@@ -326,7 +326,7 @@ var MRS = (function(MRS, $) {
                 "<td>" + MRS.formatAmount(block.numberOfTransactions) + "</td>" +
                 "<td>" + MRS.getAccountLink(block, "generator") + "</td>" +
                 "<td>" + MRS.formatVolume(block.payloadLength) + "</td>" +
-				"<td>" + MRS.baseTargetPercent(block).pad(4) + " %</td>" +
+				"<td>" + (block.nonce ? block.keyBlockDifficulty : (MRS.baseTargetPercent(block).pad(4) + " %")) + "</td>" +
             "</tr>";
 		}
 

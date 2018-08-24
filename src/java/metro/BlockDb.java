@@ -214,7 +214,7 @@ final class BlockDb {
         }
         // Search the database
         try (Connection con = Db.db.getConnection();
-             PreparedStatement pstmt = con.prepareStatement("SELECT * FROM block WHERE local_height = ? AND nonce IS " + (isKeyBlock ? "NOT NULL" : "NULL"))) {
+             PreparedStatement pstmt = con.prepareStatement("SELECT * FROM block WHERE local_height = ? AND version " + (isKeyBlock ? "< 0" : "> 0"))) {
             pstmt.setInt(1, height);
             try (ResultSet rs = pstmt.executeQuery()) {
                 BlockImpl block;
@@ -247,7 +247,7 @@ final class BlockDb {
 
     static BlockImpl findLastKeyBlock(int height) {
         try (Connection con = Db.db.getConnection();
-             PreparedStatement pstmt = con.prepareStatement("SELECT * FROM block WHERE nonce IS NOT NULL AND (next_block_id <> 0 OR next_block_id IS NULL) AND height <= ? ORDER BY timestamp DESC LIMIT 1")) {
+             PreparedStatement pstmt = con.prepareStatement("SELECT * FROM block WHERE version < 0 AND (next_block_id <> 0 OR next_block_id IS NULL) AND height <= ? ORDER BY height DESC LIMIT 1")) {
             pstmt.setInt(1, height);
             BlockImpl block = null;
             try (ResultSet rs = pstmt.executeQuery()) {
@@ -263,7 +263,7 @@ final class BlockDb {
 
     static BlockImpl findLastPosBlock(int height) {
         try (Connection con = Db.db.getConnection();
-             PreparedStatement pstmt = con.prepareStatement("SELECT * FROM block WHERE nonce IS NULL AND (next_block_id <> 0 OR next_block_id IS NULL) AND height <= ? ORDER BY timestamp DESC LIMIT 1")) {
+             PreparedStatement pstmt = con.prepareStatement("SELECT * FROM block WHERE version > 0 AND (next_block_id <> 0 OR next_block_id IS NULL) AND height <= ? ORDER BY height DESC LIMIT 1")) {
             pstmt.setInt(1, height);
             BlockImpl block = null;
             try (ResultSet rs = pstmt.executeQuery()) {
@@ -279,7 +279,7 @@ final class BlockDb {
 
     static BlockImpl findLastKeyBlock(long timestamp) {
         try (Connection con = Db.db.getConnection();
-             PreparedStatement pstmt = con.prepareStatement("SELECT * FROM block WHERE nonce IS NOT NULL AND timestamp <= ? ORDER BY timestamp DESC LIMIT 1")) {
+             PreparedStatement pstmt = con.prepareStatement("SELECT * FROM block WHERE version < 0 AND timestamp <= ? ORDER BY timestamp DESC LIMIT 1")) {
             pstmt.setLong(1, timestamp);
             BlockImpl block = null;
             try (ResultSet rs = pstmt.executeQuery()) {

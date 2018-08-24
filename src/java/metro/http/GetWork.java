@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 public final class GetWork extends APIServlet.APIRequestHandler {
 
     static final GetWork instance = new GetWork();
-    private static final int CACHE_SIZE = 5;
+    private static final int CACHE_SIZE = 25;
 
     private final long transactionsCacheDuration = Metro.getIntProperty("metro.transactionsCacheDuration");
     private final long blockCacheDuration = Metro.getIntProperty("metro.blockCacheDuration");

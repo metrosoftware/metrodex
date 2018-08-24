@@ -441,15 +441,15 @@ class MetroDbVersion extends DbVersion {
             case 155:
                 apply("CREATE INDEX IF NOT EXISTS account_active_lessee_id_latest_idx ON account (active_lessee_id, latest)");
             case 156:
-                apply("DROP INDEX account_active_lessee_id_idx");
+                apply("DROP INDEX IF EXISTS account_active_lessee_id_idx");
             case 157:
-                apply("DROP INDEX block_local_height_idx");
+                apply("DROP INDEX IF EXISTS block_local_height_idx");
             case 158:
                 apply("CREATE INDEX IF NOT EXISTS block_height_desc_version_next_block_id_idx ON block (height DESC, version, next_block_id)");
             case 159:
                 apply("CREATE INDEX IF NOT EXISTS block_timestamp_version_idx ON block (timestamp DESC, version)");
             case 160:
-                apply("DROP INDEX block_timestamp_idx");
+                apply("DROP INDEX IF EXISTS block_timestamp_idx");
             case 161:
                 return;
             default:

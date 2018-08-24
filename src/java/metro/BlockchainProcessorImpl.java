@@ -1605,6 +1605,9 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
         Map<Account.FullId, Long> recipients = coinbaseRecipients(block.getGeneratorPublicKey(), block.getTransactions(), block.isKeyBlock(), block.getLocalHeight());
         Attachment.CoinbaseRecipientsAttachment attachment = (Attachment.CoinbaseRecipientsAttachment)tx.getAttachment();
+        if (attachment.isHaveNonce() && block.getLocalHeight() <  Consensus.SOFT_FORK_1) {
+            throw new TransactionNotAcceptedException("Coinbase can not have nounce before key block " + Consensus.SOFT_FORK_1, tx);
+        }
         for (Account.FullId recipient: attachment.getRecipients().keySet()) {
             if (!recipients.containsKey(recipient)) {
                 throw new TransactionNotAcceptedException("Coinbase recipient " + recipient + " is absent.", tx);
@@ -2010,12 +2013,12 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
 
     private TransactionImpl buildCoinbase(byte[] publicKey, long timestamp, List<TransactionImpl> blockTransactions,
-                                          boolean isKeyBlock, int localHeight) {
+                                          boolean isKeyBlock, int localHeight, Integer nonce) {
         byte[] publicKeyHash = Crypto.sha256().digest(publicKey);
         Account.FullId generatorId = Account.FullId.fromFullHash(publicKeyHash);
         short COINBASE_DEADLINE = 1;
         Map<Account.FullId, Long> recipients = coinbaseRecipients(publicKey, blockTransactions, isKeyBlock, localHeight);
-        Transaction.Builder builder = Metro.newTransactionBuilder(publicKey, 0, 0L, COINBASE_DEADLINE, new Attachment.CoinbaseRecipientsAttachment(recipients, true));
+        Transaction.Builder builder = Metro.newTransactionBuilder(publicKey, 0, 0L, COINBASE_DEADLINE, new Attachment.CoinbaseRecipientsAttachment(recipients, nonce));
         builder.timestamp(timestamp);
         builder.recipientFullId(generatorId);
         try {
@@ -2061,7 +2064,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 blockTransactions.add(transaction);
                 payloadLength += transaction.getFullSize();
             }
-            TransactionImpl coinbase = buildCoinbase(publicKey, blockTimestamp, blockTransactions, false, prevPosBlock.getLocalHeight() + 1);
+            TransactionImpl coinbase = buildCoinbase(publicKey, blockTimestamp, blockTransactions, false, prevPosBlock.getLocalHeight() + 1, null);
             blockTransactions.set(0, coinbase);
             payloadLength += coinbase.getFullSize();
             List<byte[]> txids = new ArrayList<>();
@@ -2354,7 +2357,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                     }
                 }
             }
-            TransactionImpl coinbase = buildCoinbase(generatorPublicKey, blockTimestamp, blockTransactions, true, keyHeight);
+            TransactionImpl coinbase = buildCoinbase(generatorPublicKey, blockTimestamp, blockTransactions, true, keyHeight, null);
             blockTransactions.set(0, coinbase);
 
             List<byte[]> txids = new ArrayList<>();

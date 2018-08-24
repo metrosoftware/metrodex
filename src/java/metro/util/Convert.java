@@ -118,6 +118,18 @@ public final class Convert {
         }
     }
 
+    public static int parseInt(Object o) {
+        if (o == null) {
+            return 0;
+        } else if (o instanceof Integer) {
+            return ((Integer) o);
+        } else if (o instanceof String) {
+            return Integer.parseInt((String) o);
+        } else {
+            throw new IllegalArgumentException("Not an integer: " + o);
+        }
+    }
+
     public static String rsAccount(long id1, int id2) {
         return Constants.ACCOUNT_PREFIX + "-" + Crypto.rsEncode(id1, id2);
     }

@@ -1170,6 +1170,10 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 if (block.getGenerationSequence() == null) {
                     // received from JSON, prevBlockId checked, we can restore hash from DB or block cache
                     BlockImpl previousBlock = blockchain.getBlock(block.getPreviousBlockId());
+                    if (previousBlock == null) {
+                        // block points at inexistent previous block - ignore
+                        return;
+                    }
                     byte[] generationSequenceHash = BlockImpl.advanceGenerationSequenceInKeyBlock(previousBlock);
                     request.put("generationSequence", Convert.toHexString(generationSequenceHash));
                     block = BlockImpl.parseBlock(request, true);
@@ -1411,7 +1415,12 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                     throw new IllegalStateException("Last block should be pos or key block");
                 }
                 if (previousBlock.getHeight() != Math.max(previousPosBlock.getHeight(), previousKeyBlock != null ? previousKeyBlock.getHeight() : -1)) {
-                    throw new IllegalStateException("Incorrect last key block");
+                    // Last key block doesn't correspond to Last block atomic reference, let's reinitialize both from DB to be safe
+                    blockchain.forgetLastKeyBlock();
+                    blockchain.setLastBlock(BlockDb.findLastBlock());
+                    previousBlock = blockchain.getLastBlock();
+                    previousKeyBlock = blockchain.getLastKeyBlock();
+                    previousPosBlock = blockchain.getLastPosBlock();
                 }
                 block.setPrevious(previousPosBlock, previousKeyBlock);
                 validate(block, previousBlock, previousKeyBlock, curTime);

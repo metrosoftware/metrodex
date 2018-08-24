@@ -435,6 +435,22 @@ class MetroDbVersion extends DbVersion {
             case 153:
                 apply("INSERT INTO scan (rescan, height, validate) VALUES (true, 0, false)");
             case 154:
+                // TODO this one seems not necessary, as account_id_height_idx handles that SQL well: SELECT * FROM account WHERE id = ? AND id2 = ?  AND latest = TRUE LIMIT 1
+//                apply("CREATE INDEX IF NOT EXISTS account_id_id2_latest_idx ON account (id, id2, latest)");
+                apply("CREATE INDEX IF NOT EXISTS block_local_height_version_idx ON block (local_height, version)");
+            case 155:
+                apply("CREATE INDEX IF NOT EXISTS account_active_lessee_id_latest_idx ON account (active_lessee_id, latest)");
+            case 156:
+                apply("DROP INDEX account_active_lessee_id_idx");
+            case 157:
+                apply("DROP INDEX block_local_height_idx");
+            case 158:
+                apply("CREATE INDEX IF NOT EXISTS block_height_desc_version_next_block_id_idx ON block (height DESC, version, next_block_id)");
+            case 159:
+                apply("CREATE INDEX IF NOT EXISTS block_timestamp_version_idx ON block (timestamp DESC, version)");
+            case 160:
+                apply("DROP INDEX block_timestamp_idx");
+            case 161:
                 return;
             default:
                 throw new RuntimeException("Blockchain database inconsistent with code, at update " + nextUpdate

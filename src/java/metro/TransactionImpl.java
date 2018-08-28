@@ -570,7 +570,7 @@ public final class TransactionImpl implements Transaction {
         return Convert.toHexString(fullHash());
     }
 
-    byte[] fullHash() {
+    public byte[] fullHash() {
         if (fullHash == null) {
             getId();
         }

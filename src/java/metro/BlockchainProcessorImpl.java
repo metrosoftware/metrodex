@@ -74,7 +74,7 @@ import static metro.Consensus.getPosBlockVersion;
 import static metro.Consensus.getTransactionVersion;
 import static metro.util.Convert.HASH_SIZE;
 
-final class BlockchainProcessorImpl implements BlockchainProcessor {
+public final class BlockchainProcessorImpl implements BlockchainProcessor {
 
     private static final byte[] CHECKSUM_1 = Constants.isTestnet ?
             null : Convert.parseHexString("4e3fc0fcb9350472ac1a7f2d510b4a806671a517e0ede5c4a2f26499c84a2ce7");
@@ -89,7 +89,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             "WHERE A.latest AND ((A.last_forged_height > ? AND A.last_forged_height <= ?) OR A.active_lessee_id IS NOT NULL) GROUP BY super_id HAVING generator > 0 ORDER BY effective, super_id) S " +
             "JOIN public_key PK ON PK.account_id = S.super_id WHERE PK.latest";
 
-    static BlockchainProcessorImpl getInstance() {
+    public static BlockchainProcessorImpl getInstance() {
         return instance;
     }
 
@@ -2330,6 +2330,18 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         }
     }
 
+    public List<TransactionImpl> prepareKeyBlockTransactions(BlockImpl previousBlock) {
+        List<TransactionImpl> blockTransactions = new ArrayList<>();
+        SortedSet<UnconfirmedTransaction> unconfirmedTransactions = getTransactionsForKeyBlockGeneration(previousBlock);
+        if (unconfirmedTransactions.size() > 0) {
+            for (UnconfirmedTransaction unconfirmedTransaction : unconfirmedTransactions) {
+                TransactionImpl transaction = unconfirmedTransaction.getTransaction();
+                blockTransactions.add(transaction);
+            }
+        }
+        return blockTransactions;
+    }
+
     public BlockImpl prepareKeyBlockTemplate(List<TransactionImpl> transactions) {
         blockchain.readLock();
         try {
@@ -2349,13 +2361,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 //not include coinbase cause we make it later
                 blockTransactions.addAll(transactions.subList(1, transactions.size()));
             } else {
-                SortedSet<UnconfirmedTransaction> unconfirmedTransactions = getTransactionsForKeyBlockGeneration(previousBlock);
-                if (unconfirmedTransactions.size() > 0) {
-                    for (UnconfirmedTransaction unconfirmedTransaction : unconfirmedTransactions) {
-                        TransactionImpl transaction = unconfirmedTransaction.getTransaction();
-                        blockTransactions.add(transaction);
-                    }
-                }
+                blockTransactions.addAll(prepareKeyBlockTransactions(previousBlock));
             }
             TransactionImpl coinbase = buildCoinbase(generatorPublicKey, blockTimestamp, blockTransactions, true, keyHeight, null);
             blockTransactions.set(0, coinbase);
@@ -2367,7 +2373,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
             List<byte[]> tree = BitcoinJUtils.buildMerkleTree(txids);
             byte[] txMerkleRoot = tree.get(tree.size() - 1);
 
-            return new BlockImpl(getKeyBlockVersion(previousBlock.getHeight()), blockTimestamp, baseTarget, previousBlock.getId(), previousKeyBlockId, 0, 0,
+            return new BlockImpl(getKeyBlockVersion(previousBlock.getHeight()), blockTimestamp, baseTarget, previousBlock.getId(), previousKeyBlockId, previousBlock.getHeight() + 1, 0,
                     txMerkleRoot, generatorPublicKey, null, null, previousBlockHash, forgersMerkle, blockTransactions);
         } finally {
             blockchain.readUnlock();

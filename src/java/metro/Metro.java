@@ -19,6 +19,7 @@ package metro;
 
 import metro.addons.AddOns;
 import metro.crypto.Crypto;
+import metro.daemon.Daemon;
 import metro.env.DirProvider;
 import metro.env.RuntimeEnvironment;
 import metro.env.RuntimeMode;
@@ -383,6 +384,7 @@ public final class Metro {
                 Generator.init();
                 AddOns.init();
                 API.init();
+                Daemon.init();
                 DebugTrace.init();
                 int timeMultiplier = (Constants.isTestnet && Constants.isOffline) ? Math.max(Metro.getIntProperty("metro.timeMultiplier"), 1) : 1;
                 ThreadPool.start(timeMultiplier);

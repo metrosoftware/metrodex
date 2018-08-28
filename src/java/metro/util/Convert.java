@@ -276,6 +276,14 @@ public final class Convert {
         return bytes;
     }
 
+    public static byte[] toBytes(int n) {
+        byte[] bytes = new byte[4];
+        for (int i = 0; i < 4; i++) {
+            bytes[i] = (byte) (n >> (8 * i));
+        }
+        return bytes;
+    }
+
     public static String readString(ByteBuffer buffer, int numBytes, int maxLength) throws MetroException.NotValidException {
         if (numBytes > 3 * maxLength) {
             throw new MetroException.NotValidException("Max parameter length exceeded");

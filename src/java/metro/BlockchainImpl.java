@@ -23,18 +23,13 @@ import metro.util.BitcoinJUtils;
 import metro.util.Convert;
 import metro.util.Filter;
 import metro.util.ReadWriteUpdateLock;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,13 +38,12 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static metro.Consensus.GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS;
-import static metro.Consensus.HASH_FUNCTION;
 
-final class BlockchainImpl implements Blockchain {
+public final class BlockchainImpl implements Blockchain {
 
     private static final BlockchainImpl instance = new BlockchainImpl();
 
-    static BlockchainImpl getInstance() {
+    public static BlockchainImpl getInstance() {
         return instance;
     }
 

@@ -486,24 +486,35 @@ public final class BlockImpl implements Block {
             buffer.order(ByteOrder.LITTLE_ENDIAN);
             // Block.version: the most significant bit to differentiate between block (0x0001...) and keyblock (0x8001...)
             buffer.putShort(version);
-            // Block.timestamp: 8 bytes, milliseconds since MetroEpoch
-            buffer.putLong(timestamp);
-            buffer.put(txMerkleRoot);
-            buffer.putLong(previousBlockId);
-
             if (isKeyBlock) {
-                // Key blocks (starting from the 2nd) have non-null previousKeyBlock reference
-                if (previousKeyBlockId != null) {
-                    buffer.putLong(previousKeyBlockId);
+                if (localHeight <  Consensus.SOFT_FORK_1) {
+                    buffer.putLong(timestamp);
+                    buffer.put(txMerkleRoot);
+                    buffer.putLong(previousBlockId);
+                    // Key blocks (starting from the 2nd) have non-null previousKeyBlock reference
+                    if (previousKeyBlockId != null) {
+                        buffer.putLong(previousKeyBlockId);
+                    } else {
+                        buffer.putLong(0);
+                    }
+                    // hash the two branches together
+                    buffer.put(HASH_FUNCTION.hash(ArrayUtils.addAll(previousBlockHash, forgersMerkleRoot)));
+                    // only 4 bytes of target are needed for PoW
                 } else {
-                    buffer.putLong(0);
+                    buffer.putLong(previousBlockId);
+                    buffer.putLong(previousKeyBlockId);
+                    buffer.put(txMerkleRoot);
+                    // hash the two branches together
+                    buffer.put(HASH_FUNCTION.hash(ArrayUtils.addAll(previousBlockHash, forgersMerkleRoot)));
+                    // only 4 bytes of target are needed for PoW
+                    buffer.putLong(timestamp);
                 }
-                // hash the two branches together
-                buffer.put(HASH_FUNCTION.hash(ArrayUtils.addAll(previousBlockHash, forgersMerkleRoot)));
-                // only 4 bytes of target are needed for PoW
                 buffer.putInt((int) (baseTarget & 0xffffffffL));
                 buffer.putInt(nonce);
             } else {
+                buffer.putLong(timestamp);
+                buffer.put(txMerkleRoot);
+                buffer.putLong(previousBlockId);
                 buffer.put(previousBlockHash);
                 buffer.putInt(payloadLength);
                 buffer.put(getGeneratorPublicKey());

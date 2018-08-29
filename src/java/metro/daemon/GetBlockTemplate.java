@@ -58,7 +58,7 @@ public class GetBlockTemplate implements DaemonRequestHandler {
             tx.put("hash",Convert.toHexString(transaction.fullHash()));
             txs.add(tx);
         }
-        result.put("extradata", forgersMerkleRoot);
+        result.put("extradata", Convert.toHexString(forgersMerkleRoot));
         result.put("ecblockheight", ecBlock.getHeight());
         result.put("ecblockid", ecBlock.getId());
         result.put("transactions", txs);

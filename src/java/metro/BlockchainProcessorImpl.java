@@ -2013,7 +2013,7 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
 
 
     private TransactionImpl buildCoinbase(byte[] publicKey, long timestamp, List<TransactionImpl> blockTransactions,
-                                          boolean isKeyBlock, int localHeight, Integer nonce) {
+                                          boolean isKeyBlock, int localHeight, Long nonce) {
         byte[] publicKeyHash = Crypto.sha256().digest(publicKey);
         Account.FullId generatorId = Account.FullId.fromFullHash(publicKeyHash);
         short COINBASE_DEADLINE = 1;

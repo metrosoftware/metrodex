@@ -137,7 +137,7 @@ public interface Attachment extends Appendix {
 
         private final Map<Account.FullId, Long> recipients;
         private final boolean haveNonce;
-        private final int nonce;
+        private final long nonce;
 
         CoinbaseRecipientsAttachment(ByteBuffer buffer) throws MetroException.NotValidException {
             super(buffer);
@@ -150,7 +150,7 @@ public interface Attachment extends Appendix {
                 recipients.put(new Account.FullId(accountId1, accountId2), amount);
             }
             haveNonce = buffer.hasRemaining();
-            nonce = haveNonce ? buffer.getInt() : 0;
+            nonce = haveNonce ? buffer.getLong() : 0L;
         }
 
         CoinbaseRecipientsAttachment(JSONObject attachmentData) {
@@ -159,10 +159,10 @@ public interface Attachment extends Appendix {
             JSONObject recipientsField = (JSONObject) attachmentData.get("recipients");
             recipientsField.forEach((accountId, amount) -> recipients.put(Account.FullId.fromStrId((String) accountId), (Long) amount));
             haveNonce = attachmentData.containsKey("nonce");
-            nonce = haveNonce ? Convert.parseInt(attachmentData.get("nonce")) : 0;
+            nonce = haveNonce ? Convert.parseLong(attachmentData.get("nonce")) : 0;
         }
 
-        public CoinbaseRecipientsAttachment(Map<Account.FullId, Long> recipients, Integer nonce) {
+        public CoinbaseRecipientsAttachment(Map<Account.FullId, Long> recipients, Long nonce) {
             if (recipients.size() < 256) {
                 this.recipients = recipients;
             } else {
@@ -174,7 +174,7 @@ public interface Attachment extends Appendix {
 
         @Override
         int getMySize() {
-            return 1 + recipients.size() * 20 + (haveNonce ? 4 : 0);
+            return 1 + recipients.size() * 20 + (haveNonce ? 8 : 0);
         }
 
         @Override
@@ -186,7 +186,7 @@ public interface Attachment extends Appendix {
                 buffer.putLong(recipients.get(recipient));
             }
             if (haveNonce) {
-                buffer.putInt(nonce);
+                buffer.putLong(nonce);
             }
         }
 
@@ -215,7 +215,7 @@ public interface Attachment extends Appendix {
             return haveNonce;
         }
 
-        public int getNonce() {
+        public long getNonce() {
             return nonce;
         }
     }

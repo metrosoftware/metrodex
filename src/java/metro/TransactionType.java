@@ -75,6 +75,7 @@ public abstract class TransactionType {
     private static final byte SUBTYPE_ACCOUNT_CONTROL_PHASING_ONLY = 1;
 
     private static final byte SUBTYPE_COINBASE_ORDINARY_COINBASE = 0;
+    private static final byte SUBTYPE_COINBASE_INFEED_COINBASE = 1;
 
     public static TransactionType findTransactionType(byte type, byte subtype) {
         switch (type) {
@@ -153,6 +154,8 @@ public abstract class TransactionType {
                 switch (subtype) {
                     case SUBTYPE_COINBASE_ORDINARY_COINBASE:
                         return Coinbase.ORDINARY;
+                    case SUBTYPE_COINBASE_INFEED_COINBASE:
+                        return Coinbase.INFEED;
                     default:
                         return null;
                 }
@@ -172,6 +175,10 @@ public abstract class TransactionType {
 
     public boolean isCoinbase() {
         return getType() == TYPE_COINBASE;
+    }
+
+    public boolean isInfeed() {
+        return getSubtype() == SUBTYPE_COINBASE_INFEED_COINBASE;
     }
 
     public boolean isKeyBlockTransaction() { return IntStream.of(KEYBLOCK_TRANSACTION_TYPES).anyMatch(value -> value == getType()); }
@@ -405,10 +412,27 @@ public abstract class TransactionType {
 
         @Override
         final void applyAttachment(Transaction transaction, Account senderAccount, Account recipientAccount) {
-            Attachment.CoinbaseRecipientsAttachment attachment = (Attachment.CoinbaseRecipientsAttachment) transaction.getAttachment();
-            for (Account.FullId recipientId: attachment.getRecipients().keySet()) {
-                Account recipient = Account.getAccount(recipientId);
-                recipient.addToBalanceAndUnconfirmedBalanceMQT(LedgerEvent.ORDINARY_COINBASE, transaction.getBlockId(), attachment.getRecipients().get(recipientId));
+            if (transaction.getType().getSubtype() == TransactionType.SUBTYPE_COINBASE_ORDINARY_COINBASE) {
+                Attachment.CoinbaseRecipientsAttachment attachment = (Attachment.CoinbaseRecipientsAttachment) transaction.getAttachment();
+                for (Account.FullId recipientId : attachment.getRecipients().keySet()) {
+                    Account recipient = Account.getAccount(recipientId);
+                    recipient.addToBalanceAndUnconfirmedBalanceMQT(LedgerEvent.ORDINARY_COINBASE, transaction.getBlockId(), attachment.getRecipients().get(recipientId));
+                }
+            } else if (transaction.getType().getSubtype() == TransactionType.SUBTYPE_COINBASE_INFEED_COINBASE) {
+                // new subtype that can have rewards paid in assets
+                Attachment.CoinbaseAssetRecipientsAttachment attachment = (Attachment.CoinbaseAssetRecipientsAttachment) transaction.getAttachment();
+                for (Map.Entry<Account.FullId, Asset.Amount> recipient : attachment.getAssetRecipients().entrySet()) {
+                    Account account = Account.getAccount(recipient.getKey());
+                    long assetId = recipient.getValue().getAssetId();
+                    if (assetId != 0) {
+                        account.addToAssetBalanceQNT(LedgerEvent.INFEED_COINBASE, transaction.getBlockId(), assetId, recipient.getValue().getAmount());
+                    } else {
+                        // no asset, just some MQT reward
+                        account.addToBalanceAndUnconfirmedBalanceMQT(LedgerEvent.INFEED_COINBASE, transaction.getBlockId(), recipient.getValue().getAmount());
+                    }
+                }
+            } else {
+                throw new IllegalArgumentException("Unknown coinbase subtype: " + transaction.getType().getSubtype());
             }
         }
 
@@ -461,10 +485,44 @@ public abstract class TransactionType {
             @Override
             void validateAttachment(Transaction transaction) throws MetroException.ValidationException {
                 if (transaction.getAmountMQT() != 0) {
-                    throw new MetroException.NotValidException("Invalid ordinary coinbase ammount");
+                    throw new MetroException.NotValidException("Invalid ordinary coinbase amount");
                 }
             }
 
+        };
+
+        public static final TransactionType INFEED = new Coinbase() {
+            @Override
+            public byte getSubtype() {
+                return TransactionType.SUBTYPE_COINBASE_INFEED_COINBASE;
+            }
+
+            @Override
+            public LedgerEvent getLedgerEvent() {
+                return LedgerEvent.INFEED_COINBASE;
+            }
+
+            @Override
+            AbstractAttachment parseAttachment(ByteBuffer buffer) throws MetroException.NotValidException {
+                return null;
+            }
+
+            @Override
+            AbstractAttachment parseAttachment(JSONObject attachmentData) throws MetroException.NotValidException {
+                return null;
+            }
+
+            @Override
+            void validateAttachment(Transaction transaction) throws ValidationException {
+                if (transaction.getAmountMQT() != 0) {
+                    throw new MetroException.NotValidException("Invalid infeed coinbase amount");
+                }
+            }
+
+            @Override
+            public String getName() {
+                return "InfeedCoinbase";
+            }
         };
 
     }

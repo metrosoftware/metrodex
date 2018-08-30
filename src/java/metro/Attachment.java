@@ -198,6 +198,76 @@ public interface Attachment extends Appendix {
         }
     }
 
+    final class CoinbaseAssetRecipientsAttachment extends AbstractAttachment {
+
+        private final Map<Account.FullId, Asset.Amount> assetRecipients;
+
+        CoinbaseAssetRecipientsAttachment(ByteBuffer buffer) throws MetroException.NotValidException {
+            super(buffer);
+            assetRecipients = new HashMap<>();
+            byte size = buffer.get();
+            for (byte i = 0; i < size; i++) {
+                long accountId1 = buffer.getLong();
+                int accountId2 = buffer.getInt();
+                long amount = buffer.getLong();
+                long assetId = buffer.getLong();
+                assetRecipients.put(new Account.FullId(accountId1, accountId2), new Asset.Amount(assetId, amount));
+            }
+        }
+
+        CoinbaseAssetRecipientsAttachment(JSONObject attachmentData) {
+            super(attachmentData);
+            assetRecipients = new HashMap<>();
+            JSONObject recipientsField = (JSONObject) attachmentData.get("recipients");
+            recipientsField.forEach((accountId, assetAmount) -> assetRecipients.put(Account.FullId.fromStrId((String) accountId), new Asset.Amount(assetAmount)));
+        }
+
+        public CoinbaseAssetRecipientsAttachment(Map<Account.FullId, Asset.Amount> recipients, boolean fakeParameter) {
+            if (recipients.size() < 256) {
+                this.assetRecipients = recipients;
+            } else {
+                this.assetRecipients = new HashMap<>();
+            }
+        }
+
+        @Override
+        int getMySize() {
+            return 1 + assetRecipients.size() * 28;
+        }
+
+        @Override
+        void putMyBytes(ByteBuffer buffer) {
+            buffer.put((byte)assetRecipients.size());
+            for (Map.Entry<Account.FullId, Asset.Amount> recipient: assetRecipients.entrySet()) {
+                buffer.putLong(recipient.getKey().getLeft());
+                buffer.putInt(recipient.getKey().getRight());
+                buffer.putLong(recipient.getValue().getAmount());
+                buffer.putLong(recipient.getValue().getAssetId());
+            }
+        }
+
+        @Override
+        void putMyJSON(JSONObject attachment) {
+            JSONObject recipients = new JSONObject();
+            attachment.put("recipients", recipients);
+            for (Map.Entry<Account.FullId, Asset.Amount> recipient: assetRecipients.entrySet()) {
+                JSONObject assetAmount = new JSONObject();
+                recipients.put(recipient.getKey().toString(), assetAmount);
+                assetAmount.put("amount", recipient.getValue().getAmount());
+                assetAmount.put("assetId", recipient.getValue().getAssetId());
+            }
+        }
+
+        @Override
+        public TransactionType getTransactionType() {
+            return TransactionType.Coinbase.INFEED;
+        }
+
+        public Map<Account.FullId, Asset.Amount> getAssetRecipients() {
+            return assetRecipients;
+        }
+    }
+
     // the message payload is in the Appendix
     EmptyAttachment ARBITRARY_MESSAGE = new EmptyAttachment() {
 

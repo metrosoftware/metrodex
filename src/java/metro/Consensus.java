@@ -48,6 +48,9 @@ public class Consensus {
     public static final int BLOCKCHAIN_HALFDAY = Constants.BLOCKCHAIN_NXT_HALFDAY * TIMERATIO_IN_BLOCKS;
     public static final int BLOCKCHAIN_DAY = Constants.BLOCKCHAIN_NXT_DAY * TIMERATIO_IN_BLOCKS;
 
+    // the localheight of key block after which fast blocks may have subtype 1 coinbase
+    public static final int FORK_2_NFBCB = 4;
+
     public static short getPosBlockVersion(int atHeight) {
         return 3;
     }

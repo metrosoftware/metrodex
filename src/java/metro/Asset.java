@@ -21,6 +21,7 @@ import metro.db.DbClause;
 import metro.db.DbIterator;
 import metro.db.DbKey;
 import metro.db.VersionedEntityDbTable;
+import org.json.simple.JSONObject;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -28,6 +29,34 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public final class Asset {
+
+    public static class Amount {
+        private long assetId;
+        private long amount;
+
+        public Amount(long assetId, long amount) {
+            this.assetId = assetId;
+            this.amount = amount;
+        }
+
+        public Amount(Object json) {
+            if (json.getClass().equals(JSONObject.class)) {
+                JSONObject jsonObject = (JSONObject)json;
+                this.amount = (Long)jsonObject.get("amount");
+                this.assetId = (Long)jsonObject.get("assetId");
+            } else {
+                throw new IllegalArgumentException("Object constructor expects JSONObject");
+            }
+        }
+
+        public long getAssetId() {
+            return assetId;
+        }
+
+        public long getAmount() {
+            return amount;
+        }
+    }
 
     private static final DbKey.LongKeyFactory<Asset> assetDbKeyFactory = new DbKey.LongKeyFactory<Asset>("id") {
 

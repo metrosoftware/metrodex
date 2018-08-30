@@ -164,6 +164,13 @@ final class BlockchainImpl implements Blockchain {
     }
 
     @Override
+    public boolean isLastKeyBlockOnOrAfter(int localHeight) {
+        BlockImpl lastKeyBlock = getLastKeyBlock();
+        int keyHeight = lastKeyBlock != null ? lastKeyBlock.getLocalHeight() : -1;
+        return keyHeight >= localHeight;
+    }
+
+    @Override
     public BlockImpl getLastPosBlock() {
         BlockImpl lastBlock = getLastBlock();
         while (lastBlock != null && lastBlock.isKeyBlock()) {

@@ -45,6 +45,8 @@ public interface Blockchain {
 
     void forgetLastKeyBlock();
 
+    boolean isLastKeyBlockOnOrAfter(int localHeight);
+
     Block getLastPosBlock();
 
     int getHeight();

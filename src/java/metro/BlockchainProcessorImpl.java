@@ -68,6 +68,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static metro.Consensus.FORK_2_NFBCB;
 import static metro.Consensus.HASH_FUNCTION;
 import static metro.Consensus.getKeyBlockVersion;
 import static metro.Consensus.getPosBlockVersion;
@@ -1602,21 +1603,56 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         if (!tx.getSenderFullId().equals(block.getGeneratorFullId()) || tx.getSenderId() != tx.getRecipientId()) {
             throw new TransactionNotAcceptedException("Coinbase sender and recipient should be equal to block generator", tx);
         }
+        if (!tx.getType().isInfeed()) {
+            Map<Account.FullId, Asset.Amount> recipients = coinbaseRecipients(block.getGeneratorPublicKey(), block.getTransactions(), block.isKeyBlock(), block.getLocalHeight(), (byte)0);
+            Attachment.CoinbaseRecipientsAttachment attachment = (Attachment.CoinbaseRecipientsAttachment) tx.getAttachment();
+            for (Map.Entry<Account.FullId, Long> recipient1 : attachment.getRecipients().entrySet()) {
+                Account.FullId key = recipient1.getKey();
+                if (!recipients.containsKey(key)) {
+                    throw new TransactionNotAcceptedException("Coinbase recipient " + key + " is absent", tx);
+                }
+                // value found by calling coinbaseRecipients() to re-check
+                Asset.Amount value = recipients.get(recipient1.getKey());
+                if (value.getAmount() != recipient1.getValue()) {
+                    throw new TransactionNotAcceptedException("Coinbase amount is " + recipient1.getValue() +
+                            " instead of " + value.getAmount() + " for recipient " + key, tx);
+                }
 
-        Map<Account.FullId, Long> recipients = coinbaseRecipients(block.getGeneratorPublicKey(), block.getTransactions(), block.isKeyBlock(), block.getLocalHeight());
-        Attachment.CoinbaseRecipientsAttachment attachment = (Attachment.CoinbaseRecipientsAttachment)tx.getAttachment();
-        for (Account.FullId recipient: attachment.getRecipients().keySet()) {
-            if (!recipients.containsKey(recipient)) {
-                throw new TransactionNotAcceptedException("Coinbase recipient " + recipient + " is absent.", tx);
+                if (value.getAssetId() != 0) {
+                    // should not happen in result of coinbaseRecipients() with last arg (byte)0
+                    throw new TransactionNotAcceptedException("For old Coinbase assetId must be 0 but was " + value.getAssetId(), tx);
+                }
+                recipients.remove(key);
             }
-            if (!recipients.get(recipient).equals(attachment.getRecipients().get(recipient))) {
-                throw new TransactionNotAcceptedException("Coinbase amount is" + attachment.getRecipients().get(recipient) +
-                        " instead of " + recipients.get(recipient) + " for recipient " + recipient, tx);
+            if (recipients.size() > 0) {
+                throw new TransactionNotAcceptedException("Coinbase v.0(old) extra recipient " + recipients.keySet().iterator().next(), tx);
             }
-            recipients.remove(recipient);
-        }
-        if (recipients.keySet().size() > 0) {
-            throw new TransactionNotAcceptedException("Coinbase extra recipient " + recipients.keySet().iterator().next(), tx);
+        } else if (!block.isKeyBlock() && blockchain.isLastKeyBlockOnOrAfter(FORK_2_NFBCB)) {
+            // TODO #289 how to validate infeed?
+            Map<Account.FullId, Asset.Amount> recipients = coinbaseRecipients(block.getGeneratorPublicKey(), block.getTransactions(), block.isKeyBlock(), block.getLocalHeight(), (byte)1);
+            Attachment.CoinbaseAssetRecipientsAttachment attachment = (Attachment.CoinbaseAssetRecipientsAttachment) tx.getAttachment();
+            for (Map.Entry<Account.FullId, Asset.Amount> recipient1 : attachment.getAssetRecipients().entrySet()) {
+                Account.FullId key = recipient1.getKey();
+                if (!recipients.containsKey(key)) {
+                    throw new TransactionNotAcceptedException("Coinbase recipient " + key + " is absent", tx);
+                }
+                // value found by calling coinbaseRecipients() to re-check
+                Asset.Amount value = recipients.get(recipient1.getKey());
+                if (value.getAmount() != recipient1.getValue().getAmount()) {
+                    throw new TransactionNotAcceptedException("Coinbase amount is " + recipient1.getValue().getAmount() +
+                            " instead of " + value.getAmount() + " for recipient " + key, tx);
+                }
+                if (value.getAssetId() != recipient1.getValue().getAssetId()) {
+                    throw new TransactionNotAcceptedException("Coinbase assetId is " + recipient1.getValue().getAssetId() +
+                            " instead of " + value.getAssetId() + " for recipient " + key, tx);
+                }
+                recipients.remove(key);
+            }
+            if (recipients.size() > 0) {
+                throw new TransactionNotAcceptedException("Coinbase v.1(new) extra recipient " + recipients.keySet().iterator().next(), tx);
+            }
+        } else {
+            throw new TransactionNotAcceptedException("Coinbase v.1(new) too early, or in key block", tx);
         }
     }
 
@@ -1961,9 +1997,9 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
     }
 
 
-    private Map<Account.FullId, Long> coinbaseRecipients(byte[] publicKey, List<? extends Transaction> blockTransactions,
-                                               boolean isKeyBlock, int localHeight) {
-        Map<Account.FullId, Long> recipients = new HashMap<>();
+    private Map<Account.FullId, Asset.Amount> coinbaseRecipients(byte[] publicKey, List<? extends Transaction> blockTransactions,
+                                               boolean isKeyBlock, int localHeight, byte subtype) {
+        Map<Account.FullId, Asset.Amount> recipients = new HashMap<>();
         long totalReward = isKeyBlock ? Consensus.getBlockSubsidy(localHeight) : 0;
         long totalBackFees = 0;
         long[] backFees = new long[3];
@@ -1996,14 +2032,18 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
                 Logger.logDebugMessage("Back fees %f %s to forger at POS height %d", ((double) backFees[i]) / Constants.ONE_MTR, Constants.COIN_SYMBOL, localHeight - i - 1);
                 long reward = backFees[i];
                 if (recipients.containsKey(previousGenerator)) {
-                    reward += recipients.get(previousGenerator);
+                    reward += recipients.get(previousGenerator).getAmount();
                 }
-                recipients.put(previousGenerator, reward);
+                recipients.put(previousGenerator, new Asset.Amount(0, reward));
                 //previousGeneratorAccount.addToForgedBalanceMQT(backFees[i]);
             }
         }
         Account.FullId generator = Account.FullId.fromPublicKey(publicKey);
-        recipients.put(generator, totalReward + (recipients.containsKey(generator) ? recipients.get(generator) : 0) - totalBackFees);
+        recipients.put(generator, new Asset.Amount(0, totalReward + (recipients.containsKey(generator) ? recipients.get(generator).getAmount() : 0) - totalBackFees));
+        // TODO #289 do additional work for subtype (byte)1
+        if (subtype == 1) {
+
+        }
         return recipients;
     }
 
@@ -2014,8 +2054,20 @@ final class BlockchainProcessorImpl implements BlockchainProcessor {
         byte[] publicKeyHash = Crypto.sha256().digest(publicKey);
         Account.FullId generatorId = Account.FullId.fromFullHash(publicKeyHash);
         short COINBASE_DEADLINE = 1;
-        Map<Account.FullId, Long> recipients = coinbaseRecipients(publicKey, blockTransactions, isKeyBlock, localHeight);
-        Transaction.Builder builder = Metro.newTransactionBuilder(publicKey, 0, 0L, COINBASE_DEADLINE, new Attachment.CoinbaseRecipientsAttachment(recipients, true));
+        Attachment coinbaseAttachment;
+        if (isKeyBlock || !blockchain.isLastKeyBlockOnOrAfter(FORK_2_NFBCB)) {
+            Map<Account.FullId, Long> recipients = new HashMap<>();
+            // convert to old representation of recipients
+            for (Map.Entry<Account.FullId, Asset.Amount> recipient1 : coinbaseRecipients(publicKey, blockTransactions, isKeyBlock, localHeight, (byte)0).entrySet()) {
+                recipients.put(recipient1.getKey(), recipient1.getValue().getAmount());
+            }
+            coinbaseAttachment = new Attachment.CoinbaseRecipientsAttachment(recipients, true);
+        } else {
+            // we are at fast block on or after FORK_2_NFBCB keyHeight, use new subtype of coinbase
+            Map<Account.FullId, Asset.Amount> recipients = coinbaseRecipients(publicKey, blockTransactions, isKeyBlock, localHeight, (byte)1);
+            coinbaseAttachment = new Attachment.CoinbaseAssetRecipientsAttachment(recipients, true);
+        }
+        Transaction.Builder builder = Metro.newTransactionBuilder(publicKey, 0, 0L, COINBASE_DEADLINE, coinbaseAttachment);
         builder.timestamp(timestamp);
         builder.recipientFullId(generatorId);
         try {

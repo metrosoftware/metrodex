@@ -1069,7 +1069,9 @@ public final class TransactionImpl implements Transaction {
                             + ", transaction was generated on a fork");
                 }
             }
-            AccountRestrictions.checkTransaction(this);
+            if (!type.isCoinbase()) {
+                AccountRestrictions.checkTransaction(this);
+            }
         }
     }
 

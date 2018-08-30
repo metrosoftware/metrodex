@@ -442,7 +442,8 @@ public class AccountLedger {
             SHUFFLING_CANCELLATION(53, true),
             SHUFFLING_DISTRIBUTION(54, true),
         // TYPE_COINBASE
-            ORDINARY_COINBASE(58, true);
+            ORDINARY_COINBASE(58, true),
+            INFEED_COINBASE(59, true);
 
 
         /** Event code mapping */

@@ -1627,7 +1627,7 @@ public final class Account {
         long totalAmountMQT = Math.addExact(amountMQT, feeMQT);
         this.balanceMQT = Math.addExact(this.balanceMQT, totalAmountMQT);
         this.unconfirmedBalanceMQT = Math.addExact(this.unconfirmedBalanceMQT, totalAmountMQT);
-        addToGuaranteedBalanceMQT(totalAmountMQT, event == LedgerEvent.ORDINARY_COINBASE);
+        addToGuaranteedBalanceMQT(totalAmountMQT, event == LedgerEvent.ORDINARY_COINBASE || event == LedgerEvent.INFEED_COINBASE);
         checkBalance(this.id, this.balanceMQT, this.unconfirmedBalanceMQT);
         save();
         listeners.notify(this, Event.BALANCE);

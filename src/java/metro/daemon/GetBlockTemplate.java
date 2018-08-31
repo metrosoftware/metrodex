@@ -34,17 +34,17 @@ public class GetBlockTemplate implements DaemonRequestHandler {
         BlockchainProcessorImpl blockchainProcessor = BlockchainProcessorImpl.getInstance();
         JSONObject result = new JSONObject();
 
-        int height = blockchain.getHeight();
         BlockImpl previousBlock = blockchain.getLastBlock();
         BlockImpl previousKeyBlock = blockchain.getLastKeyBlock();
+        int keyHeight = previousKeyBlock != null ? previousKeyBlock.getLocalHeight() + 1 : 0;
         long previousBlockId = previousBlock.getId();
         long previousKeyBlockId = previousKeyBlock == null ? 0 : previousKeyBlock.getId();
         long time = Metro.getEpochTime();
         Block ecBlock = BlockchainImpl.getInstance().getECBlock(time);
         byte[] forgersMerkleRoot = HASH_FUNCTION.hash(ArrayUtils.addAll(HASH_FUNCTION.hash(previousBlock.getBytes()), blockchainProcessor.getForgersMerkleAtLastKeyBlock()));
 
-        result.put("height", height);
-        result.put("version", Consensus.getKeyBlockVersion(height));
+        result.put("height", keyHeight);
+        result.put("version", Consensus.getPreferableKeyBlockVersion(keyHeight) + 1);
         result.put("curtime", time);
         result.put("workid", time);
         result.put("bits", Convert.toHexString(Convert.toBytes(Target.nextTarget(previousKeyBlock))));

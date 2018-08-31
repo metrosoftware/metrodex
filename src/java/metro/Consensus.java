@@ -5,6 +5,7 @@ import metro.util.BitcoinJUtils;
 
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -54,8 +55,26 @@ public class Consensus {
         return 3;
     }
 
-    public static short getKeyBlockVersion(int atHeight) {
-        return (short)0x8001;
+    public static final short INITIAL_BLOCK = (short) 0x8001;
+    public static final short STRATUM_COMPATIBILITY_BLOCK = (short) 0x8002;
+
+    public static short getPreferableKeyBlockVersion(int keyHeight) {
+        if(keyHeight < SOFT_FORK_1) {
+            return INITIAL_BLOCK;
+        } else {
+            return STRATUM_COMPATIBILITY_BLOCK;
+        }
+    }
+
+    public static Set<Short> getPermissibleKeyBlockVersions(int keyHeight) {
+        if(keyHeight < SOFT_FORK_1) {
+            return Collections.singleton(INITIAL_BLOCK);
+        } else if (keyHeight < SOFT_FORK_1 + 100) {
+            Short[] versions = {INITIAL_BLOCK, STRATUM_COMPATIBILITY_BLOCK};
+            return new HashSet<>(Arrays.asList(versions));
+        } else {
+            return Collections.singleton(STRATUM_COMPATIBILITY_BLOCK);
+        }
     }
 
     public static int getTransactionVersion(int atHeight) {

@@ -69,8 +69,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static metro.Consensus.HASH_FUNCTION;
-import static metro.Consensus.getKeyBlockVersion;
+import static metro.Consensus.STRATUM_COMPATIBILITY_BLOCK;
+import static metro.Consensus.getPermissibleKeyBlockVersions;
 import static metro.Consensus.getPosBlockVersion;
+import static metro.Consensus.getPreferableKeyBlockVersion;
 import static metro.Consensus.getTransactionVersion;
 import static metro.util.Convert.HASH_SIZE;
 
@@ -1503,7 +1505,8 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
         if (previousLastBlock.getId() != block.getPreviousBlockId()) {
             throw new BlockOutOfOrderException("Previous block id doesn't match", block);
         }
-        if (block.getVersion() != (block.isKeyBlock() ? getKeyBlockVersion(previousLastBlock.getHeight()) : getPosBlockVersion(previousLastBlock.getHeight()))) {
+        if ((!block.isKeyBlock() && block.getVersion() != getPosBlockVersion(previousLastKeyBlock.getLocalHeight()))
+            || (block.isKeyBlock() && getPermissibleKeyBlockVersions(previousLastKeyBlock.getLocalHeight() + 1).contains(block.getVersion()))) {
             throw new BlockNotAcceptedException("Invalid version " + block.getVersion(), block);
         }
         if (block.getTimestamp() > curTime + Constants.MAX_TIMEDRIFT) {
@@ -1566,10 +1569,6 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
     }
 
     private Block.ValidationResult validateKeyBlock(Block keyBlock) {
-        if (keyBlock.getVersion() != Consensus.getKeyBlockVersion(keyBlock.getHeight())) {
-            return Block.ValidationResult.INCORRECT_VERSION;
-        }
-
         if (keyBlock.getLocalHeight() >= Consensus.FORGERS_FIXATION_BLOCK && !Arrays.equals(keyBlock.getForgersMerkleRoot(), forgersMerkleAtLastKeyBlock)) {
             return Block.ValidationResult.FORGERS_MERKLE_ROOT_DISCREPANCY;
         }
@@ -1605,7 +1604,7 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
 
         Map<Account.FullId, Long> recipients = coinbaseRecipients(block.getGeneratorPublicKey(), block.getTransactions(), block.isKeyBlock(), block.getLocalHeight());
         Attachment.CoinbaseRecipientsAttachment attachment = (Attachment.CoinbaseRecipientsAttachment)tx.getAttachment();
-        if (attachment.isHaveNonce() && block.getLocalHeight() <  Consensus.SOFT_FORK_1) {
+        if (attachment.isHaveNonce() && block.getVersion() < STRATUM_COMPATIBILITY_BLOCK) {
             throw new TransactionNotAcceptedException("Coinbase can not have nounce before key block " + Consensus.SOFT_FORK_1, tx);
         }
         for (Account.FullId recipient: attachment.getRecipients().keySet()) {
@@ -2373,7 +2372,7 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
             List<byte[]> tree = BitcoinJUtils.buildMerkleTree(txids);
             byte[] txMerkleRoot = tree.get(tree.size() - 1);
 
-            return new BlockImpl(getKeyBlockVersion(previousBlock.getHeight()), blockTimestamp, baseTarget, previousBlock.getId(), previousKeyBlockId, previousBlock.getHeight() + 1, 0,
+            return new BlockImpl(getPreferableKeyBlockVersion(keyHeight), blockTimestamp, baseTarget, previousBlock.getId(), previousKeyBlockId, previousBlock.getHeight() + 1, 0,
                     txMerkleRoot, generatorPublicKey, null, null, previousBlockHash, forgersMerkle, blockTransactions);
         } finally {
             blockchain.readUnlock();

@@ -75,7 +75,7 @@ public class BlockTest extends BlockchainTest {
             coinbaseBuilder.setAccessible(true);
 
             TransactionImpl coinbase = (TransactionImpl) coinbaseBuilder.invoke(blockchainProcessor, ALICE.getPublicKey(), posBlock.getTimestamp() + 1, Collections.EMPTY_LIST, true, 0);
-            return new BlockImpl(Consensus.getKeyBlockVersion(posBlock.getHeight()), Metro.getEpochTime(), 0x9299FF3, prevBlockId, null, 1,
+            return new BlockImpl(Consensus.getPreferableKeyBlockVersion(posBlock.getHeight()), Metro.getEpochTime(), 0x9299FF3, prevBlockId, null, 1,
                      0, Convert.EMPTY_HASH, pubKey,
                     generationSequence, null, prevBlockHash, forgersBranches, Collections.singletonList(coinbase));
         } else {

@@ -487,7 +487,7 @@ public final class BlockImpl implements Block {
             // Block.version: the most significant bit to differentiate between block (0x0001...) and keyblock (0x8001...)
             buffer.putShort(version);
             if (isKeyBlock) {
-                if (localHeight <  Consensus.SOFT_FORK_1) {
+                if (version < Consensus.STRATUM_COMPATIBILITY_BLOCK) {
                     buffer.putLong(timestamp);
                     buffer.put(txMerkleRoot);
                     buffer.putLong(previousBlockId);

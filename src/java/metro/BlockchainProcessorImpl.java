@@ -1505,8 +1505,9 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
         if (previousLastBlock.getId() != block.getPreviousBlockId()) {
             throw new BlockOutOfOrderException("Previous block id doesn't match", block);
         }
-        if ((!block.isKeyBlock() && block.getVersion() != getPosBlockVersion(previousLastKeyBlock.getLocalHeight()))
-            || (block.isKeyBlock() && getPermissibleKeyBlockVersions(previousLastKeyBlock.getLocalHeight() + 1).contains(block.getVersion()))) {
+        int keyHeight = previousLastKeyBlock != null ? previousLastKeyBlock.getLocalHeight() + 1 : 0;
+        if ((!block.isKeyBlock() && block.getVersion() != getPosBlockVersion(keyHeight))
+            || (block.isKeyBlock() && !getPermissibleKeyBlockVersions(keyHeight).contains(block.getVersion()))) {
             throw new BlockNotAcceptedException("Invalid version " + block.getVersion(), block);
         }
         if (block.getTimestamp() > curTime + Constants.MAX_TIMEDRIFT) {
@@ -2392,8 +2393,7 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
             final int hashSize = Convert.HASH_SIZE;
             long timestamp = 0;
             byte[] txMerkleRoot = new byte[hashSize];
-
-            if (blockchain.getLastKeyBlock().getLocalHeight() + 1 < Consensus.SOFT_FORK_1) {
+            if (version < Consensus.STRATUM_COMPATIBILITY_BLOCK) {
                 timestamp = header.getLong();
                 header.get(txMerkleRoot);
             }
@@ -2418,7 +2418,7 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
             } else {
                 previousKeyBlockId = null;
             }
-            if (blockchain.getLastKeyBlock().getLocalHeight() + 1 >= Consensus.SOFT_FORK_1) {
+            if (version >= Consensus.STRATUM_COMPATIBILITY_BLOCK) {
                 header.get(txMerkleRoot);
             }
             byte[] forgersMerkleRoot = new byte[hashSize];
@@ -2427,7 +2427,7 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
             if (!Arrays.equals(forgersMerkleRoot, HASH_FUNCTION.hash(ArrayUtils.addAll(previousBlockHash, forgersMerkleBranches)))) {
                 throw new IllegalArgumentException("Forgers root: " + Convert.toHexString(forgersMerkleRoot) + ", not matching branches: " + Convert.toHexString(forgersMerkleBranches));
             }
-            if (blockchain.getLastKeyBlock().getLocalHeight() + 1 >= Consensus.SOFT_FORK_1) {
+            if (version >= Consensus.STRATUM_COMPATIBILITY_BLOCK) {
                 timestamp = header.getLong();
             }
             long baseTarget = header.getInt();

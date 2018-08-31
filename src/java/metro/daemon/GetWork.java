@@ -1,6 +1,7 @@
 package metro.daemon;
 
 import metro.Block;
+import metro.Consensus;
 import metro.Metro;
 import metro.MetroException;
 import metro.Miner;
@@ -15,6 +16,7 @@ import org.json.simple.JSONStreamAware;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -130,7 +132,8 @@ public class GetWork implements DaemonRequestHandler {
 
             Logger.logDebugMessage("getwork params:" + params.toString());
             String blockHeader = (String) params.get(0);
-            String merkle = blockHeader.substring(20, 84);
+            short version = getVersion(Convert.parseHexString(blockHeader));
+            String merkle = version < Consensus.STRATUM_COMPATIBILITY_BLOCK ? blockHeader.substring(20, 84) : blockHeader.substring(36, 100);
             byte[] blockHeaderBytes = Convert.parseHexString(blockHeader.toLowerCase(Locale.ROOT));
             List<TransactionImpl> txs = findTxsByMerkle(merkle);
             if (txs == null) {
@@ -144,6 +147,12 @@ public class GetWork implements DaemonRequestHandler {
             response.put("result", blockAccepted);
             return response;
         }
+    }
+
+    private short getVersion(byte[] blockHeaderBytes) {
+        ByteBuffer buffer = ByteBuffer.wrap(blockHeaderBytes);
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+        return buffer.getShort();
     }
 
     private List<TransactionImpl> findTxsByMerkle(String merkle) {

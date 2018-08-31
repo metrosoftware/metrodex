@@ -49,7 +49,7 @@ public class Consensus {
     public static final int BLOCKCHAIN_HALFDAY = Constants.BLOCKCHAIN_NXT_HALFDAY * TIMERATIO_IN_BLOCKS;
     public static final int BLOCKCHAIN_DAY = Constants.BLOCKCHAIN_NXT_DAY * TIMERATIO_IN_BLOCKS;
 
-    public static final int SOFT_FORK_1 = 3000;
+    public static final int SOFT_FORK_1 = 4000;
 
     public static short getPosBlockVersion(int atHeight) {
         return 3;

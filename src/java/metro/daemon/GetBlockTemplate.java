@@ -16,6 +16,8 @@ import org.json.simple.JSONObject;
 import org.json.simple.JSONStreamAware;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import static metro.Consensus.HASH_FUNCTION;
 
@@ -53,11 +55,14 @@ public class GetBlockTemplate implements DaemonRequestHandler {
         result.put("previousblockhash", Convert.toHexString(buffer.array()));
         result.put("coinbasevalue", Consensus.getBlockSubsidy(previousKeyBlock == null ? 0 : previousKeyBlock.getLocalHeight()));
         JSONArray txs = new JSONArray();
+        List<Long> template = new ArrayList<>();
         for (TransactionImpl transaction: Metro.getBlockchainProcessor().prepareKeyBlockTransactions(previousBlock)) {
             JSONObject tx = new JSONObject();
             tx.put("hash",Convert.toHexString(transaction.fullHash()));
             txs.add(tx);
+            template.add(transaction.getId());
         }
+        TemplateCache.instance.put(time, template);
         result.put("extradata", Convert.toHexString(forgersMerkleRoot));
         result.put("ecblockheight", ecBlock.getHeight());
         result.put("ecblockid", ecBlock.getId());

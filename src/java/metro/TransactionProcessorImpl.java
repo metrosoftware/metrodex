@@ -17,7 +17,6 @@
 
 package metro;
 
-import jdk.nashorn.internal.runtime.regexp.joni.Warnings;
 import metro.db.DbClause;
 import metro.db.DbIterator;
 import metro.db.DbKey;
@@ -52,7 +51,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
-final class TransactionProcessorImpl implements TransactionProcessor {
+public final class TransactionProcessorImpl implements TransactionProcessor {
 
     private static final boolean enableTransactionRebroadcasting = Metro.getBooleanProperty("metro.enableTransactionRebroadcasting");
     private static final boolean testUnconfirmedTransactions = Metro.getBooleanProperty("metro.testUnconfirmedTransactions");

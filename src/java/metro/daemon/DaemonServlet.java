@@ -61,6 +61,10 @@ public class DaemonServlet extends HttpServlet {
             return GetInfo.instance.process(dReq);
         } else if (dReq.getMethod().equals("getblocktemplate")) {
             return GetBlockTemplate.instance.process(dReq);
+        } else if (dReq.getMethod().equals("submitblock")) {
+            return SubmitBlock.instance.process(dReq);
+        } else if (dReq.getMethod().equals("getblock")) {
+            return GetBlock.instance.process(dReq);
         } else {
             response.put("error", "Method " + dReq.getMethod() + " not supported");
             response.put("id", dReq.getId());

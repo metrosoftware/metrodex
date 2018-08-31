@@ -2390,10 +2390,14 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
             if (!BlockImpl.isKeyBlockVersion(version)) {
                 throw new IllegalArgumentException("Wrong block version: 0x" + Integer.toUnsignedString(Short.toUnsignedInt(version), 16));
             }
-            long timestamp = header.getLong();
             final int hashSize = Convert.HASH_SIZE;
+            long timestamp = 0;
             byte[] txMerkleRoot = new byte[hashSize];
-            header.get(txMerkleRoot);
+
+            if (blockchain.getLastKeyBlock().getLocalHeight() + 1 < Consensus.SOFT_FORK_1) {
+                timestamp = header.getLong();
+                header.get(txMerkleRoot);
+            }
 
             long previousBlockId = header.getLong();
             BlockImpl previousBlock = BlockDb.findBlock(previousBlockId);
@@ -2415,12 +2419,17 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
             } else {
                 previousKeyBlockId = null;
             }
-
+            if (blockchain.getLastKeyBlock().getLocalHeight() + 1 >= Consensus.SOFT_FORK_1) {
+                header.get(txMerkleRoot);
+            }
             byte[] forgersMerkleRoot = new byte[hashSize];
             header.get(forgersMerkleRoot);
             byte[] forgersMerkleBranches = getForgersMerkleAtLastKeyBlock();
             if (!Arrays.equals(forgersMerkleRoot, HASH_FUNCTION.hash(ArrayUtils.addAll(previousBlockHash, forgersMerkleBranches)))) {
                 throw new IllegalArgumentException("Forgers root: " + Convert.toHexString(forgersMerkleRoot) + ", not matching branches: " + Convert.toHexString(forgersMerkleBranches));
+            }
+            if (blockchain.getLastKeyBlock().getLocalHeight() + 1 >= Consensus.SOFT_FORK_1) {
+                timestamp = header.getLong();
             }
             long baseTarget = header.getInt();
             int nonce = header.getInt();

@@ -1,14 +1,21 @@
 package metro.daemon;
 
+import metro.BlockchainProcessor;
+import metro.BlockchainProcessorImpl;
 import metro.Metro;
+import metro.util.Convert;
 import metro.util.Logger;
 import metro.util.ThreadPool;
+import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 
 public final class Daemon {
     public static final int DAEMON_PORT = 8135;
@@ -55,6 +62,16 @@ public final class Daemon {
 
             }, true);
 
+            String blockNotifyCommand = Metro.getStringProperty("metro.daemon.blocknotify");
+            if (blockNotifyCommand.trim().length() > 0) {
+                BlockchainProcessorImpl.getInstance().addListener(block -> {
+                    byte[] hash = block.getHash();
+                    ArrayUtils.reverse(hash);
+                    String command = blockNotifyCommand.replace("%s", Convert.toHexString(hash));
+                    String output = executeCommand(command);
+                    Logger.logInfoMessage("Block notify output:" + output);
+                }, BlockchainProcessor.Event.AFTER_BLOCK_ACCEPT);
+            }
         } else {
             daemonServer = null;
         }
@@ -62,4 +79,29 @@ public final class Daemon {
 
     public static void init() {
     }
+
+    private static String executeCommand(String command) {
+
+        StringBuffer output = new StringBuffer();
+
+        Process p;
+        try {
+            p = Runtime.getRuntime().exec(command);
+            p.waitFor();
+            BufferedReader reader =
+                    new BufferedReader(new InputStreamReader(p.getInputStream()));
+
+            String line = "";
+            while ((line = reader.readLine())!= null) {
+                output.append(line + "\n");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return output.toString();
+
+    }
+
 }

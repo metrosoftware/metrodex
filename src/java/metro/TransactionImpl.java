@@ -36,7 +36,7 @@ import java.util.Map;
 
 public final class TransactionImpl implements Transaction {
 
-    static final class BuilderImpl implements Builder {
+    public static final class BuilderImpl implements Builder {
 
         private final short deadline;
         private final byte[] senderPublicKey;
@@ -700,7 +700,7 @@ public final class TransactionImpl implements Transaction {
         return bytes;
     }
 
-    static TransactionImpl.BuilderImpl newTransactionBuilder(byte[] bytes) throws MetroException.NotValidException {
+    public static TransactionImpl.BuilderImpl newTransactionBuilder(byte[] bytes) throws MetroException.NotValidException {
         try {
             ByteBuffer buffer = ByteBuffer.wrap(bytes);
             buffer.order(ByteOrder.LITTLE_ENDIAN);

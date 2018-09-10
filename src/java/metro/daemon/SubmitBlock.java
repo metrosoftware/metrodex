@@ -5,7 +5,6 @@ import metro.Metro;
 import metro.MetroException;
 import metro.TransactionImpl;
 import metro.util.Convert;
-import metro.util.JSON;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONStreamAware;
 
@@ -15,6 +14,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import static metro.daemon.DaemonUtils.awareError;
+import static metro.daemon.DaemonUtils.awareResult;
+
 public class SubmitBlock implements DaemonRequestHandler {
 
     static SubmitBlock instance = new SubmitBlock();
@@ -22,16 +24,9 @@ public class SubmitBlock implements DaemonRequestHandler {
     private SubmitBlock() {
     }
 
-    private JSONObject jsonError(int code, String message) {
-        JSONObject result = new JSONObject();
-        result.put("code", code);
-        result.put("message", message);
-        return result;
-    }
 
     @Override
     public JSONStreamAware process(DaemonRequest dReq) {
-        JSONObject response = new JSONObject();
         String block = (String) dReq.getParams().get(0);
         byte[] blockHeaderBytes = Convert.parseHexString(block.substring(0, 196).toLowerCase(Locale.ROOT));
         List<TransactionImpl> txs = new ArrayList<>();
@@ -40,18 +35,12 @@ public class SubmitBlock implements DaemonRequestHandler {
             TransactionImpl coinbase = builder.build();
             txs.add(coinbase);
         } catch (MetroException.NotValidException e) {
-            response.put("result", null);
-            response.put("error", jsonError(-1, "Coinbase not valid. " + e.getMessage()));
-            response.put("id", dReq.getId());
-            return JSON.prepare(response);
+            return awareError(-1, "Coinbase not valid. " + e.getMessage(), dReq.getId());
         }
         long time = getTimestamp(blockHeaderBytes);
         List<Long> txIds = TemplateCache.instance.get(time);
         if (txIds == null) {
-            response.put("result", null);
-            response.put("error", jsonError(-1, "Time roll not allowed"));
-            response.put("id", dReq.getId());
-            return JSON.prepare(response);
+            return awareError(-1, "Time roll not allowed", dReq.getId());
         }
         for (Long txId: txIds) {
             txs.add((TransactionImpl)Metro.getTransactionProcessor().getUnconfirmedTransaction(txId));
@@ -61,16 +50,15 @@ public class SubmitBlock implements DaemonRequestHandler {
         try {
             blockAccepted = Metro.getBlockchainProcessor().processMyKeyBlock(extra);
         } catch (MetroException e) {
-            response.put("result", null);
-            response.put("error", jsonError(-1, e.getMessage()));
-            response.put("id", dReq.getId());
-            return JSON.prepare(response);
+            return awareError(-1, e.getMessage(), dReq.getId());
         }
-        response.put("result", null);
-        response.put("error", blockAccepted ? null : jsonError(-1, "Block not accepted."));
-        response.put("id", dReq.getId());
-        return JSON.prepare(response);
+        if (!blockAccepted) {
+            return awareError(-1, "Block have not accepted.", dReq.getId());
+        }
+        return awareResult((JSONObject) null, dReq.getId());
     }
+
+
 
     private long getTimestamp(byte[] blockHeaderBytes) {
         ByteBuffer buffer = ByteBuffer.wrap(blockHeaderBytes);

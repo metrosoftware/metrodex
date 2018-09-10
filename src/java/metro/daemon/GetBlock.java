@@ -57,11 +57,9 @@ public class GetBlock implements DaemonRequestHandler {
         }
         JSONArray txs = new JSONArray();
         for (Transaction transaction: block.getTransactions()) {
-            JSONObject tx = new JSONObject();
-            tx.put("hash",Convert.toHexString(((TransactionImpl)transaction).fullHash()));
-            txs.add(tx);
+            txs.add(Convert.toHexString(((TransactionImpl)transaction).fullHash()));
         }
-        result.put("transactions", txs);
+        result.put("tx", txs);
 
         JSONObject response = new JSONObject();
         response.put("result", result);

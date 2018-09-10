@@ -33,7 +33,7 @@ public class DaemonServlet extends HttpServlet {
         try {
             if (req.getReader() != null) {
                 content = req.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
-                Logger.logDebugMessage("Daemon:" + content);
+                //Logger.logDebugMessage("Daemon:" + content);
             }
         } catch (IOException e) {
             response.put("error", e.getMessage());
@@ -41,6 +41,9 @@ public class DaemonServlet extends HttpServlet {
         if (content.length() > 0) {
             try {
                 DaemonRequest dReq = DaemonRequest.init(content);
+                if (!dReq.getMethod().equals("getwork") || dReq.getParams().size() > 0) {
+                    Logger.logDebugMessage("Daemon:" + content);
+                }
                 return processRequest(dReq, ((Request) req).getMetaData().getURI().getHost());
             } catch (ParseException e) {
                 e.printStackTrace();
@@ -63,8 +66,14 @@ public class DaemonServlet extends HttpServlet {
             return GetBlockTemplate.instance.process(dReq);
         } else if (dReq.getMethod().equals("submitblock")) {
             return SubmitBlock.instance.process(dReq);
+        } else if (dReq.getMethod().equals("gettransaction")) {
+            return GetTransaction.instance.process(dReq);
         } else if (dReq.getMethod().equals("getblock")) {
             return GetBlock.instance.process(dReq);
+        } else if (dReq.getMethod().equals("sendtoaddress")) {
+            return SendToAddress.instance.process(dReq);
+        } else if (dReq.getMethod().equals("sendmany")) {
+            return SendMany.instance.process(dReq);
         } else {
             response.put("error", "Method " + dReq.getMethod() + " not supported");
             response.put("id", dReq.getId());

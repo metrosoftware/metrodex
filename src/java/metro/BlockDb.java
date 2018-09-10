@@ -19,8 +19,6 @@ package metro;
 
 import metro.db.DbUtils;
 import metro.util.Logger;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.math.BigInteger;
 import java.sql.Connection;
@@ -29,11 +27,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
@@ -263,7 +259,7 @@ final class BlockDb {
 
     static BlockImpl findLastPosBlock(int height) {
         try (Connection con = Db.db.getConnection();
-             PreparedStatement pstmt = con.prepareStatement("SELECT * FROM block WHERE version > 0 AND (next_block_id <> 0 OR next_block_id IS NULL) AND height <= ? ORDER BY height DESC LIMIT 1")) {
+             PreparedStatement pstmt = con.prepareStatement("SELECT * FROM block WHERE version >= 0 AND (next_block_id <> 0 OR next_block_id IS NULL) AND height <= ? ORDER BY height DESC LIMIT 1")) {
             pstmt.setInt(1, height);
             BlockImpl block = null;
             try (ResultSet rs = pstmt.executeQuery()) {

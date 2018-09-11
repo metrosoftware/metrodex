@@ -52,8 +52,8 @@ public class GetBlockTemplate implements DaemonRequestHandler {
         result.put("bits", Convert.toHexString(bits));
         result.put("coinbaseaux", new JSONObject());
         ByteBuffer buffer = ByteBuffer.allocate(16);
-        buffer.putLong(previousBlockId);
         buffer.putLong(previousKeyBlockId);
+        buffer.putLong(previousBlockId);
         result.put("previousblockhash", Convert.toHexString(buffer.array()));
         result.put("coinbasevalue", Consensus.getBlockSubsidy(previousKeyBlock == null ? 0 : previousKeyBlock.getLocalHeight()));
         JSONArray txs = new JSONArray();

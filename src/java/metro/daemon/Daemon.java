@@ -63,7 +63,7 @@ public final class Daemon {
             }, true);
 
             String blockNotifyCommand = Metro.getStringProperty("metro.daemon.blocknotify");
-            if (blockNotifyCommand.trim().length() > 0) {
+            if (blockNotifyCommand != null && blockNotifyCommand.trim().length() > 0) {
                 BlockchainProcessorImpl.getInstance().addListener(block -> {
                     byte[] hash = block.getHash();
                     ArrayUtils.reverse(hash);

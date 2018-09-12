@@ -10,10 +10,14 @@ import metro.util.Convert;
 import metro.util.JSON;
 import metro.util.Logger;
 import org.apache.commons.lang3.ArrayUtils;
+import org.eclipse.jetty.server.Request;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONStreamAware;
+import org.json.simple.parser.ParseException;
 
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -21,6 +25,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
+import static metro.daemon.DaemonUtils.awareError;
+import static metro.daemon.DaemonUtils.awareResult;
 
 public class GetWork implements DaemonRequestHandler {
 
@@ -59,10 +67,7 @@ public class GetWork implements DaemonRequestHandler {
     public JSONStreamAware process(DaemonRequest dReq, Object options) {
         try {
             String host = (options == null || !(options instanceof String)) ? null : (String) options;
-            JSONObject response = processGetWork(dReq, host);
-            response.put("error", null);
-            response.put("id", dReq.getId());
-            return JSON.prepare(response);
+            return processGetWork(dReq, host);
         } catch (MetroException e) {
             JSONObject response = new JSONObject();
             response.put("error", e.getMessage());
@@ -71,25 +76,47 @@ public class GetWork implements DaemonRequestHandler {
         }
     }
 
-    public JSONObject processGetWork(DaemonRequest dReq, String host) throws MetroException {
+    public JSONStreamAware processGetWork(HttpServletRequest req) throws MetroException {
+        JSONObject response = new JSONObject();
+        String content = "";
+        try {
+            if (req.getReader() != null) {
+                content = req.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
+            }
+        } catch (IOException e) {
+            return awareError(e.getMessage(), null);
+        }
+        try {
+            DaemonRequest dReq;
+            if (content.length() > 0) {
+                dReq = DaemonRequest.init(content);
+            } else {
+                dReq = new DaemonRequest("getwork", null, new JSONArray());
+            }
+            return process(dReq, ((Request) req).getMetaData().getURI().getHost());
+        } catch (ParseException e) {
+            e.printStackTrace();
+            return awareError(e.getMessage(), null);
+        }
+    }
+
+    public JSONStreamAware processGetWork(DaemonRequest dReq, String host) throws MetroException {
         JSONObject response = new JSONObject();
         if (Miner.getPublicKey() == null) {
-            response.put("error", "Set metro.mine.publicKey property in conf/metro.properties on " + host);
-            return response;
+            return awareError("Set metro.mine.publicKey property in conf/metro.properties on " + host, dReq.getId());
         }
         lastGetWorkTime = System.currentTimeMillis();
         if (Metro.getBlockchainProcessor().isDownloading() || Metro.getBlockchainProcessor().isScanning()) {
-            response.put("error", "Blockchain scan or download in progress");
-            return response;
+            return awareError("Blockchain scan or download in progress", dReq.getId());
         }
 
         if (dReq.getParams() != null && !dReq.getParams().isEmpty()) {
-            return processWorkSubmit(dReq.getParams());
+            return processWorkSubmit(dReq.getParams(), dReq.getId());
         }
-        return processWorkGet();
+        return processWorkGet(dReq.getId());
     }
 
-    private JSONObject processWorkGet() {
+    private JSONStreamAware processWorkGet(String id) {
         JSONObject response = new JSONObject();
         synchronized (this) {
             long lastBlockId = Metro.getBlockchain().getLastBlock().getId();
@@ -118,15 +145,14 @@ public class GetWork implements DaemonRequestHandler {
         }
         byte[] blockBytes = padZeroValuesSpecialAndSize(cache);
         JSONObject result = new JSONObject();
-        response.put("result", result);
         result.put("data", Convert.toHexString(blockBytes));
         String targetString = targetToLittleEndianString(cachedTarget);
         result.put("target", targetString);
-        return response;
+        return DaemonUtils.awareResult(result, id);
 
     }
 
-    private JSONObject processWorkSubmit(JSONArray params) throws MetroException {
+    private JSONStreamAware processWorkSubmit(JSONArray params, String id) throws MetroException {
         synchronized (this) {
             JSONObject response = new JSONObject();
 
@@ -138,14 +164,12 @@ public class GetWork implements DaemonRequestHandler {
             List<TransactionImpl> txs = findTxsByMerkle(merkle);
             if (txs == null) {
                 Logger.logErrorMessage("Too small get work cache.");
-                response.put("error", "Too small get work cache.");
-                return response;
+                return awareError("Too small get work cache.", id);
             }
             Block extra = Metro.getBlockchainProcessor().composeKeyBlock(blockHeaderBytes, txs);
             boolean blockAccepted = Metro.getBlockchainProcessor().processMyKeyBlock(extra);
             Logger.logDebugMessage("Solution found. Block Accepted:" + blockAccepted);
-            response.put("result", blockAccepted);
-            return response;
+            return awareResult(blockAccepted, id);
         }
     }
 

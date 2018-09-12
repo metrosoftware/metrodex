@@ -20,15 +20,7 @@ public class DaemonUtils {
         return JSON.prepare(response);
     }
 
-    static JSONStreamAware awareResult(JSONObject result, String id) {
-        JSONObject response = new JSONObject();
-        response.put("result", result);
-        response.put("error", null);
-        response.put("id", id);
-        return JSON.prepare(response);
-    }
-
-    static JSONStreamAware awareResult(String result, String id) {
+    static JSONStreamAware awareResult(Object result, String id) {
         JSONObject response = new JSONObject();
         response.put("result", result);
         response.put("error", null);

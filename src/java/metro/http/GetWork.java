@@ -1,14 +1,9 @@
 package metro.http;
 
 import metro.MetroException;
-import metro.daemon.DaemonServlet;
-import metro.util.JSON;
-import org.json.simple.JSONObject;
 import org.json.simple.JSONStreamAware;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
 
 
 public final class GetWork extends APIServlet.APIRequestHandler {
@@ -25,13 +20,7 @@ public final class GetWork extends APIServlet.APIRequestHandler {
 
     @Override
     public JSONStreamAware processRequest(HttpServletRequest request) throws MetroException {
-        JSONObject response = new JSONObject();
-        try {
-            return DaemonServlet.instance.processRequest(request);
-        } catch (ServletException | IOException e) {
-            response.put("error", e.getMessage());
-            return JSON.prepare(response);
-        }
+        return metro.daemon.GetWork.instance.processGetWork(request);
     }
 
 }

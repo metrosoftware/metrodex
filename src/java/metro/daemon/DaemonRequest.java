@@ -35,6 +35,12 @@ public class DaemonRequest {
         this.params = (JSONArray) requestJSON.get("params");
     }
 
+    public DaemonRequest(String method, String id, JSONArray params) {
+        this.method = method;
+        this.id = id;
+        this.params = params;
+    }
+
     public String getMethod() {
         return method;
     }

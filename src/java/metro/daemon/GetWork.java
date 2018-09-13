@@ -121,7 +121,7 @@ public class GetWork implements DaemonRequestHandler {
         synchronized (this) {
             long lastBlockId = Metro.getBlockchain().getLastBlock().getId();
             long currentTime = System.currentTimeMillis();
-            if (cachedLastBlockId != lastBlockId || currentTime - lastTxTime > Math.min(transactionsCacheDuration, 5000)) {
+            if (cachedLastBlockId != lastBlockId || currentTime - lastTxTime > Math.min(transactionsCacheDuration, 10000)) {
                 lastTxTime = currentTime;
                 Block block = Metro.getBlockchainProcessor().prepareKeyBlockTemplate(null);
                 cache = block.getBytes();
@@ -131,7 +131,7 @@ public class GetWork implements DaemonRequestHandler {
                 transactions[i] = (List<TransactionImpl>) block.getTransactions();
                 merkles[i] = Convert.toHexString(block.getTxMerkleRoot());
                 lastTimestamp = currentTime;
-            } else if (currentTime - lastTimestamp > Math.min(blockCacheDuration, 1000)) {
+            } else if (currentTime - lastTimestamp > Math.min(blockCacheDuration, 3000)) {
                 int i = index.get();
                 Block block = Metro.getBlockchainProcessor().prepareKeyBlockTemplate(transactions[i]);
                 i = index.getAndUpdate(j -> (j + 1) % CACHE_SIZE);

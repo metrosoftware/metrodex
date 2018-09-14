@@ -5,6 +5,7 @@ import metro.Metro;
 import metro.MetroException;
 import metro.TransactionImpl;
 import metro.util.Convert;
+import metro.util.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONStreamAware;
 
@@ -27,6 +28,7 @@ public class SubmitBlock implements DaemonRequestHandler {
 
     @Override
     public JSONStreamAware process(DaemonRequest dReq) {
+
         String block = (String) dReq.getParams().get(0);
         byte[] blockHeaderBytes = Convert.parseHexString(block.substring(0, 196).toLowerCase(Locale.ROOT));
         List<TransactionImpl> txs = new ArrayList<>();
@@ -35,11 +37,13 @@ public class SubmitBlock implements DaemonRequestHandler {
             TransactionImpl coinbase = builder.build();
             txs.add(coinbase);
         } catch (MetroException.NotValidException e) {
+            Logger.logErrorMessage("Block rejected", e);
             return awareError(-1, "Coinbase not valid. " + e.getMessage(), dReq.getId());
         }
         long time = getTimestamp(blockHeaderBytes);
         List<Long> txIds = TemplateCache.instance.get(time);
         if (txIds == null) {
+            Logger.logErrorMessage("Block rejected. Time roll not allowed");
             return awareError(-1, "Time roll not allowed", dReq.getId());
         }
         for (Long txId: txIds) {
@@ -50,9 +54,11 @@ public class SubmitBlock implements DaemonRequestHandler {
         try {
             blockAccepted = Metro.getBlockchainProcessor().processMyKeyBlock(extra);
         } catch (MetroException e) {
+            Logger.logErrorMessage("Block rejected", e);
             return awareError(-1, e.getMessage(), dReq.getId());
         }
         if (!blockAccepted) {
+            Logger.logErrorMessage("Block rejected. Blockhave not accepted");
             return awareError(-1, "Block have not accepted.", dReq.getId());
         }
         return awareResult((JSONObject) null, dReq.getId());

@@ -40,12 +40,14 @@ public class SubmitBlock implements DaemonRequestHandler {
             Logger.logErrorMessage("Block rejected", e);
             return awareError(-1, "Coinbase not valid. " + e.getMessage(), dReq.getId());
         }
-
-        Block extra = Metro.getBlockchainProcessor().composeKeyBlock(blockHeaderBytes, txs);
         boolean blockAccepted;
         try {
+            Block extra = Metro.getBlockchainProcessor().composeKeyBlock(blockHeaderBytes, txs);
             blockAccepted = Metro.getBlockchainProcessor().processMyKeyBlock(extra);
         } catch (MetroException e) {
+            Logger.logErrorMessage("Block rejected", e);
+            return awareError(-1, e.getMessage(), dReq.getId());
+        } catch (IllegalStateException | IllegalArgumentException e) {
             Logger.logErrorMessage("Block rejected", e);
             return awareError(-1, e.getMessage(), dReq.getId());
         }

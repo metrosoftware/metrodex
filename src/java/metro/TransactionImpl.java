@@ -294,14 +294,14 @@ public final class TransactionImpl implements Transaction {
         this.senderId2 = builder.senderId2;
         this.blockTimestamp = builder.blockTimestamp;
         this.fullHash = builder.fullHash;
-		this.ecBlockHeight = builder.ecBlockHeight;
+        this.ecBlockHeight = builder.ecBlockHeight;
         this.ecBlockId = builder.ecBlockId;
 
         List<Appendix.AbstractAppendix> list = new ArrayList<>();
         if ((this.attachment = builder.attachment) != null) {
             list.add(this.attachment);
         }
-        if ((this.message  = builder.message) != null) {
+        if ((this.message = builder.message) != null) {
             list.add(this.message);
         }
         if ((this.encryptedMessage = builder.encryptedMessage) != null) {
@@ -326,7 +326,7 @@ public final class TransactionImpl implements Transaction {
         int appendagesSize = 0;
         for (Appendix appendage : appendages) {
             if (secretPhrase != null && appendage instanceof Appendix.Encryptable) {
-                ((Appendix.Encryptable)appendage).encrypt(secretPhrase);
+                ((Appendix.Encryptable) appendage).encrypt(secretPhrase);
             }
             appendagesSize += appendage.getSize();
         }
@@ -344,7 +344,7 @@ public final class TransactionImpl implements Transaction {
         } else if (builder.signature != null) {
             this.signature = builder.signature;
         } else if (secretPhrase != null) {
-            if (getSenderPublicKey() != null && ! Arrays.equals(senderPublicKey, Crypto.getPublicKey(secretPhrase))) {
+            if (getSenderPublicKey() != null && !Arrays.equals(senderPublicKey, Crypto.getPublicKey(secretPhrase))) {
                 throw new MetroException.NotValidException("Secret phrase doesn't match transaction sender public key");
             }
             signature = Crypto.sign(bytes(), secretPhrase);
@@ -472,7 +472,7 @@ public final class TransactionImpl implements Transaction {
     }
 
     void setIndex(int index) {
-        this.index = (short)index;
+        this.index = (short) index;
     }
 
     @Override
@@ -700,75 +700,38 @@ public final class TransactionImpl implements Transaction {
         return bytes;
     }
 
+    public static List<TransactionImpl> buildTransactions(byte[] bytes) throws MetroException.NotValidException {
+        List<TransactionImpl> result = new ArrayList<>();
+        try {
+            ByteBuffer buffer = ByteBuffer.wrap(bytes);
+            int txCount = readShortVarInt(buffer);
+            for (int i = 0; i < txCount; i++) {
+                BuilderImpl builder = newTransactionBuilder(buffer);
+                result.add(builder.build());
+            }
+            if (buffer.hasRemaining()) {
+                throw new MetroException.NotValidException("Transaction bytes too long, " + buffer.remaining() + " extra bytes");
+            }
+        } catch (MetroException.NotValidException|RuntimeException e) {
+            Logger.logDebugMessage("Failed to parse transaction bytes: " + Convert.toHexString(bytes));
+            throw e;
+        }
+        return result;
+    }
+
+    private static int readShortVarInt(ByteBuffer buffer) {
+        int v = buffer.get() & 0xFF;
+        if (v < 253) {
+            return v;
+        } else {
+            return  ((buffer.get()) & 0xFF) | ((buffer.get() & 0xFF) << 8);
+        }
+    }
+
     public static TransactionImpl.BuilderImpl newTransactionBuilder(byte[] bytes) throws MetroException.NotValidException {
         try {
             ByteBuffer buffer = ByteBuffer.wrap(bytes);
-            buffer.order(ByteOrder.LITTLE_ENDIAN);
-            byte type = buffer.get();
-            byte subtype = buffer.get();
-            byte version = (byte) ((subtype & 0xF0) >> 4);
-            subtype = (byte) (subtype & 0x0F);
-            long timestamp = buffer.getLong();
-            short deadline = buffer.getShort();
-            byte[] senderPublicKey = new byte[32];
-            buffer.get(senderPublicKey);
-            long recipientId = buffer.getLong();
-            int recipientId2 = buffer.getInt();
-            long amountMQT = buffer.getLong();
-            long feeMQT = buffer.getLong();
-            byte[] referencedTransactionFullHash = new byte[32];
-            buffer.get(referencedTransactionFullHash);
-            referencedTransactionFullHash = Convert.emptyToNull(referencedTransactionFullHash);
-            byte[] signature = new byte[64];
-            buffer.get(signature);
-            signature = Convert.emptyToNull(signature);
-            int flags = 0;
-            int ecBlockHeight = 0;
-            long ecBlockId = 0;
-            if (version > 0) {
-                flags = buffer.getInt();
-                ecBlockHeight = buffer.getInt();
-                ecBlockId = buffer.getLong();
-            }
-            TransactionType transactionType = TransactionType.findTransactionType(type, subtype);
-            TransactionImpl.BuilderImpl builder = new BuilderImpl(version, senderPublicKey, amountMQT, feeMQT,
-                    deadline, transactionType.parseAttachment(buffer))
-                    .timestamp(timestamp)
-                    .referencedTransactionFullHash(referencedTransactionFullHash)
-                    .signature(signature)
-                    .ecBlockHeight(ecBlockHeight)
-                    .ecBlockId(ecBlockId);
-            if (transactionType.canHaveRecipient()) {
-                builder.recipientFullId(recipientId, recipientId2);
-            }
-            int position = 1;
-            if ((flags & position) != 0 || (version == 0 && transactionType == TransactionType.Messaging.ARBITRARY_MESSAGE)) {
-                builder.appendix(new Appendix.Message(buffer));
-            }
-            position <<= 1;
-            if ((flags & position) != 0) {
-                builder.appendix(new Appendix.EncryptedMessage(buffer));
-            }
-            position <<= 1;
-            if ((flags & position) != 0) {
-                builder.appendix(new Appendix.PublicKeyAnnouncement(buffer));
-            }
-            position <<= 1;
-            if ((flags & position) != 0) {
-                builder.appendix(new Appendix.EncryptToSelfMessage(buffer));
-            }
-            position <<= 1;
-            if ((flags & position) != 0) {
-                builder.appendix(new Appendix.Phasing(buffer));
-            }
-            position <<= 1;
-            if ((flags & position) != 0) {
-                builder.appendix(new Appendix.PrunablePlainMessage(buffer));
-            }
-            position <<= 1;
-            if ((flags & position) != 0) {
-                builder.appendix(new Appendix.PrunableEncryptedMessage(buffer));
-            }
+            BuilderImpl builder = newTransactionBuilder(buffer);
             if (buffer.hasRemaining()) {
                 throw new MetroException.NotValidException("Transaction bytes too long, " + buffer.remaining() + " extra bytes");
             }
@@ -777,6 +740,76 @@ public final class TransactionImpl implements Transaction {
             Logger.logDebugMessage("Failed to parse transaction bytes: " + Convert.toHexString(bytes));
             throw e;
         }
+    }
+
+    public static TransactionImpl.BuilderImpl newTransactionBuilder(ByteBuffer buffer) throws MetroException.NotValidException {
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+        byte type = buffer.get();
+        byte subtype = buffer.get();
+        byte version = (byte) ((subtype & 0xF0) >> 4);
+        subtype = (byte) (subtype & 0x0F);
+        long timestamp = buffer.getLong();
+        short deadline = buffer.getShort();
+        byte[] senderPublicKey = new byte[32];
+        buffer.get(senderPublicKey);
+        long recipientId = buffer.getLong();
+        int recipientId2 = buffer.getInt();
+        long amountMQT = buffer.getLong();
+        long feeMQT = buffer.getLong();
+        byte[] referencedTransactionFullHash = new byte[32];
+        buffer.get(referencedTransactionFullHash);
+        referencedTransactionFullHash = Convert.emptyToNull(referencedTransactionFullHash);
+        byte[] signature = new byte[64];
+        buffer.get(signature);
+        signature = Convert.emptyToNull(signature);
+        int flags = 0;
+        int ecBlockHeight = 0;
+        long ecBlockId = 0;
+        if (version > 0) {
+            flags = buffer.getInt();
+            ecBlockHeight = buffer.getInt();
+            ecBlockId = buffer.getLong();
+        }
+        TransactionType transactionType = TransactionType.findTransactionType(type, subtype);
+        TransactionImpl.BuilderImpl builder = new BuilderImpl(version, senderPublicKey, amountMQT, feeMQT,
+                deadline, transactionType.parseAttachment(buffer))
+                .timestamp(timestamp)
+                .referencedTransactionFullHash(referencedTransactionFullHash)
+                .signature(signature)
+                .ecBlockHeight(ecBlockHeight)
+                .ecBlockId(ecBlockId);
+        if (transactionType.canHaveRecipient()) {
+            builder.recipientFullId(recipientId, recipientId2);
+        }
+        int position = 1;
+        if ((flags & position) != 0 || (version == 0 && transactionType == TransactionType.Messaging.ARBITRARY_MESSAGE)) {
+            builder.appendix(new Appendix.Message(buffer));
+        }
+        position <<= 1;
+        if ((flags & position) != 0) {
+            builder.appendix(new Appendix.EncryptedMessage(buffer));
+        }
+        position <<= 1;
+        if ((flags & position) != 0) {
+            builder.appendix(new Appendix.PublicKeyAnnouncement(buffer));
+        }
+        position <<= 1;
+        if ((flags & position) != 0) {
+            builder.appendix(new Appendix.EncryptToSelfMessage(buffer));
+        }
+        position <<= 1;
+        if ((flags & position) != 0) {
+            builder.appendix(new Appendix.Phasing(buffer));
+        }
+        position <<= 1;
+        if ((flags & position) != 0) {
+            builder.appendix(new Appendix.PrunablePlainMessage(buffer));
+        }
+        position <<= 1;
+        if ((flags & position) != 0) {
+            builder.appendix(new Appendix.PrunableEncryptedMessage(buffer));
+        }
+        return builder;
     }
 
     static TransactionImpl.BuilderImpl newTransactionBuilder(byte[] bytes, JSONObject prunableAttachments) throws MetroException.NotValidException {

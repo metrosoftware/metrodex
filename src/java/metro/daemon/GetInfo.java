@@ -1,6 +1,7 @@
 package metro.daemon;
 
 import metro.Account;
+import metro.BlockImpl;
 import metro.BlockchainImpl;
 import metro.Consensus;
 import metro.Constants;
@@ -26,11 +27,12 @@ public class GetInfo implements DaemonRequestHandler {
     @Override
     public JSONStreamAware process(DaemonRequest dReq) {
         BlockchainImpl blockchain = BlockchainImpl.getInstance();
+        BlockImpl lastKeyBlock = blockchain.getLastKeyBlock();
         Account account = Account.getAccount(Convert.parseHexString(Miner.getPublicKey()));
         JSONObject result = new JSONObject();
         result.put("version", Metro.VERSION);
         result.put("balance", account == null ? 0 : account.getBalanceMQT() / Constants.ONE_MTR);
-        result.put("blocks", blockchain.getHeight());
+        result.put("blocks", lastKeyBlock.getLocalHeight() + 1);
         result.put("connections", Peers.getActivePeers().size());
         result.put("difficulty", new BigDecimal(Consensus.DIFFICULTY_MAX_TARGET).
                 divide(new BigDecimal(BitcoinJUtils.decodeCompactBits((int) blockchain.getLastKeyBlock().getBaseTarget())),

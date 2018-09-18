@@ -31,24 +31,16 @@ public class SubmitBlock implements DaemonRequestHandler {
 
         String block = (String) dReq.getParams().get(0);
         byte[] blockHeaderBytes = Convert.parseHexString(block.substring(0, 196).toLowerCase(Locale.ROOT));
+        byte[] txBytes = Convert.parseHexString(block.substring(196).toLowerCase(Locale.ROOT));
+
         List<TransactionImpl> txs = new ArrayList<>();
         try {
-            TransactionImpl.BuilderImpl builder = TransactionImpl.newTransactionBuilder(Convert.parseHexString(block.substring(198, 626).toLowerCase(Locale.ROOT)));
-            TransactionImpl coinbase = builder.build();
-            txs.add(coinbase);
+            txs = TransactionImpl.buildTransactions(txBytes);
         } catch (MetroException.NotValidException e) {
             Logger.logErrorMessage("Block rejected", e);
             return awareError(-1, "Coinbase not valid. " + e.getMessage(), dReq.getId());
         }
-        long time = getTimestamp(blockHeaderBytes);
-        List<Long> txIds = TemplateCache.instance.get(time);
-        if (txIds == null) {
-            Logger.logErrorMessage("Block rejected. Time roll not allowed");
-            return awareError(-1, "Time roll not allowed", dReq.getId());
-        }
-        for (Long txId: txIds) {
-            txs.add((TransactionImpl)Metro.getTransactionProcessor().getUnconfirmedTransaction(txId));
-        }
+
         Block extra = Metro.getBlockchainProcessor().composeKeyBlock(blockHeaderBytes, txs);
         boolean blockAccepted;
         try {

@@ -42,8 +42,6 @@ public class GetBlockTemplate implements DaemonRequestHandler {
             }
             BlockchainImpl blockchain = BlockchainImpl.getInstance();
             BlockchainProcessorImpl blockchainProcessor = BlockchainProcessorImpl.getInstance();
-            result = new JSONObject();
-
             BlockImpl previousBlock = blockchain.getLastBlock();
             BlockImpl previousKeyBlock = blockchain.getLastKeyBlock();
             int keyHeight = previousKeyBlock != null ? previousKeyBlock.getLocalHeight() + 1 : 0;
@@ -55,6 +53,7 @@ public class GetBlockTemplate implements DaemonRequestHandler {
             byte[] bits = Convert.toBytes(Target.nextTarget(previousKeyBlock));
             ArrayUtils.reverse(bits);
 
+            result = new JSONObject();
             result.put("height", keyHeight);
             result.put("version", Consensus.getPreferableKeyBlockVersion(keyHeight + 1));
             result.put("curtime", time);

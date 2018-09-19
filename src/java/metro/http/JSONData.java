@@ -48,15 +48,12 @@ import metro.Trade;
 import metro.Transaction;
 import metro.Vote;
 import metro.VoteWeighting;
-import metro.crypto.Crypto;
 import metro.crypto.EncryptedData;
 import metro.db.DbIterator;
 import metro.peer.Hallmark;
 import metro.peer.Peer;
 import metro.util.Convert;
 import metro.util.Filter;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -326,13 +323,13 @@ public final class JSONData {
         if (block.getNextBlockId() != 0) {
             json.put("nextBlock", Long.toUnsignedString(block.getNextBlockId()));
         }
-        // TODO #145 if (block.isKeyblock()) { ... } report key block fields for UI
         json.put("txMerkleRoot", Convert.toHexString(block.getTxMerkleRoot()));
         json.put("generationSequence", Convert.toHexString(block.getGenerationSequence()));
         json.put("previousBlockHash", Convert.toHexString(block.getPreviousBlockHash()));
         json.put("blockSignature", Convert.toHexString(block.getBlockSignature()));
         if (block.isKeyBlock()) {
             json.put("nonce", block.getNonce());
+            json.put("forgersMerkleBranches", block.getForgersMerkleBranches());
         }
         JSONArray transactions = new JSONArray();
         if (includeTransactions) {

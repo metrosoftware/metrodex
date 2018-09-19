@@ -382,7 +382,7 @@ final class BlockDb {
                 } else {
                     pstmt.setNull(++i, Types.BIGINT);
                 }
-                DbUtils.setBytes(pstmt, ++i, block.getForgersMerkleRoot());
+                DbUtils.setBytes(pstmt, ++i, block.getForgersMerkleBranches());
                 pstmt.setLong(++i, block.getTotalAmountMQT());
                 pstmt.setLong(++i, block.getRewardMQT());
                 pstmt.setInt(++i, block.getPayloadLength());

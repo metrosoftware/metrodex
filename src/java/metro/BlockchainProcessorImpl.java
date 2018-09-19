@@ -114,10 +114,10 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
     private volatile int lastBlockchainFeederHeight;
     private volatile boolean getMoreBlocks = true;
 
-    private volatile byte[] forgersMerkleAtLastKeyBlock;
+    private volatile byte[] lastKeyBlockForgersMerkleBranches;
 
-    public byte[] getForgersMerkleAtLastKeyBlock() {
-        return forgersMerkleAtLastKeyBlock;
+    public byte[] getLastKeyBlockForgersMerkleBranches() {
+        return lastKeyBlockForgersMerkleBranches;
     }
 
     private volatile boolean isTrimming;
@@ -1007,7 +1007,7 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
             }
             // find last key block with ANY timestamp
             Block lastKeyBlock = BlockDb.findLastKeyBlock(Long.MAX_VALUE);
-            if (lastKeyBlock != null && Arrays.equals(forgersMerkleAtLastKeyBlock, Constants.TWO_BRANCHES_EMPTY_MERKLE_ROOT)) {
+            if (lastKeyBlock != null && Arrays.equals(lastKeyBlockForgersMerkleBranches, Constants.TWO_BRANCHES_EMPTY_MERKLE_ROOT)) {
                 // our previous scan, if any, was insufficient to initialize the forgersMerkle; rescan starting from last key block
                 scan(lastKeyBlock.getHeight(), false);
             }
@@ -1570,7 +1570,7 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
     }
 
     private Block.ValidationResult validateKeyBlock(Block keyBlock) {
-        if (keyBlock.getLocalHeight() >= Consensus.FORGERS_FIXATION_BLOCK && !Arrays.equals(keyBlock.getForgersMerkleRoot(), forgersMerkleAtLastKeyBlock)) {
+        if (keyBlock.getLocalHeight() >= Consensus.FORGERS_FIXATION_BLOCK && !Arrays.equals(keyBlock.getForgersMerkleBranches(), lastKeyBlockForgersMerkleBranches)) {
             return Block.ValidationResult.FORGERS_MERKLE_ROOT_DISCREPANCY;
         }
 
@@ -1794,7 +1794,7 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
             AccountLedger.commitEntries();
             // Account records are all updated by now, so we can recalculate the forgersMerkle here
             if (block.isKeyBlock()) {
-                forgersMerkleAtLastKeyBlock = getCurrentForgersMerkleBranches();
+                lastKeyBlockForgersMerkleBranches = getCurrentForgersMerkleBranches();
             }
         } finally {
             isProcessingBlock = false;
@@ -1866,7 +1866,7 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
         previousBlock.loadTransactions();
         blockchain.setLastBlock(previousBlock);
         if (block.isKeyBlock()) {
-            forgersMerkleAtLastKeyBlock = block.getForgersMerkleRoot();
+            lastKeyBlockForgersMerkleBranches = block.getForgersMerkleBranches();
         }
         blockListeners.notify(block, Event.BLOCK_POPPED);
         return previousBlock;
@@ -1889,7 +1889,7 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
     }
 
     private void resetForgersMerkle() {
-        forgersMerkleAtLastKeyBlock = Constants.TWO_BRANCHES_EMPTY_MERKLE_ROOT;
+        lastKeyBlockForgersMerkleBranches = Constants.TWO_BRANCHES_EMPTY_MERKLE_ROOT;
     }
 
     private boolean verifyChecksum(byte[] validChecksum, int fromHeight, int toHeight) {
@@ -2352,7 +2352,7 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
             Long previousKeyBlockId = previousKeyBlock == null ? null : previousKeyBlock.getId();
             long baseTarget = BitcoinJUtils.encodeCompactBits(Metro.getBlockchain().getNextTarget());
             long blockTimestamp = Metro.getEpochTime();
-            byte[] forgersMerkle = forgersMerkleAtLastKeyBlock;
+            byte[] forgersMerkle = lastKeyBlockForgersMerkleBranches;
             List<TransactionImpl> blockTransactions = new ArrayList<>();
 
             int keyHeight = previousKeyBlock != null ? previousKeyBlock.getLocalHeight() + 1 : 0;
@@ -2423,7 +2423,7 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
             }
             byte[] forgersMerkleRoot = new byte[hashSize];
             header.get(forgersMerkleRoot);
-            byte[] forgersMerkleBranches = getForgersMerkleAtLastKeyBlock();
+            byte[] forgersMerkleBranches = getLastKeyBlockForgersMerkleBranches();
             if (!Arrays.equals(forgersMerkleRoot, HASH_FUNCTION.hash(ArrayUtils.addAll(previousBlockHash, forgersMerkleBranches)))) {
                 throw new IllegalArgumentException("Forgers root: " + Convert.toHexString(forgersMerkleRoot) + ", not matching branches: " + Convert.toHexString(forgersMerkleBranches));
             }

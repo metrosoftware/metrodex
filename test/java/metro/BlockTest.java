@@ -141,7 +141,7 @@ public class BlockTest extends BlockchainTest {
         Assert.assertNotNull("mined block not accepted", minedBlock);
         Assert.assertEquals(1, minedBlock.getTransactions().size());
         Assert.assertTrue(minedBlock.getTransactions().get(0).getType().isCoinbase());
-        Assert.assertArrayEquals(new byte[Convert.HASH_SIZE * 2], minedBlock.getForgersMerkleRoot());
+        Assert.assertArrayEquals(new byte[Convert.HASH_SIZE * 2], minedBlock.getForgersMerkleBranches());
         Assert.assertArrayEquals(txHashPrivateAccess(minedBlock.getTransactions().get(0)), minedBlock.getTxMerkleRoot());
         generateBlock();
         for (int i = 0; i < Math.min(GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS, 1); i++) {
@@ -149,7 +149,7 @@ public class BlockTest extends BlockchainTest {
             Assert.assertNotNull(minedBlock);
         }
 
-        Assert.assertEquals("1584abcb68b7beb00d30c4a93270d8607e596da72697bd92f0d7edac79e49fa80000000000000000000000000000000000000000000000000000000000000000", Convert.toHexString(minedBlock.getForgersMerkleRoot()));
+        Assert.assertEquals("1584abcb68b7beb00d30c4a93270d8607e596da72697bd92f0d7edac79e49fa80000000000000000000000000000000000000000000000000000000000000000", Convert.toHexString(minedBlock.getForgersMerkleBranches()));
     }
 
     @Test
@@ -413,7 +413,7 @@ public class BlockTest extends BlockchainTest {
         emptyKeyBlockJSON.put("previousBlockHash", Convert.toHexString(posBlock3.getHash()));
         emptyKeyBlockJSON.put("nonce", 212428);
         emptyKeyBlockJSON.put("timestamp", 2330920112L);
-        emptyKeyBlockJSON.put("forgersMerkleRoot", Convert.toHexString(Metro.getBlockchainProcessor().getForgersMerkleAtLastKeyBlock()));
+        emptyKeyBlockJSON.put("forgersMerkleRoot", Convert.toHexString(Metro.getBlockchainProcessor().getLastKeyBlockForgersMerkleBranches()));
         // adding key block that finishes cluster consisting of 3 blocks
         Metro.getBlockchainProcessor().processPeerBlock(emptyKeyBlockJSON, null);
     }

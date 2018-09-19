@@ -57,7 +57,7 @@ public interface Block {
 
     byte[] getTxMerkleRoot();
 
-    byte[] getForgersMerkleRoot();
+    byte[] getForgersMerkleBranches();
 
     long getNextBlockId();
 

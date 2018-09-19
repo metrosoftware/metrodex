@@ -253,13 +253,13 @@ public class AccountTest extends BlockchainTest {
             lastMined = mineBlock();
             Assert.assertNotNull(lastMined);
         }
-        byte[] forgersMerkle1 = lastMined.getForgersMerkleRoot();
+        byte[] forgersMerkle1 = lastMined.getForgersMerkleBranches();
         generateBlockBy(ALICE);
         for (int i = 0; i < GUARANTEED_BALANCE_KEYBLOCK_CONFIRMATIONS; i++) {
             lastMined = mineBlock();
             Assert.assertNotNull(lastMined);
         }
-        Assert.assertFalse("forgersMerkle must change (from the initial one) after the 3rd key block", Arrays.equals(forgersMerkle1, lastMined.getForgersMerkleRoot()));
+        Assert.assertFalse("forgersMerkle must change (from the initial one) after the 3rd key block", Arrays.equals(forgersMerkle1, lastMined.getForgersMerkleBranches()));
         Account bob = Account.getAccount(BOB.getFullId());
         Assert.assertEquals(1000100, bob.getEffectiveBalanceMTR());
         blockchainProcessor.scan(0, true);

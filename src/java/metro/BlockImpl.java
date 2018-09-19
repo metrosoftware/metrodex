@@ -48,7 +48,7 @@ public final class BlockImpl implements Block {
     private volatile byte[] generatorPublicKey;
     private final byte[] previousBlockHash;
     private final byte[] txMerkleRoot;
-    private final byte[] forgersMerkleRoot;
+    private final byte[] forgersMerkleBranches;
     private long totalAmountMQT;
     private long rewardMQT;
     private final int payloadLength;
@@ -89,9 +89,9 @@ public final class BlockImpl implements Block {
      *
      */
     BlockImpl(short version, long timestamp, long previousBlockId, Long previousKeyBlockId, int nonce, int payloadLength, byte[] txMerkleRoot,
-              byte[] generatorPublicKey, byte[] generationSequence, byte[] previousBlockHash, byte[] forgersMerkleRoot, List<TransactionImpl> transactions, String secretPhrase) {
+              byte[] generatorPublicKey, byte[] generationSequence, byte[] previousBlockHash, byte[] forgersMerkleBranches, List<TransactionImpl> transactions, String secretPhrase) {
         this(version, timestamp, 0, previousBlockId, previousKeyBlockId, nonce, payloadLength, txMerkleRoot,
-                generatorPublicKey, generationSequence, null, previousBlockHash, forgersMerkleRoot, transactions);
+                generatorPublicKey, generationSequence, null, previousBlockHash, forgersMerkleBranches, transactions);
         blockSignature = Crypto.sign(bytes(), secretPhrase);
         bytes = null;
     }
@@ -101,7 +101,7 @@ public final class BlockImpl implements Block {
      *
      */
     BlockImpl(short version, long timestamp, long baseTarget, long previousBlockId, Long previousKeyBlockId, int nonce, int payloadLength, byte[] txMerkleRoot,
-              byte[] generatorPublicKey, byte[] generationSequence, byte[] blockSignature, byte[] previousBlockHash, byte[] forgersMerkleRoot, List<TransactionImpl> transactions) {
+              byte[] generatorPublicKey, byte[] generationSequence, byte[] blockSignature, byte[] previousBlockHash, byte[] forgersMerkleBranches, List<TransactionImpl> transactions) {
         this.version = version;
         this.timestamp = timestamp;
         this.baseTarget = baseTarget;
@@ -114,7 +114,7 @@ public final class BlockImpl implements Block {
         this.generationSequence = generationSequence;
         this.blockSignature = blockSignature;
         this.previousBlockHash = previousBlockHash;
-        this.forgersMerkleRoot = forgersMerkleRoot;
+        this.forgersMerkleBranches = forgersMerkleBranches;
         if (transactions != null) {
             this.blockTransactions = Collections.unmodifiableList(transactions);
             long calculatedReward = 0, calculatedAmount = 0;
@@ -143,11 +143,11 @@ public final class BlockImpl implements Block {
      */
     BlockImpl(short version, long timestamp, long previousBlockId, Long previousKeyBlockId, int nonce, long totalAmountMQT, long rewardMQT, int payloadLength,
               byte[] txMerkleRoot, long generatorId, byte[] generationSequence, byte[] blockSignature,
-              byte[] previousBlockHash, byte[] forgersMerkleRoot,
+              byte[] previousBlockHash, byte[] forgersMerkleBranches,
               BigInteger cumulativeDifficulty, BigInteger stakeBatchDifficulty, long baseTarget, long nextBlockId, int height, int localHeight, long id,
               List<TransactionImpl> blockTransactions) {
         this(version, timestamp, baseTarget, previousBlockId, previousKeyBlockId, nonce, payloadLength, txMerkleRoot,
-                null, generationSequence, blockSignature, previousBlockHash, forgersMerkleRoot, blockTransactions);
+                null, generationSequence, blockSignature, previousBlockHash, forgersMerkleBranches, blockTransactions);
         this.cumulativeDifficulty = cumulativeDifficulty;
         this.stakeBatchDifficulty = stakeBatchDifficulty;
         this.nextBlockId = nextBlockId;
@@ -176,7 +176,7 @@ public final class BlockImpl implements Block {
         this.txMerkleRoot = block.txMerkleRoot;
         this.generatorPublicKey = block.generatorPublicKey;
         this.blockSignature = block.blockSignature;
-        this.forgersMerkleRoot = block.forgersMerkleRoot;
+        this.forgersMerkleBranches = block.forgersMerkleBranches;
         this.generatorPublicKey = block.generatorPublicKey;
         this.rewardMQT = block.rewardMQT;
         this.totalAmountMQT = block.totalAmountMQT;
@@ -232,9 +232,8 @@ public final class BlockImpl implements Block {
         return previousBlockHash;
     }
 
-    @Override
-    public byte[] getForgersMerkleRoot() {
-        return forgersMerkleRoot;
+    public byte[] getForgersMerkleBranches() {
+        return forgersMerkleBranches;
     }
 
     @Override
@@ -386,7 +385,9 @@ public final class BlockImpl implements Block {
             }
             json.put("nonce", nonce);
             json.put("baseTarget", baseTarget);
-            json.put("forgersMerkleRoot", Convert.toHexString(forgersMerkleRoot));
+            //Backward compatibility
+            json.put("forgersMerkleRoot", Convert.toHexString(forgersMerkleBranches));
+            json.put("forgersMerkleBranches", Convert.toHexString(forgersMerkleBranches));
         } else {
             json.put("payloadLength", payloadLength);
             json.put("generatorPublicKey", Convert.toHexString(getGeneratorPublicKey()));
@@ -424,7 +425,7 @@ public final class BlockImpl implements Block {
             int payloadLength = 0, nonce = 0;
             // these are not present in BOTH fast and key blocks, so may be null
             // generationSequence for key block is not passed, but re-calculated
-            byte[] forgersMerkleRoot = null, generatorPublicKey = null, blockSignature = null, generationSequence = null;
+            byte[] forgersMerkleBranches = null, generatorPublicKey = null, blockSignature = null, generationSequence = null;
             if (keyBlock) {
                 String strPrevKeyBlock = (String) blockData.get("previousKeyBlock");
                 if (strPrevKeyBlock != null) {
@@ -432,7 +433,11 @@ public final class BlockImpl implements Block {
                 }
                 nonce = ((Number) blockData.get("nonce")).intValue();
                 baseTarget = Convert.parseLong(blockData.get("baseTarget"));
-                forgersMerkleRoot = Convert.parseHexString((String) blockData.get("forgersMerkleRoot"));
+                if (blockData.containsKey("forgersMerkleBranches")) {
+                    forgersMerkleBranches = Convert.parseHexString((String) blockData.get("forgersMerkleBranches"));
+                } else {
+                    forgersMerkleBranches = Convert.parseHexString((String) blockData.get("forgersMerkleRoot"));
+                }
             } else {
                 payloadLength = ((Number) blockData.get("payloadLength")).intValue();
                 generatorPublicKey = Convert.parseHexString((String) blockData.get("generatorPublicKey"));
@@ -448,7 +453,7 @@ public final class BlockImpl implements Block {
                 blockTransactions.add(TransactionImpl.parseTransaction((JSONObject) transactionData));
             }
             BlockImpl block = new BlockImpl(version, timestamp, baseTarget, previousBlock, previousKeyBlock, nonce, payloadLength, txMerkleRoot, generatorPublicKey,
-                    generationSequence, blockSignature, previousBlockHash, forgersMerkleRoot, blockTransactions);
+                    generationSequence, blockSignature, previousBlockHash, forgersMerkleBranches, blockTransactions);
             if (!(keyBlock || block.checkSignature()) && !reparse) {
                 throw new MetroException.NotValidException("Invalid block signature");
             }
@@ -498,14 +503,14 @@ public final class BlockImpl implements Block {
                         buffer.putLong(0);
                     }
                     // hash the two branches together
-                    buffer.put(HASH_FUNCTION.hash(ArrayUtils.addAll(previousBlockHash, forgersMerkleRoot)));
+                    buffer.put(HASH_FUNCTION.hash(ArrayUtils.addAll(previousBlockHash, forgersMerkleBranches)));
                     // only 4 bytes of target are needed for PoW
                 } else {
                     buffer.putLong(previousBlockId);
                     buffer.putLong(previousKeyBlockId);
                     buffer.put(txMerkleRoot);
                     // hash the two branches together
-                    buffer.put(HASH_FUNCTION.hash(ArrayUtils.addAll(previousBlockHash, forgersMerkleRoot)));
+                    buffer.put(HASH_FUNCTION.hash(ArrayUtils.addAll(previousBlockHash, forgersMerkleBranches)));
                     // only 4 bytes of target are needed for PoW
                     buffer.putLong(timestamp);
                 }

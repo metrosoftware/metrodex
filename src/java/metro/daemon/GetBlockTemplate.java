@@ -49,7 +49,7 @@ public class GetBlockTemplate implements DaemonRequestHandler {
             long previousKeyBlockId = previousKeyBlock == null ? 0 : previousKeyBlock.getId();
             long time = Metro.getEpochTime();
             Block ecBlock = BlockchainImpl.getInstance().getECBlock(time);
-            byte[] forgersMerkleRoot = HASH_FUNCTION.hash(ArrayUtils.addAll(HASH_FUNCTION.hash(previousBlock.getBytes()), blockchainProcessor.getForgersMerkleAtLastKeyBlock()));
+            byte[] forgersMerkleRoot = HASH_FUNCTION.hash(ArrayUtils.addAll(HASH_FUNCTION.hash(previousBlock.getBytes()), blockchainProcessor.getLastKeyBlockForgersMerkleBranches()));
             byte[] bits = Convert.toBytes(Target.nextTarget(previousKeyBlock));
             ArrayUtils.reverse(bits);
 

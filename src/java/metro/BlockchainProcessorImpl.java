@@ -1794,6 +1794,8 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
             AccountLedger.commitEntries();
             // Account records are all updated by now, so we can recalculate the forgersMerkle here
             if (block.isKeyBlock()) {
+                Logger.logInfoMessage(String.format("LastKeyBlockForgersMerkleBranches changed from %s to %s",
+                        Convert.toHexString(lastKeyBlockForgersMerkleBranches), Convert.toHexString(getCurrentForgersMerkleBranches())));
                 lastKeyBlockForgersMerkleBranches = getCurrentForgersMerkleBranches();
             }
         } finally {
@@ -1866,6 +1868,8 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
         previousBlock.loadTransactions();
         blockchain.setLastBlock(previousBlock);
         if (block.isKeyBlock()) {
+            Logger.logInfoMessage(String.format("LastKeyBlockForgersMerkleBranches changed from %s to %s",
+                    Convert.toHexString(lastKeyBlockForgersMerkleBranches), Convert.toHexString(block.getForgersMerkleBranches())));
             lastKeyBlockForgersMerkleBranches = block.getForgersMerkleBranches();
         }
         blockListeners.notify(block, Event.BLOCK_POPPED);
@@ -1889,6 +1893,8 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
     }
 
     private void resetForgersMerkle() {
+        Logger.logInfoMessage(String.format("LastKeyBlockForgersMerkleBranches changed from %s to %s",
+                Convert.toHexString(lastKeyBlockForgersMerkleBranches), Convert.toHexString(Constants.TWO_BRANCHES_EMPTY_MERKLE_ROOT)));
         lastKeyBlockForgersMerkleBranches = Constants.TWO_BRANCHES_EMPTY_MERKLE_ROOT;
     }
 

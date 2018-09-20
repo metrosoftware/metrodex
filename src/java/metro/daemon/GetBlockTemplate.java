@@ -9,6 +9,7 @@ import metro.Metro;
 import metro.Target;
 import metro.TransactionImpl;
 import metro.util.Convert;
+import metro.util.Logger;
 import org.apache.commons.lang3.ArrayUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -50,6 +51,8 @@ public class GetBlockTemplate implements DaemonRequestHandler {
             long time = Metro.getEpochTime();
             Block ecBlock = BlockchainImpl.getInstance().getECBlock(time);
             byte[] forgersMerkleRoot = HASH_FUNCTION.hash(ArrayUtils.addAll(HASH_FUNCTION.hash(previousBlock.getBytes()), blockchainProcessor.getLastKeyBlockForgersMerkleBranches()));
+            Logger.logInfoMessage(String.format("Root %s calculated from %s and %s", Convert.toHexString(forgersMerkleRoot),
+                    Convert.toHexString(previousBlock.getBytes()), Convert.toHexString(blockchainProcessor.getLastKeyBlockForgersMerkleBranches())));
             byte[] bits = Convert.toBytes(Target.nextTarget(previousKeyBlock));
             ArrayUtils.reverse(bits);
 

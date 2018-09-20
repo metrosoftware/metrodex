@@ -18,6 +18,7 @@
 package metro;
 
 import metro.crypto.Crypto;
+import metro.daemon.TipCache;
 import metro.db.DbIterator;
 import metro.db.DerivedDbTable;
 import metro.db.FilteringIterator;
@@ -1122,8 +1123,13 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
         BlockImpl lastKeyBlock = blockchain.getLastKeyBlock();
         BlockImpl common = blockchain.getBlock(block.getPreviousBlockId());
 
-        //Only allow to add block in current cluster
-        if (common == null || (lastKeyBlock != null && lastKeyBlock.getHeight() >= common.getHeight())) {
+        if (common == null) {
+            Logger.logInfoMessage("Have not found prev block. Can not add new key block.");
+            return false;
+        }
+
+        if (lastKeyBlock != null && lastKeyBlock.getHeight() >= common.getHeight()) {
+            Logger.logInfoMessage("Can not add key block in prev cluster.");
             return false;
         }
 
@@ -1137,6 +1143,27 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
             }
         }
         return added;
+    }
+
+    @Override
+    public boolean processKeyBlockFork(BlockImpl block) {
+        blockchain.writeLock();
+        try {
+            List<BlockImpl> tip = TipCache.instance.get(block.getPreviousBlockId());
+            tip.add(block);
+            BlockImpl common = blockchain.getBlock(tip.get(0).getPreviousBlockId());
+            boolean added = processFork(null, tip, common);
+            if (added) {
+                try {
+                    Logger.logWarningMessage("Some blocks replaced by key block " + block.getStringId() + " height " + block.getHeight());
+                } catch (IllegalStateException ex) {
+                    Logger.logWarningMessage("Some blocks replaced by key block " + block.getStringId());
+                }
+            }
+            return added;
+        } finally {
+            blockchain.writeUnlock();
+        }
     }
 
     @Override
@@ -1455,6 +1482,7 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
                 Db.db.rollbackTransaction();
                 popOffTo(previousBlock);
                 blockchain.setLastBlock(previousBlock);
+                Logger.logErrorMessage("Block have not accepted", e);
                 throw e;
             } finally {
                 Db.db.endTransaction();
@@ -2407,8 +2435,18 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
             long previousBlockId = header.getLong();
             BlockImpl previousBlock = BlockDb.findBlock(previousBlockId);
             if (previousBlock == null) {
-                throw new IllegalArgumentException("Wrong prev block id: " + previousBlockId);
-            } else if (previousBlock.getGenerationSequence() == null) {
+                List<BlockImpl> tip = TipCache.instance.get(previousBlockId);
+                BlockImpl commonBlock = null;
+                if (tip != null) {
+                    long commonId = tip.get(0).getPreviousBlockId();
+                    commonBlock = BlockDb.findBlock(commonId);
+                }
+                if (commonBlock == null) {
+                    throw new IllegalArgumentException("Wrong prev block id: " + previousBlockId);
+                }
+                previousBlock = tip.get(tip.size()-1);
+            }
+            if (previousBlock.getGenerationSequence() == null) {
                 throw new IllegalStateException("Generation sequence is not yet set in block " + previousBlockId + " given as previous");
             }
             byte[] previousBlockHash = HASH_FUNCTION.hash(previousBlock.getBytes());

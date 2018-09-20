@@ -17,6 +17,7 @@ import org.json.simple.JSONStreamAware;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 
@@ -26,6 +27,7 @@ import static metro.daemon.DaemonUtils.awareResult;
 public class GetBlockTemplate implements DaemonRequestHandler {
 
     static final GetBlockTemplate instance = new GetBlockTemplate();
+    private static final int GET_WORK_TIP_SIZE = 5;
 
     private final long blockCacheDuration = Metro.getIntProperty("metro.blockCacheDuration");
 
@@ -69,21 +71,32 @@ public class GetBlockTemplate implements DaemonRequestHandler {
             result.put("previousblockhash", Convert.toHexString(buffer.array()));
             result.put("coinbasevalue", Consensus.getBlockSubsidy(previousKeyBlock == null ? 0 : previousKeyBlock.getLocalHeight()));
             JSONArray txs = new JSONArray();
-            List<Long> template = new ArrayList<>();
             for (TransactionImpl transaction : Metro.getBlockchainProcessor().prepareKeyBlockTransactions(previousBlock)) {
                 JSONObject tx = new JSONObject();
                 tx.put("hash", Convert.toHexString(transaction.fullHash()));
                 txs.add(tx);
-                template.add(transaction.getId());
             }
-            TemplateCache.instance.put(time, template);
             result.put("extradata", Convert.toHexString(forgersMerkleRoot));
             result.put("ecblockheight", ecBlock.getHeight());
             result.put("ecblockid", ecBlock.getId());
             result.put("transactions", txs);
             lastRequest = Calendar.getInstance().getTimeInMillis();
+
+            TipCache.instance.put(previousBlockId, tip(blockchain, previousBlock));
             return awareResult(result, dReq.getId());
         }
+    }
+
+    private List<BlockImpl> tip(BlockchainImpl blockchain, BlockImpl previousBlock){
+        BlockImpl[] result = new BlockImpl[GET_WORK_TIP_SIZE];
+
+        result[GET_WORK_TIP_SIZE - 1] = previousBlock;
+        BlockImpl block = previousBlock;
+        for (int i = GET_WORK_TIP_SIZE - 2; i >= 0 ; i--) {
+            block = blockchain.getBlock(block.getPreviousBlockId());
+            result[i] = block;
+        }
+        return new ArrayList<>(Arrays.asList(result));
     }
 
     @Override

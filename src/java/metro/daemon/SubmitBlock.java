@@ -1,6 +1,8 @@
 package metro.daemon;
 
 import metro.Block;
+import metro.BlockImpl;
+import metro.BlockchainImpl;
 import metro.Metro;
 import metro.MetroException;
 import metro.TransactionImpl;
@@ -43,7 +45,12 @@ public class SubmitBlock implements DaemonRequestHandler {
         boolean blockAccepted;
         try {
             Block extra = Metro.getBlockchainProcessor().composeKeyBlock(blockHeaderBytes, txs);
-            blockAccepted = Metro.getBlockchainProcessor().processMyKeyBlock(extra);
+            BlockchainImpl blockchain = BlockchainImpl.getInstance();
+            if (blockchain.getBlock(extra.getPreviousBlockId()) != null) {
+                blockAccepted = Metro.getBlockchainProcessor().processMyKeyBlock(extra);
+            } else {
+                blockAccepted = Metro.getBlockchainProcessor().processKeyBlockFork((BlockImpl) extra);
+            }
         } catch (MetroException e) {
             Logger.logErrorMessage("Block rejected", e);
             return awareError(-1, e.getMessage(), dReq.getId());

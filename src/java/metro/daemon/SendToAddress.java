@@ -40,8 +40,12 @@ public class SendToAddress implements DaemonRequestHandler {
         Block ecBlock = Metro.getBlockchain().getECBlock(Metro.getEpochTime());
         byte[] senderPubKey = Convert.parseHexString(Miner.getPublicKey());
         Account sender = Account.getAccount(Convert.parseHexString(Miner.getPublicKey()));
-        long amountMQT = (new BigDecimal(amount instanceof Double ? (Double) amount : (Long) amount))
-                .multiply(new BigDecimal(Constants.ONE_MTR)).longValueExact();
+        long amountMQT = -1;
+        if (amount instanceof Double) {
+            amountMQT = (new BigDecimal((Double) amount)).multiply(new BigDecimal(Constants.ONE_MTR)).longValue();
+        } else {
+            amountMQT = (new BigDecimal((Long) amount)).multiply(new BigDecimal(Constants.ONE_MTR)).longValue();
+        }
         long feeMQT = Constants.ONE_MTR;
         Attachment.EmptyAttachment attachment = Attachment.ORDINARY_PAYMENT;
         Account.FullId recipientFullId = Account.FullId.fromPublicKey(Convert.parseHexString(pubKey));

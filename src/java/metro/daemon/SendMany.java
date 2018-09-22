@@ -45,8 +45,12 @@ public class SendMany implements DaemonRequestHandler {
         List<Transaction> txs = new ArrayList<>();
         long totalSpent = 0L;
         for (String pubKey : payments.keySet()) {
-            long amountMQT = (new BigDecimal(payments.get(pubKey) instanceof Double ? (Double) payments.get(pubKey) : (Long) payments.get(pubKey)))
-                    .multiply(new BigDecimal(Constants.ONE_MTR)).longValueExact();
+            long amountMQT = -1;
+            if (payments.get(pubKey) instanceof Double) {
+                amountMQT = (new BigDecimal((Double) payments.get(pubKey))).multiply(new BigDecimal(Constants.ONE_MTR)).longValue();
+            } else {
+                amountMQT = (new BigDecimal((Long) payments.get(pubKey))).multiply(new BigDecimal(Constants.ONE_MTR)).longValue();
+            }
             long feeMQT = Constants.ONE_MTR;
             Attachment.EmptyAttachment attachment = Attachment.ORDINARY_PAYMENT;
             Account.FullId recipientFullId = Account.FullId.fromPublicKey(Convert.parseHexString(pubKey));

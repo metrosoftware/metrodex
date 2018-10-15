@@ -1,4 +1,4 @@
-This is a list of current and past developers working on the Nxt core software,
+This is a list of current and past developers working on the Nxt/Metro Blockchain core software,
 in order approximately corresponding to the time they joined the team.
 
 
@@ -68,3 +68,11 @@ tomislav.gountchev@jelurida.com
 GPG key fingerprint: 4554 EB0D 4B9D A419 7AE7  03DA 1B30 B078 D77E D3E5
 Nxt account: NXT-XNBG-5TB4-SC4R-B73ZW
 
+
+Andy Orb <metrosoftware@zoho.com>
+
+
+Frédéric Bastiat <fbastiat@metro.software>
+NXT-2B3E-AUU2-GFCP-EUT4S/MTR-2B3E-AUU2-WCUW-UT4S-MMM3-WGHL
+
+Saïd Ibrahim

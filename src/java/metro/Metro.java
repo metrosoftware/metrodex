@@ -53,7 +53,7 @@ import java.util.Properties;
 
 public final class Metro {
 
-    public static final String VERSION = "1.12.0";
+    public static final String VERSION = "1.13.0";
     public static final String APPLICATION = "Metro";
 
     private static volatile Time time = new Time.EpochTime();

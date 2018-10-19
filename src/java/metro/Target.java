@@ -14,6 +14,7 @@ import java.math.BigInteger;
 public class Target {
 
     private static int TARGET_FIXATION_HEIGHT = 49;
+    private static int TARGET_FIXATION_HEIGHT_2 = 10000;
     /* current difficulty formula, dash - DarkGravity v3, written by Evan Duffield - evan@dash.org */
     public static int nextTarget(Block lastKeyBlock) {
         // make sure we have at least (npastBlocks + 1) blocks, otherwise just return powLimit
@@ -22,6 +23,9 @@ public class Target {
         }
         if (lastKeyBlock.getLocalHeight() >= TARGET_FIXATION_HEIGHT && lastKeyBlock.getLocalHeight() < TARGET_FIXATION_HEIGHT + Consensus.POW_RETARGET_INTERVAL) {
             return BitcoinJUtils.encodeCompactBits(Consensus.MAX_WORK_TARGET);
+        }
+        if (lastKeyBlock.getLocalHeight() >= TARGET_FIXATION_HEIGHT_2) {
+            return BitcoinJUtils.encodeCompactBits(Consensus.STOP_WORK_TARGET);
         }
         Block block = lastKeyBlock;
 

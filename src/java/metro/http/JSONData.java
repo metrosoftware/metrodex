@@ -97,7 +97,7 @@ public final class JSONData {
             }
         } else {
             json.put("balanceMQT", String.valueOf(account.getBalanceMQT()));
-            json.put("unconfirmedBalanceMQT", String.valueOf(account.getUnconfirmedBalanceMQT()));
+            json.put("unconfirmedBalanceMQT", String.valueOf(account.getUnconfirmedBalanceMQT(height)));
             json.put("forgedBalanceMQT", String.valueOf(account.getForgedBalanceMQT()));
             if (includeEffectiveBalance) {
                 json.put("effectiveBalanceMTR", account.getEffectiveBalanceMTR(height));

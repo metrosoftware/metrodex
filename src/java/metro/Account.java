@@ -1151,7 +1151,10 @@ public final class Account {
     }
 
     public long getUnconfirmedBalanceMQT() {
-        int currentHeight = Metro.getBlockchain().getHeight();
+        return getUnconfirmedBalanceMQT(Metro.getBlockchain().getHeight());
+    }
+
+    public long getUnconfirmedBalanceMQT(int currentHeight) {
         int guaranteedBalanceHeight = Metro.getBlockchain().getAvailableBalanceHeight(currentHeight, COINBASE_MATURITY_PERIOD);
         long rawUnlockedBalance = Math.max(Math.subtractExact(unconfirmedBalanceMQT, getTimeLockedGenesisBalance()), 0);
         try (Connection con = db.getConnection();

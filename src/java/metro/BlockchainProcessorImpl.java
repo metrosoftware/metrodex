@@ -1007,10 +1007,17 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
                 }
             }
             // find last key block with ANY timestamp
-            Block lastKeyBlock = BlockDb.findLastKeyBlock(Long.MAX_VALUE);
-            if (lastKeyBlock != null && Arrays.equals(lastKeyBlockForgersMerkleBranches, Constants.TWO_BRANCHES_EMPTY_MERKLE_ROOT)) {
-                // our previous scan, if any, was insufficient to initialize the forgersMerkle; rescan starting from last key block
-                scan(lastKeyBlock.getHeight(), false);
+            if (Arrays.equals(lastKeyBlockForgersMerkleBranches, Constants.TWO_BRANCHES_EMPTY_MERKLE_ROOT)) {
+                // our previous scan, if any, was insufficient to initialize the forgersMerkle; rescan starting from last key block or thousand block
+                Block lastKeyBlock = BlockDb.findLastKeyBlock(Long.MAX_VALUE);
+                BlockImpl lastBlock = BlockDb.findLastBlock();
+                Block lastThousandBlock = BlockDb.findBlockAtHeight(lastBlock.getHeight() / 1000 * 1000);
+                if (lastThousandBlock.getForgersMerkleBranches() != null &&
+                        lastThousandBlock.getHeight() > (lastKeyBlock != null ? lastKeyBlock.getHeight() : 0)) {
+                    scan(lastThousandBlock.getHeight(), false);
+                } else if (lastKeyBlock != null) {
+                    scan(lastKeyBlock.getHeight(), false);
+                }
             }
         }, false);
 
@@ -1821,7 +1828,7 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor {
             }
             AccountLedger.commitEntries();
             // Account records are all updated by now, so we can recalculate the forgersMerkle here
-            if (block.isKeyBlock()) {
+            if (block.isKeyBlock() || block.getHeight() % 1000 == 0) {
                 Logger.logInfoMessage(String.format("LastKeyBlockForgersMerkleBranches changed from %s to %s",
                         Convert.toHexString(lastKeyBlockForgersMerkleBranches), Convert.toHexString(getCurrentForgersMerkleBranches())));
                 lastKeyBlockForgersMerkleBranches = getCurrentForgersMerkleBranches();
